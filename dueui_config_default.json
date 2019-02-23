@@ -1,0 +1,1698 @@
+/* This is actually a JSONP response.  Don't mess with the DueUIConfig line below */
+DueUIConfig({
+	/*
+	 * Some terminology...
+	 * 
+	 * This file is organized as a tree of "elements".  Not to be confused
+	 * with HTML elements, a DueUI element is either a container such as a
+	 * "panel" or a "widget" such as a "button".  All emements have a "type"
+	 * attribute that decide their purpose.  They also _should_ have an "id"
+	 * attribute that makes them unique and create a handle that they can be
+	 * referenced with in other parts of the config file.  It's OK to omit
+	 * the "id" if you won't need to reference the element elsewhere but
+	 * I've included them in all elements in this file for completeness
+	 * and clarity.  Each element can also have an optional "enabled"
+	 * attribute which controls if the element will actually be created.
+	 * It's default is "true" so if you don't include it, the element
+	 * will be shown by default.  Set it to "false" if you temporarily
+	 * need to exclude an element for testing purposes.   
+	 * 
+	 * Another common element attribute is "style" which can contain any CSS
+	 * styles you want set for the object.  If you see something you don't
+	 * understand in a style, check https://www.w3schools.com/css/default.asp.
+	 * 
+	 * Element types:
+	 * 
+	 * Panels:
+	 * There are 3 types of panel elements...
+	 * 
+	 * "panel": A simple container with no special behavior.
+	 * 
+	 * "tabbed_panel": An extension of panel that has separate areas
+	 * for specific purposes.  
+	 * 	* A "header_panel" which is just a plain panel at the top of
+	 *		the screen that stays visible at all times.
+	 *  * A "menubar" panel locked to the bottom of the screen that
+	 *    contains buttons allowing you to switch between tabs.
+	 *  * "tab_panel"s that resize dynamically between the
+	 *    header and menubar and contain the bulk of the content
+	 * 
+	 * "tab_panel": A plain panel that adds a button to it's tabbed_panel
+	 * parent's menubar and is only shown when the menubar button is clicked.
+	 * These should only be direct children of a tabbed_panel.
+	 * 
+	 * Widgets:
+	 * There are many types of widget elements.
+	 * 
+	 * Some like "button" and "textarea" are "primitive" widgets.  The term
+	 * "primitive" in this context refers to the fact that these widgets
+	 * aren't composed of other widgets and could possibly be components
+	 * of other widgets.
+	 * 
+	 * Other widgets like "heater_labels" are "convenience" widgets.
+	 * This one is a plain panel containing 4 static buttons displaying heater
+	 * field labels.
+	 * 
+	 * Speaking of which, "heater" is an example of a complex
+	 * widget that consists of a panel containing 2 buttons and 2 input fields
+	 * plus logic to change the colors of the buttons, turn the heater
+	 * on or off, set the temps, etc.
+	 * 
+	 */
+	
+	/* 
+	 * "dueui_content" is a key looked for by DueUI as the "root" element.
+	 * It MUST exist and is must be named "dueui_content".
+	 */
+	"dueui_content": {
+	/*
+	 * The root object is a "tabbed_panel" named "dueui".
+	 * Nothing says you have to start with a tabbed_panel.  You could just 
+	 * have a single plain panel with a bunch of buttons in it.  
+	 */ 
+		"id": "dueui",
+		"type": "tabbed_panel",
+		/*
+		 * There are 2 fixed "panel" child objects: an optional "header_panel",
+		 * and the "menubar" which contains the buttons for the tabs.
+		 */
+		"header_panel": {
+			"id": "dueui_header_main",
+			/*
+			 * This is a plain "panel" which is just a container for
+			 * widgets you'd like to stay visible at the top of the screen
+			 * regardless of what tab is activated.
+			 */
+			"type": "panel",
+			"enabled": true,
+			/*
+			 * All "style" objects are passed directly to the browser
+			 * and use standard CSS naming and syntax.
+			 */
+			"style": {
+				/*
+				 * We want the panel to extend the entire width of the screen
+				 * and we want it to be 3 "em"s tall.
+				 */
+				"width": "100%",
+				"height": "3em",
+				/* 
+				 * "flex" and "row-reverse" are standard CSS layout
+				 * constructs.  We're going to use them because we want
+				 * the log area in the header to change size with the width
+				 * of the window.  To make that happen, it needs to be defined
+				 * last BUT we want it first in the header.  So we use 
+				 * "row-reverse" and define the header in reverse order.
+				 * Whoever invented Cascading Style Sheets has a lot to
+				 * answer for.
+				 */
+				"display": "flex",
+				"flex-direction": "row-reverse"
+			},
+			"element_configs": [
+				/*
+				 * Every element that needs children (like a panel) needs an
+				 * "elements_config" array that contains the child elements.
+				 */
+				{
+					/*
+					 * A "Stop" button.
+					 * 
+					 * This button doesn't really need a unique id because
+					 * we never reference it anywhere.  It's good practice
+					 * to assign one though.
+					 */
+					"id": "stop",
+					/*
+					 * This is just as primitive "button".  I say "primitive"
+					 * but buttons are the concerstone of DueUI.
+					 */
+					"type": "button",
+					"enabled": true,
+					"style": {
+						"width": "96px",
+						"background": "red"
+					},
+					/* 
+					 * It has an icon as well as a display value.  The icon
+					 * can be any icon in the jQuery UI palette.  To see the
+					 * available icon names, visit https://jqueryui.com/themeroller/
+					 * then scroll down to the icons.  If you hover over an icon
+					 * it's name will pop up.
+					 */
+					"icon": "ui-icon-alert",
+					/* The text to display in the button. */
+					"value": "STOP",
+					/*
+					 * "actions" defines what happens when the widget is triggered.
+					 * For a button, the trigger is a click or tap on a touchscreen.
+					 * Multiple actions can be defined and if there are multiple
+					 * gcode actions, a popup will appear which will allow you to
+					 * choose.  This button only has 1 action defined so when you
+					 * click the button, it'll send gcode M112 to the Duet. 
+					 */
+					"actions": [
+						{"type": "gcode", "gcode": "M112"}
+					]
+				},
+				{
+					/*
+					 * Another button that sends the Restart M999
+					 * gcode when clicked.
+					 */
+					"id": "restart",
+					"type": "button",
+					"enabled": true,
+					"style": {
+						"width": "96px",
+						"background": "lightgreen"
+					},
+					"icon": "ui-icon-refresh",
+					"value": "Restart",
+					"actions": [
+						{"type": "gcode", "gcode": "M999"}
+					]
+				},
+				{
+					/*
+					 * "status" is one of those "convenience" widgets that's just
+					 * a read-only button that tracks the status of the Duet.
+					 * Look at the "status_map" object at the bottom of this file
+					 * to see what gets displayed and when. 
+					 */
+					"id": "status",
+					"type": "status",
+					"enabled": true,
+					/*
+					 * "status_level" tells DueUI that this object needs to
+					 * be notified whenever a status report is received from
+					 * the Duet.  There are 3 report types and they are polled
+					 * at the intervals defined in the DueUI Settings.  For
+					 * more information about what's contained in each level,
+					 * visit https://duet3d.dozuki.com/Wiki/Gcode#Section_M408_Report_JSON_style_response
+					 * 
+					 * The status is in every level so we'll just use level 1
+					 * because it's usually the one that's polled most often,
+					 * by default, every 2 seconds.  
+					 */
+					"status_level": 1,
+					"style": {
+						"width": "15ch"
+					}
+				},
+				{
+					/*
+					 * Finally the header has the log area which will actually
+					 * appear first in the header.  Remember "row-reverse"?
+					 */
+					"id": "log",
+					"type": "textarea",
+					"enabled": true,
+					"style": {
+						"height": "100%", "width": "100%",
+						"box-sizing": "border-box"
+					},
+					/*
+					 * We'd rather etries not wrap and we don't need
+					 * to enter text ourselves. 
+					 */
+					"wrap": "off",
+					"read_only": true,
+					/*
+					 * The purpose of the textarea is to display log messages.
+					 */
+					"show_log_messages": true
+				}
+				/* Header area done! */
+			]
+		},
+		"menubar": {
+			/* 
+			 * There's not much to the menubar.  In fact, it doesn't really need to
+			 * be defined here at all unless you want to apply special styling to it.
+			 * It's default name will be the id of the main tabbed_panel plus "_menubar",
+			 * so "dueui_menubar" in this case.  
+			 */
+			"id": "dueui_menubar",
+			"type": "panel",
+			"enabled": true
+		},
+		/*
+		 * These are the "tab_panel"s that contain the bulk of the content.
+		 */
+		"element_configs": [
+			{
+				/* The "Main" tab */
+				"id": "dueui_panel_main",
+				"type": "tab_panel",
+				"enabled": true,
+				/*
+				 * The label for the menubar button.
+				 */
+				"menubar_label": "Main",
+				/*
+				 * And its actual contents...
+				 */
+				"element_configs": [
+					{
+						/*
+						 * "heater_labels" is a special convenience widget that
+						 * defines the 4 buttons used as the labels to the left
+						 * of the heaters. You could define the labels individually
+						 * or even use "label" widgets that don't look like
+						 * buttons. 
+						 */
+						"id": "heater_labels",
+						"type": "heater_labels",
+						"enabled": true,
+						/*
+						 * This is the first time we've used "position".
+						 * It's pretty straightforward other than the
+						 * reference element "of" MUST have been defined
+						 * previously.  If not, things will get ugly.
+						 * Also notice the "#".  That says that the "of"
+						 * is a reference to another element.
+						 */
+						"position": {
+							"my": "left top",
+							"at": "left top",
+							"of": "#dueui_panel_main"
+						},
+						"style": {
+							"width": "96px"
+						},
+						/*
+						 * These defaults are applied to each of the 4 buttons.
+						 * If you haven't figured out what an "em" is yet, it's
+						 * the height of a single character.  Don't blame me,
+						 * I didn't make the CSS stuff up.
+						 */
+						"button_defaults": {
+							"style": {
+								"height": "2.5em"							
+							}
+						}
+					},
+					{
+						/*
+						 * A "heater" is complex widget that's
+						 * composed of 2 buttons and 2 input fields.
+						 */
+						"id": "bed_heater",
+						"type": "heater",
+						"enabled": true,
+						/*
+						 * The button at the top of the widget that has
+						 * the label is actually the heater control button.
+						 * When you click it, a popup will show allowing you
+						 * to click "Off", "Standby" or "On.  It's style
+						 * will also change based on the state.  The next
+						 * widget has examples of how to change the defaults. 
+						 */
+						"label": "Bed",
+						/*
+						 * Notice that we're positioning this widget
+						 * 5 pixels to the right of the heater_labels widget.
+						 */
+						"position": {
+							"my": "left top",
+							"at": "right+5 top",
+							"of": "#heater_labels"
+						},
+						"button_defaults": {
+							"style": {
+								"height": "2.5em"							
+							}
+						},
+						/*
+						 * Tolerances allow you to change the style of a button
+						 * based on it's value.  In this case, the button in
+						 * question is the one that displays the current temperature.
+						 * The background will be lightgreen if the temp is within 2
+						 * degrees of the set point, yellow if more than 2 but
+						 * less than 5 degrees and red if more than 5.  The set
+						 * point is determined by the state of the heater.  If off
+						 * no special styling is performed, if it's in standby, the
+						 * standby set point is used and if active, the active
+						 * set point is used.
+						 */
+						"tolerances": [
+							{"limit": 2, "style": {"background": "lightgreen"}},
+							{"limit": 5, "style": {"background": "yellow"}},
+							{"limit": 999, "style": {"background": "red"}}
+						],
+						/*
+						 * "heater_index" is the actual heater number on the Duet
+						 * to be controlled.  The object uses this to construct
+						 * all of the commands sent to the heater and to determine
+						 * which fields in the status message has the heater's info. 
+						 */
+						"heater_index": 0,
+						/*
+						 * The attributes defined below are needed
+						 * if the version of RepRapFirmware you're running
+						 * does not have the M308 command and the active
+						 * and standby additions to the status message.
+						 * See the "Known Issues" section of README.md
+						 * for more information.
+						 */
+						/*
+						 * The field in the status message that has the
+						 * current temperature.  All dynamic values MUST
+						 * be enclosed in "${}" to be evaluated properly.
+						 * "status" is the status message and the rest
+						 * is the field in the status message. See
+						 * https://duet3d.dozuki.com/Wiki/Gcode#Section_M408_Report_JSON_style_response
+						 * for a list of the fields.
+						 */
+						"current_temp_field": "${status.temps.bed.current}",
+						"active_temp_field": "${status.temps.bed.active}",
+						"standby_temp_field": "${status.temps.bed.standby}",
+						/*
+						 * These are the commands to send to the Duet to change
+						 * the state of the heater.  The default commands use
+						 * the M308 GCode command which is yet to be released.  
+						 */
+						"state_commands": {
+        					"off": "M140 P0 S-273.15 R-273.15",
+        					"standby": "M144 P0 S0",
+					        "on": "M144 P0 S1"
+						},
+						/*
+						 * Commands to change the set points.
+						 */
+						"set_temp_commands": {
+					        "standby": "M140 P0 R${value}",
+					        "active": "M140 P0 S${value}"
+						}
+					},
+					{
+						/*
+						 * This heater is for a standard extruder heater and
+						 * although not required, the default commands and
+						 * styles are shown as an example of what you can
+						 * customize.
+						 */
+						"id": "extr1_heater",
+						"type": "heater",
+						"enabled": true,
+						"label": "Extr 1",
+						"position": {
+							"my": "left top",
+							"at": "right top",
+							"of": "#bed_heater"
+						},
+						"style": { "width": "100px" },
+						"button_defaults": {
+							"style": {
+								"height": "2.5em"
+							}
+						},
+						/*
+						 * What do you want the button with the label in
+						 * it to look like when the heater is in various states?
+						 * In order, the states are off, standby, on, fault,
+						 * tuning.
+						 */
+						"state_styles": [
+							{"background": "gray", "color": "white"},
+							{"background": "green", "color": "white"},
+							{"background": "lightgreen", "color": "black"},
+							{"background": "red", "color": "black"},
+							{"background": "voilet", "color": "black"}
+						],
+						/* Same as above. */
+						"tolerances": [
+							{"limit": 2, "style": {"background": "lightgreen"}},
+							{"limit": 5, "style": {"background": "yellow"}},
+							{"limit": 999, "style": {"background": "red"}}
+						],
+						/*
+						 * Same as above. It's not really needed here because
+						 * we fully specify all of the commands below. 
+						 */
+						"heater_index": 1,
+						/*
+						 * The attributes defined below are needed
+						 * if the version of RepRapFirmware you're running
+						 * does not have the M308 command and the active
+						 * and standby additions to the status message.
+						 * See the "Known Issues" section of README.md
+						 * for more information.
+						 */
+						/* The status level message that has the heater info. */
+						"status_level": 1,
+						/*
+						 * The field in the status message that has the
+						 * current temperature.  All dynamic values MUST
+						 * be enclosed in "${}" to be evaluated properly.
+						 * "status" is the status message and the rest
+						 * is the field in the status message. See
+						 * https://duet3d.dozuki.com/Wiki/Gcode#Section_M408_Report_JSON_style_response
+						 * for a list of the fields.
+						 * 
+						 */
+						"current_temp_field": "${status.temps.current[1]}",
+						/*
+						 * It's heater 1 but tool 0.
+						 */
+						"active_temp_field": "${status.temps.tools.active[0]}",
+						"standby_temp_field": "${status.temps.tools.standby[0]}",
+						/*
+						 * The state field drives the application of the
+						 * state_styles to the label button.
+						 */
+						"state_field": "${status.temps.state[1]}",
+						/*
+						 * These are the commands to send to the Duet to change
+						 * the state of the heater.
+						 */
+						"state_commands": {
+        					"off": "G10 P0 S-273.15 R-273.15",
+        					"standby": "T-1",
+					        "on": "T0"
+						},
+						/*
+						 * Commands to change the set points.  Again, these
+						 * use the new M308 Gcode command.
+						 */
+						"set_temp_commands": {
+					        "standby": "G10 P0 R${value}",
+					        "active": "G10 P0 S${value}"
+						}
+					},
+					{
+						/*
+						 * Time for some macros...
+						 * A macro_grid is panel that is divided
+						 * into rows and columns and auto-fills
+						 * based on files in a directory on the Duet.
+						 */
+						"id": "main_macros",
+						"type": "macro_grid",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "right+25 top",
+							"of": "#extr1_heater"
+						},
+						"button_defaults": {
+							"style": { "width": "12ch", "height": "2.5em" }
+						},
+						/*
+						 * How big should the grid be and should it be 
+						 * filled row first or column?
+						 */
+						"rows": 4,
+						"cols": 3,
+						"direction": "row",
+						/*
+						 * This is probably always going to be true.
+						 */
+						"autofill_macros": true,
+						/*
+						 * What directory should the macros be retrieved from?
+						 * If you have lots of macros that you'd like to
+						 * display in groups, put them in sub directories
+						 * and just display that directory.
+						 */
+						"directory": "/macros",
+						/*
+						 * You can sort them based on the "file"
+						 * name which would include any "XX_" prefix
+						 * or you can sort them based on the "label"
+						 * after any of the following transforms are done. 
+						 */
+						"sort_autofill": "file",
+						/*
+						 * For the label, you can strip the directory
+						 * off the front, any "XX_" prefix from the
+						 * front, and any ".g" or other suffix from the
+						 * end.
+						 */
+						"strip_directory": true,
+						"strip_prefix": true,
+						"strip_suffix": true
+					},
+					{
+						/*
+						 * A "label" is just a dumb chunk of text
+						 * you can stick anywhere.
+						 */
+						"id": "fan_0_label",
+						"type": "label",
+						"value": "<b>Fan 0</b>",
+						/*
+						 * In the "Global Positioning Stupidity" section
+						 * of the README I talked about how the "right" and
+						 * "bottom" of an element might not be where you
+						 * expect.  Here's an example.  The macro_grid widget
+						 * we just defined doesn't set its "right" property
+						 * correctly so we have to fudge it with 190
+						 * pixels.  If we didn't, this label would appear
+						 * on top of one of the macro buttons.
+						 */
+						"position": {
+							"my": "left top",
+							"at": "right+190 top+10",
+							"of": "#main_macros"
+						}
+					},
+					{
+						/*
+						 * A generic "slider".  This one will
+						 * control fan 0.
+						 */
+						"id": "fan_0",
+						"type": "slider",
+						"enabled": true,
+						"style": {
+							"height": "30ch"
+						},
+						/*
+						 * The fan label is now fixed in place and
+						 * reports it's dimensions correctly so we can
+						 * position this slider realtive to it with no
+						 * fudge factor.
+						 */
+						"position": {
+							"my": "center top",
+							"at": "center bottom+10",
+							"of": "#fan_0_label"
+						},
+						"slider": {
+							/* 
+							 * Since PWM devices on the Duet are controlled
+							 * either as a decimal number between 0.0 and 1.0
+							 * OR an 8 bit value between 0 and 255, using 0
+							 * and 100 as the min and max make it easy to 
+							 * just divide by 100 and send that value.
+							 */
+							"min": 0,
+							"max": 100,
+							"step": 5,
+							"orientation": "vertical"
+						},
+						/*
+						 * We want this control to track the state of
+						 * fan 0.
+						 */
+						"status_level": 1,
+						"value": "${status.params.fanPercent[0]}",
+						"actions": [
+							/*
+							 * We're doing a bit of math here so we can
+							 * convert the value of the slider (0-100)
+							 * to values the M106 command understands
+							 * (0.0 - 1.0).
+							 */
+							{"type": "gcode", "gcode": "M106 P0 S${value / 100.0}"}
+						]
+					},
+					{
+						"id": "fan_1_label",
+						"type": "label",
+						"value": "<b>Fan 1</b>",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#fan_0_label"
+						}
+					},
+					{
+						/*
+						 * Another fan.
+						 */
+						"id": "fan_1",
+						"type": "slider",
+						"enabled": true,
+						"style": {
+							"height": "30ch"
+						},
+						"position": {
+							"my": "center top",
+							"at": "center bottom+10",
+							"of": "#fan_1_label"
+						},
+						"slider": {
+							"min": 0, "max": 100, "step": 5, "orientation": "vertical"
+						},
+						"status_level": 1,
+						"value": "${status.params.fanPercent[1]}",
+						"actions": [
+							{"type": "gcode", "gcode": "M106 P1 S${value / 100.0}"}
+						]
+					},
+					{
+						"id": "leds_label",
+						"type": "label",
+						"value": "<b>LEDs</b>",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#fan_1_label"
+						}
+					},
+					{
+						/*
+						 * Some LEDs
+						 */
+						"id": "leds",
+						"type": "slider",
+						"enabled": true,
+						"style": {
+							"height": "30ch"
+						},
+						"position": {
+							"my": "center top",
+							"at": "center bottom+10",
+							"of": "#leds_label"
+						},
+						"slider": {
+							"min": 0, "max": 100, "step": 5, "orientation": "vertical"
+						},
+						"status_level": 1,
+						"value": "${status.params.fanPercent[3]}",
+						"actions": [
+							/*
+							 * I use 2 fan outputs for my LEDs so we're going to
+							 * send 2 Gcode commands when the slider value changes.
+							 * The 2 commands are separated by the semi-colon.
+							 * You DON'T want to use 2 separate "gcode" action
+							 * lines or you'll be prompted for which one you
+							 * want to submit every time you move the slider.  
+							 */
+							{"type": "gcode", "gcode": "M106 P3 S${value / 100.0} ; M106 P4 S${value / 100.0}"}
+						]
+					},
+					{
+						/*
+						 * A generic button that sends G28 when clicked.
+						 */
+						"id": "homeall",
+						"type": "button",
+						"enabled": true,
+						"value": "Home All",
+						"style": {"width": "130px", "height": "2.5em"},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#heater_labels"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "G28"}
+						]
+					},
+					{
+						/*
+						 * This is another convenience widget that
+						 * just creates buttons that display the
+						 * position of each axis.  When you click the
+						 * button, the axis will "home". 
+						 */
+						"id": "main_position",
+						"type": "position",
+						"enabled": true,
+						"style": {
+							"width": "130px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#homeall"
+						},
+						/*
+						 * This widget is actually 3 separate buttons.
+						 * We can set defaults for all of them with
+						 * "button_defaults".  The "state" for an axis
+						 * can be either 0 or 1.  If it's 0, then the axis
+						 * hasn't been homed and it's position is unknown.
+						 * 1 means it HAS been homed and it's position is
+						 * known.
+						 */
+			            "button_defaults": {
+							"style": {"height": "2.5em"},
+							"status_level": 1,
+							"state_styles": [
+			    				{ "background": "red", "color": "white" },
+			    				{ "background": "lightgreen", "color": "black" }
+			    			]
+			            },
+						"direction": "column",
+						"axes": [
+							/*
+							 * "label" is what you want displayed in the button.
+							 * "gcode_axis" is what gets sent in the Gcode G28 command.
+							 * "index" is the axis's index in the status message that
+							 * reports the axis state. 
+							 */
+							{"label": "X:  ", "gcode_axis": "X", "index": 0},
+							{"label": "Y:  ", "gcode_axis": "Y", "index": 1},
+							{"label": "Z:  ", "gcode_axis": "Z", "index": 2}
+						]
+					},
+					{
+						/*
+						 * Another button that displays the status of
+						 * the probe.  It's marked "read_only" and therefore
+						 * does nothing when you tap it.  You could
+						 * add an action to do a bed leveling run and
+						 * another one to do a matrix probe.  Then when
+						 * you tap the button you'd get a popup dialog
+						 * asking you to choose which you wanted to run.
+						 */
+						"id": "probe",
+						"type": "button",
+						"enabled": true,
+						"read_only": true,
+						"status_level": 1,
+						"value": "Probe: ${status.sensors.probeValue}",
+						"initial_value": "Probe: ?",
+						/*
+						 * I use dc42's mini IR probe and these are the
+						 * colors I like.  You don't have to have any.
+						 */
+						"tolerances": [
+							{"limit": 400, "style": {"background": "lightgreen"}},
+							{"limit": 500, "style": {"background": "yellow"}},
+							{"limit": 999, "style": {"background": "red"}}
+						],
+						/*
+						 * We didn't need to set "tolerance_value" for the
+						 * heaters because DueUI knew they were heaters and
+						 * could figure it out.  This is a generic button
+						 * though so we need to tell it.  If you don't specify
+						 * "tolerance_value", DueUI will try to use "value"
+						 * but in this case, "value" contains text so it
+						 * won't work.
+						 */
+						"tolerance_value": "${status.sensors.probeValue}",
+						"style": {"width": "130px", "height": "2.5em"},
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#main_position"
+						}
+					},
+					{
+						"id": "print_progress_label",
+						"type": "label",
+						"enabled": true,
+						"value": "Print Progress (by layer):",
+						"position": {
+							"my": "left top",
+							"at": "right+25 top",
+							"of": "#homeall"
+						}
+					},
+					{
+						/*
+						 * The Print Progress bar.
+						 */
+						"id": "print_progress",
+						"type": "progress",
+						"enabled": true,
+						/*
+						 * Print information is in the level 3 status message.
+						 */
+						"status_level": 3,
+						/*
+						 * There's nothing like a simple "percent done" in
+						 * the status message so we have to calculate it.
+						 * Notice the " || 1" after the calculation of the
+						 * total time?  That's there to prevent a divide
+						 * by zero error in case both timesLeft and
+						 * printDuration are 0. :)  
+						 * 
+						 * The "layer" time estimate is used here to calculate
+						 * the progress but you can make it "file" or
+						 * "filament" if you choose. 
+						 */
+						"value": "${((status.printDuration / ((status.timesLeft.layer + status.printDuration) || 1)) * 100)}",
+						"max": 100,
+						"style": {
+							"width": "55ch"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#print_progress_label"
+						}
+					},
+					{
+						"id": "elapsed_label",
+						"type": "label",
+						"enabled": true,
+						"value": "Elapsed Time:",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#print_progress"
+						}
+					},
+					{
+						/*
+						 * More read-only buttons with the times in
+						 * them.
+						 */
+						"id": "elapsed",
+						"type": "button",
+						"enabled": true,
+						"read_only": true,
+						"status_level": 3,
+						"value": "${DueUI.formatElapsed(status.printDuration)}",
+						"initial_value": "0:00:00",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top-5",
+							"of": "#elapsed_label"
+						}
+					},
+					{
+						"id": "times_label",
+						"type": "label",
+						"enabled": true,
+						"value": "Time Left By File:<br><br>By Filament:<br><br>By Layer:",
+						"style": {
+							"text-align": "right"
+						},
+						"position": {
+							"my": "left top",
+							"at": "right-250 bottom+10",
+							"of": "#print_progress"
+						}
+					},
+					{
+						"id": "byfile",
+						"type": "button",
+						"enabled": true,
+						"read_only": true,
+						"status_level": 3,
+						"value": "${DueUI.formatElapsed(status.timesLeft.file)}",
+						"initial_value": "0:00:00",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top-5",
+							"of": "#times_label"
+						}
+					},
+					{
+						"id": "byfilament",
+						"type": "button",
+						"enabled": true,
+						"read_only": true,
+						"status_level": 3,
+						"value": "${DueUI.formatElapsed(status.timesLeft.filament)}",
+						"initial_value": "0:00:00",
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#byfile"
+						}
+					},
+					{
+						"id": "bylayer",
+						"type": "button",
+						"enabled": true,
+						"read_only": true,
+						"status_level": 3,
+						"value": "${DueUI.formatElapsed(status.timesLeft.layer)}",
+						"initial_value": "0:00:00",
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#byfilament"
+						}
+					},
+					{
+						/*
+						 * Pause, Resume and Cancel buttons.
+						 */
+						"id": "pause",
+						"type": "button",
+						"enabled": true,
+						"value": "Pause",
+						"style": {
+							"width": "10ch"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#elapsed_label"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "M25"}
+						]
+					},
+					{
+						"id": "resume",
+						"type": "button",
+						"enabled": true,
+						"value": "Resume",
+						"style": {
+							"width": "10ch"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#pause"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "M24"}
+						]
+					},
+					{
+						"id": "cancel",
+						"type": "button",
+						"enabled": true,
+						"value": "Cancel",
+						"style": {
+							"width": "10ch"
+						},
+						"position": {
+							"my": "left top",
+							"at": "right+10 bottom-10",
+							"of": "#pause"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "M25 ; M0"}
+						]
+					}
+					/*
+					 * And that's it for the "Main" tab.
+					 */
+				]
+			},
+			{
+				/*
+				 * A whole tab of macros.  Go wild.
+				 */
+				"id": "dueui_panel_macros",
+				"type": "tab_panel",
+				"enabled": true,
+				"menubar_label": "Macros",
+				"element_configs": [
+					{
+						"id": "panel_macros",
+						"type": "macro_grid",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left top",
+							"of": "#dueui_panel_macros"
+						},
+						"button_defaults": {
+							"style": { "width": "12ch", "height": "2.5em" }
+						},
+						"rows": 5,
+						"cols": 5,
+						"direction": "column",
+						"directory": "/macros",
+						"autofill_macros": true,
+						"sort_autofill": "macro",
+						"strip_directory": true,
+						"strip_prefix": true,
+						"strip_suffix": true
+					}
+				]
+			},
+			{
+				/*
+				 * A tab of gcode files.
+				 */
+				"id": "dueui_panel_files",
+				"type": "tab_panel",
+				"enabled": true,
+				"menubar_label": "Files",
+				"style": {
+					/*
+					 * We're using flex again because we want the file list
+					 * to take all remaining space in the panel after the
+					 * refresh button.
+					 */
+					"display": "flex",
+					"flex-direction": "column"
+				},
+				"element_configs": [
+					{
+						"id": "files_refresh",
+						"type": "button",
+						"value": "Refresh",
+						"style": {
+							"width": "20ch",
+							"height": "2.5em"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left top",
+							"of": "#dueui_panel_files"
+						},
+						/*
+						 * When you click this button, it sends the "refresh_list"
+						 * event to the file list.  When you reference other elements
+						 * in a "position" attribute it MUST have already been defined.
+						 * For events, that's not the case because we don't need to find
+						 * the target until you trigger the action.
+						 */
+						"actions": [
+							{"type": "event", "event": "refresh_list", "target": "#panel_files"}
+						]
+					},
+					{
+						/*
+						 * The only difference between a file_grid and
+						 * a macro_grid is the command sent to the Duet.
+						 * To run a macro, it's M98 and to print a file
+						 * it's M23 followed by M24.  
+						 */
+						"id": "panel_files",
+						"type": "file_grid",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#files_refresh"
+						},
+						"button_defaults": {
+							"style": {
+								"width": "64ch",
+								"height": "3em",
+								"text-align": "left"
+							}
+						},
+						"cols": 1,
+						"style": {
+							"position": "relative",
+							"overflow-x": "none",
+							"overflow-y": "scroll",
+							/*
+							 * We need to use some magic here to get
+							 * the grid sized correctly and to scroll
+							 * correctly.  There's probably a better way
+							 * to do this but sometimes I like brute force.
+							 * 
+							 * We're going to use the CSS "calc" function
+							 * to set the dimensions.  Feel free to play with
+							 * this and let me know what you find.
+							 */
+							"width": "calc(100% - 2ch)",
+							"height": "calc(100% - 2.5em)"
+						},
+						"direction": "column",
+						"directory": "/gcodes",
+						/*
+						 * Accidentally starting a print is probably not
+						 * a good thing so when you click on a file a confirmation
+						 * popup will appear. 
+						 */
+						"confirm_message": "Print this file?",
+						"autofill_files": true,
+						"sort_autofill": "file",
+						"strip_directory": true,
+						"strip_prefix": true,
+						"strip_suffix": true
+					}
+				]
+			},
+			{
+				/*
+				 *  This is the most complex tab because the
+				 *  controls interact with each other.
+				 *  Pay attention. :) 
+				 */
+				"id": "dueui_panel_movement",
+				"type": "tab_panel",
+				"enabled": true,
+				"menubar_label": "Movement",
+				"element_configs": [
+					{
+						/*
+						 * Jog buttons for the X axis
+						 */
+						"id": "jog_x",
+						"type": "jog",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left+10 top+210",
+							"of": "#dueui_panel_movement"
+						},
+						/*
+						 * Styling here is really dependent on how
+						 * big your fingers are vs how much screen
+						 * real estate you have available.
+						 */
+						"button_defaults": {
+							"style": {
+								"width": "5ch",
+								"height": "2em",
+								"padding": "5px",
+								"margin": "2px"
+							}
+						},
+						/*
+						 * The axis to be controlled.
+						 */
+						"axis": "X",
+						/*
+						 * These are the values assigned to the buttons.
+						 * You can have multiple scales and toggle through
+						 * them by tapping another button (see below).
+						 * 
+						 * I've got 2 scales, a "medium" and a "coarse".
+						 * You could add a "fine", "ultra-fine", 
+						 * "microscopic", "gigantic", etc.
+						 * 
+						 * The "&npsp" in the middle is just the placeholder
+						 * for a blank button in the middle.
+						 * 
+						 * The number of buttons in each scale is up to
+						 * you but there have to be the same number in
+						 * each scale.
+						 */
+						"values": [
+							[-50,-25,-10,-5,-1,"&nbsp",1,5,10,25,50],
+							[-100,-50,-25,-10,-1,"&nbsp",1,10,25,50,100]
+						],
+						/*
+						 * Which direction do you want them layed out?
+						 */
+						"orientation": "horizontal",
+						/*
+						 * The jog control listens to 2 events that
+						 * alter its behavior:  The speed you want the
+						 * moves to happen at, and which scale to display.
+						 * See the buttons below.
+						 * 
+						 * These are the defaults and are omitted from
+						 * the rest of the axis jog controls.
+						 */
+						"speed_change_event": "jog_speed",
+						"scale_change_event": "jog_scale"
+					},
+					{
+						/*
+						 * This is the scale cycle button for the
+						 * X axis.  
+						 */
+						"id": "jog_x_scale",
+						"type": "button",
+						"enabled": true,
+						"value": "+/-",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+5",
+							"of": "#jog_x"
+						},
+						"style": {
+							"height": "2em", "padding-left": "9px",
+							"background": "lightgray"
+						},
+						/*
+						 * When you click this button, it sends the "jog_scale"
+						 * event to the X jog control.  This tells it to cycle
+						 * the values displayed on the buttons to the next scale.
+						 */
+						"actions": [
+							{"type": "event", "event": "jog_scale", "target": "#jog_x"}
+						]
+					},
+					{
+						"id": "jog_x_speed_label",
+						"type": "label",
+						"enabled": true,
+						"value": "X Speed",
+						"position": {
+							"my": "left bottom",
+							"at": "left top-25",
+							"of": "#jog_x"
+						}
+					},
+					{
+						/*
+						 * This is a selectbox that allows you to set
+						 * the speed for axis moves.  
+						 */
+						"id": "jog_x_speed",
+						"type": "select",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#jog_x_speed_label"
+						},
+						/*
+						 * The speeds you want to choose from.
+						 */
+						"options": [ 600,1200,3200,6400,8000,12000],
+						/*
+						 * This tells the selectbox to fire the actions
+						 * when you change the value. 
+						 */
+						"submit_on_change": true,
+						/*
+						 * There are 2 actions here.  The first one saves and restores
+						 * the current value so the next time you start DueUI, the
+						 * previously chosen value will be selected.  The second action
+						 * sends the event to the jog control to inform it of the
+						 * new speed.  Both actions have "fire_on_startup" set to
+						 * true so the actions happen when you bring up the page
+						 * for the first time.  
+						 */
+						"actions": [
+							{"type": "setting", "setting": "jog_x_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_x", "fire_on_startup": true}
+						]
+					},
+					{
+						/*
+						 * Another "Home All" button.
+						 */
+						"id": "homeall_movement",
+						"type": "button",
+						"enabled": true,
+						"value": "Home All",
+						"style": {"width": "130px", "height": "2.5em"},
+						"position": {
+							"my": "left top",
+							"at": "left top+350",
+							"of": "#dueui_panel_movement"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "G28"}
+						]
+					},
+					{
+						/*
+						 * Another position widget. 
+						 */
+						"id": "movement_position",
+						"type": "position",
+						"enabled": true,
+						"style": {
+							"width": "15ch"
+						},
+						"button_defaults": {
+							"style": {"height": "2.5em"}
+						},
+						"position": {
+							"my": "left top",
+							"at": "left top+10",
+							"of": "#dueui_panel_movement"
+						},
+						"direction": "column",
+						"axes": [
+							{"label": "X:  ", "gcode_axis": "X", "index": 0},
+							{"label": "Y:  ", "gcode_axis": "Y", "index": 1},
+							{"label": "Z:  ", "gcode_axis": "Z", "index": 2}
+						]
+					},
+					{
+						/*
+						 * Another Probe button.
+						 */
+						"id": "probe_movement",
+						"type": "button",
+						"enabled": true,
+						"read_only": true,
+						"status_level": 1,
+						"value": "Probe: ${status.sensors.probeValue}",
+						"initial_value": "Probe",
+						"tolerances": [
+							{"limit": 400, "style": {"background": "lightgreen"}},
+							{"limit": 500, "style": {"background": "yellow"}},
+							{"limit": 999, "style": {"background": "red"}}
+						],
+						"tolerance_value": "${status.sensors.probeValue}",
+						"style": {"width": "130px", "height": "2.5em"},
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#homeall_movement"
+						}
+					},
+					{
+						/*
+						 * The Y axis jog control
+						 */
+						"id": "jog_y",
+						"type": "jog",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left+285 top+5",
+							"of": "#dueui_panel_movement"
+						},
+						"button_defaults": {
+							"style": {
+								"width": "5ch",
+								"height": "2em",
+								"padding": "5px",
+								"margin": "3px"
+							}
+						},
+						"axis": "Y",
+						"values": [
+							[50,25,10,5,1,"&nbsp",-1,-5,-10,-25,-50],
+							[100,50,25,10,1,"&nbsp",-1,-10,-25,-50,-100]
+						],
+						"direction": "column"
+					},
+					{
+						"id": "jog_y_scale",
+						"type": "button",
+						"enabled": true,
+						"value": "+/-",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#jog_y"
+						},
+						"style": {
+							"height": "2em", "padding-left": "9px",
+							"background": "lightgray"
+						},
+						"actions": [
+							{"type": "event", "event": "jog_scale", "target": "#jog_y"}
+						]
+					},
+					{
+						"id": "jog_y_speed_label",
+						"type": "label",
+						"enabled": true,
+						"value": "Y Speed",
+						"position": {
+							"my": "right top",
+							"at": "left-65 top",
+							"of": "#jog_y"
+						}
+					},
+					{
+						"id": "jog_y_speed",
+						"type": "select",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#jog_y_speed_label"
+						},
+						"options": [ 600,1200,3200,6400,8000,12000],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_y_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_y", "fire_on_startup": true}
+						]
+					},
+					{
+						/*
+						 * The Z axis
+						 */
+						"id": "jog_z",
+						"type": "jog",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left+650 top+2",
+							"of": "#dueui_panel_movement"
+						},
+						"button_defaults": {
+							"style": {
+								"width": "5ch",
+								"height": "2em",
+								"padding": "5px",
+								"margin": "3px"
+							}
+						},
+						"axis": "Z",
+						/*
+						 * Notice that I have the negative values to the left
+						 * (actually the top because this is a column).
+						 * My bed moves in the Z direction so the negative
+						 * values move the bed "up".  
+						 * 
+						 * Also notice that I added a third "finer" scale.
+						 */
+						"values": [
+							[-50,-25,-10,-5,-1,"&nbsp",1,5,10,25,50],
+							[-100,-50,-25,-10,-1,"&nbsp",1,10,25,50,100],
+							[-1.0,-0.5,-0.2,-0.1,-0.05,"&nbsp",0.05,0.1,0.2,0.5,1]
+						],
+						"direction": "column",
+						"scale_button": {
+							"position": "center",
+							"style": {
+								"background": "lightgray"
+							}
+						}
+					},
+					{
+						"id": "jog_z_speed_label",
+						"type": "label",
+						"enabled": true,
+						"value": "Z Speed",
+						"position": {
+							"my": "right top",
+							"at": "left-65 top",
+							"of": "#jog_z"
+						}
+					},
+					{
+						"id": "jog_z_speed",
+						"type": "select",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#jog_z_speed_label"
+						},
+						"options": [ 600,1200,3200,6400,8000,12000],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_z_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_z", "fire_on_startup": true}
+						]
+					},
+					{
+						"id": "jog_z_scale",
+						"type": "button",
+						"enabled": true,
+						"value": "+/-",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#jog_z_speed"
+						},
+						"style": {
+							"height": "2em", "padding-left": "9px",
+							"background": "lightgray"
+						},
+						"actions": [
+							{"type": "event", "event": "jog_scale", "target": "#jog_z"}
+						]
+					},
+					{
+						/*
+						 * A button that kicks off bed compensation probing.
+						 * You could just add the gcode action to the probe button
+						 * and save the space.
+						 */
+						"id": "bed_compensation",
+						"type": "button",
+						"enabled": true,
+						"value": "Level<br>Bed",
+						"position": {
+							"my": "right bottom",
+							"at": "left-75 bottom-15",
+							"of": "#jog_z"
+						},
+						"style": {
+							"height": "4em"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "G32 S3"}
+						]
+					},
+					{
+						/*
+						 * The extruder 
+						 */
+						"id": "jog_e",
+						"type": "jog",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#jog_z"
+						},
+						"button_defaults": {
+							"style": {
+								"width": "5ch",
+								"height": "2em",
+								"padding": "5px",
+								"margin": "3px"
+							}
+						},
+						"axis": "E",
+						"values": [
+							[-50,-25,-10,-5,-1,"&nbsp",1,5,10,25,50],
+							[-100,-50,-25,-10,-1,"&nbsp",1,10,25,50,100]
+						],
+						"direction": "column",
+						"scale_button": {
+							"position": "center",
+							"style": {
+								"background": "lightgray"
+							}
+						}
+					},
+					{
+						"id": "jog_e_speed_label",
+						"type": "label",
+						"enabled": true,
+						"value": "E Speed",
+						"position": {
+							"my": "left top",
+							"at": "right+15 top",
+							"of": "#jog_e"
+						}
+					},
+					{
+						"id": "jog_e_speed",
+						"type": "select",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#jog_e_speed_label"
+						},
+						"options": [ 5,10,15,20,25,35,45,50],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_e_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_e", "fire_on_startup": true}
+						]
+					},
+					{
+						"id": "jog_e_scale",
+						"type": "button",
+						"enabled": true,
+						"value": "+/-",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#jog_e_speed"
+						},
+						"style": {
+							"height": "2em", "padding-left": "9px",
+							"background": "lightgray"
+						},
+						"actions": [
+							{"type": "event", "event": "jog_scale", "target": "#jog_e"}
+						]
+					}
+				]
+			/*
+			 * Getting close to the end...
+			 */
+			},
+			{
+				/*
+				 * This panel just has the console and a twist.
+				 */
+				"id": "dueui_panel_console",
+				"type": "tab_panel",
+				"enabled": true,
+				"menubar_label": "Console",
+				"style": {
+					/*
+					 * We're using flex again because we want the log area
+					 * to take all remaining space in the panel after the
+					 * input field.
+					 */
+					"display": "flex",
+					"flex-direction": "column"
+				},
+				"element_defaults": {
+					"style": {
+						"width": "100%",
+						"position": "relative"
+					}
+				},
+				"element_configs": [
+					{
+						/*
+						 * The input field you type Gcode into.
+						 */
+						"id": "console_log_input",
+						"type": "input_field",
+						"enabled": true,
+						"style": {
+							"height": "2.5em"
+						},
+						"field_type": "text",
+						/*
+						 * autocomplete_key is just a unique value this widget
+						 * will use to keep track of its own autocomplete
+						 * values.  If not specified, autocomplete will
+						 * be turned off.
+						 */
+						"autocomplete_key": "console",
+						/*
+						 * There's no separate "submit" button so we want to
+						 * trigger sending just by the enter key.
+						 */
+						"submit_on_enter": true,
+						"actions": [
+							{"type": "gcode", "gcode": "${value}", "get_reply": true}
+						]
+					},
+					{
+						/*
+						 * The textarea to receive the responses.
+						 */
+						"id": "console_log",
+						"type": "textarea",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#console_log_input"
+						},
+						"style": {
+							/* Another use of calc */
+							"height": "calc(100% - 2.5em)"
+						},
+						"read_only": true,
+						"wrap": "off",
+						"show_gcode_replies": true,
+						"show_log_messages": true,
+						"new_entries_at_top": true
+					}
+				]
+			}
+		]
+	},
+	/* The status_map has the long names and styles associated with each status */
+	"status_map": {
+		"I": {"label": "Idle","style": {"background": "lightgreen",	"color": "black"}},
+		"P": {"label": "Printing","style": {"background": "lightgreen",	"color": "black"}},
+		"S": {"label": "Stopped","style": {"background": "red","color": "white"}},
+		"C": {"label": "Starting Up","style": {"background": "yellow","color": "black"}},
+		"A": {"label": "Paused","style": {"background": "lightgreen","color": "black"}},
+		"D": {"label": "Pausing","style": {"background": "lightgreen","color": "black"}},
+		"R": {"label": "Resuming","style": {"background": "lightgreen","color": "black"}},
+		"B": {"label": "Busy","style": {"background": "lightgreen","color": "black"}},
+		"F": {"label": "Updating","style": {"background": "lightgreen","color": "black"}},
+		"H": {"label": "Halted","style": {"background": "red","color": "black"}},
+		"connected": {"label": "Connected","style": {"background": "lightgreen","color": "black"}},
+		"disconnected": {"label": "Disconnected","style": {"background": "red","color": "white"}},
+		"retrying": {"label": "Retrying","style": {"background": "yellow","color": "black"}},
+		"failed": {"label": "Failed","style": {"background": "red","color": "white"}}
+	}
+})
+/*
+ * 1700 lines of config seems like a lot but you get a lot of flexibility
+ * with them.  If you find things that don't make sense, could have been
+ * named, explained or organized better, let me know.
+ */
+

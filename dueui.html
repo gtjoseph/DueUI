@@ -1,0 +1,62 @@
+<html>
+<head>
+	<title></title>
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+	<meta http-equiv="Pragma" content="no-cache" />
+	<meta http-equiv="Expires" content="0" />	
+	<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/base/jquery-ui.css">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/jquery-ui.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.js"></script>
+	<script src="js/dueui.js"></script>
+	<script src="js/dueui_panel.js"></script>
+	<script src="js/dueui_widget.js"></script>
+<style>
+* {
+	box-sizing: border-box;
+}
+
+html, body {
+ 	margin: 2px;
+ 	height: calc(100% - 5px);
+}
+
+body {
+  background: white;
+}
+
+.dueui-header {
+	height: 3em;
+	width: 100%;
+	display: flex;
+	flex-direction: row-reverse;
+	border: 1px;
+	border-color: black;
+}
+
+.dueui-tabbed-container {
+	height: 100%;
+	width: 100%;
+}
+
+.dueui-panel-area {
+	height: calc(100% - 6em);
+}
+
+.dueui-panel-tab {
+	height: 100%;
+}
+
+.dueui-menubar {
+	height: 3em;
+	width: 100%;
+	border: 1px;
+	border-color: black;
+}
+
+
+</style>
+</head>
+<body onload="dueui.startup();">
+</body>
+</html>
