@@ -1127,6 +1127,31 @@ DueUIConfig({
 				"element_configs": [
 					{
 						/*
+						 * Another position widget. 
+						 */
+						"id": "movement_position",
+						"type": "position",
+						"enabled": true,
+						"style": {
+							"width": "15ch"
+						},
+						"button_defaults": {
+							"style": {"height": "2.5em"}
+						},
+						"position": {
+							"my": "left top",
+							"at": "left top+10",
+							"of": "#dueui_panel_movement"
+						},
+						"direction": "column",
+						"axes": [
+							{"label": "X:  ", "gcode_axis": "X", "index": 0},
+							{"label": "Y:  ", "gcode_axis": "Y", "index": 1},
+							{"label": "Z:  ", "gcode_axis": "Z", "index": 2}
+						]
+					},
+					{
+						/*
 						 * Jog buttons for the X axis
 						 */
 						"id": "jog_x",
@@ -1155,6 +1180,21 @@ DueUIConfig({
 						 */
 						"axis": "X",
 						/*
+						 * The command(s) to send for a move.
+						 * M120: Save the current state.
+						 * G91:  Relative movement.
+						 * G1:   Move
+						 *    ${axis}: Replaced with the "axis" letter defined above.
+						 *    ${position}: Replaced with the current value of the button clicked.
+						 *    ${speed}: Replaced with the current speed (converted to mm/min if necessary).
+						 *    ${sense}: Replaced with the current endstop sense "S" parameter.
+						 * M121:  Restore settings
+						 *
+						 * This is the default command and omitted from the other jog
+						 * widgets.
+						 */
+						"jog_command": "M120;G91;G1 ${axis}${position} F${speed} ${sense};M121",
+						/*
 						 * These are the values assigned to the buttons.
 						 * You can have multiple scales and toggle through
 						 * them by tapping another button (see below).
@@ -1179,16 +1219,18 @@ DueUIConfig({
 						 */
 						"orientation": "horizontal",
 						/*
-						 * The jog control listens to 2 events that
+						 * The jog control listens to 3 events that
 						 * alter its behavior:  The speed you want the
-						 * moves to happen at, and which scale to display.
+						 * moves to happen at, which scale to display,
+						 * and how you want endstop sensing to be set.
 						 * See the buttons below.
 						 * 
 						 * These are the defaults and are omitted from
-						 * the rest of the axis jog controls.
+						 * the rest of the jog widgets.
 						 */
 						"speed_change_event": "jog_speed",
-						"scale_change_event": "jog_scale"
+						"scale_change_event": "jog_scale",
+						"sense_chnage_event": "jog_sense"
 					},
 					{
 						/*
@@ -1243,8 +1285,18 @@ DueUIConfig({
 						},
 						/*
 						 * The speeds you want to choose from.
+						 * You can display units of mm/second but you
+						 * must send units of mm/minute to the jog
+						 * widget.
 						 */
-						"options": [ 600,1200,3200,6400,8000,12000],
+						"options": [
+							{"label": "10 mm/sec", "value": 600},
+							{"label": "20 mm/sec", "value": 1200},
+							{"label": "30 mm/sec", "value": 1800},
+							{"label": "60 mm/sec", "value": 3600},
+							{"label": "90 mm/sec", "value": 5400},
+							{"label": "120 mm/sec", "value": 7200}
+						],
 						/*
 						 * This tells the selectbox to fire the actions
 						 * when you change the value. 
@@ -1275,8 +1327,8 @@ DueUIConfig({
 						"style": {"width": "130px", "height": "2.5em"},
 						"position": {
 							"my": "left top",
-							"at": "left top+350",
-							"of": "#dueui_panel_movement"
+							"at": "left bottom+25",
+							"of": "#jog_x_scale"
 						},
 						"actions": [
 							{"type": "gcode", "gcode": "G28"}
@@ -1284,27 +1336,22 @@ DueUIConfig({
 					},
 					{
 						/*
-						 * Another position widget. 
+						 * A button that kicks off bed compensation probing.
+						 * You could just add the gcode action to the probe button
+						 * and save the space.
 						 */
-						"id": "movement_position",
-						"type": "position",
+						"id": "bed_compensation",
+						"type": "button",
 						"enabled": true,
-						"style": {
-							"width": "15ch"
-						},
-						"button_defaults": {
-							"style": {"height": "2.5em"}
-						},
+						"value": "Level Bed",
 						"position": {
 							"my": "left top",
-							"at": "left top+10",
-							"of": "#dueui_panel_movement"
+							"at": "left bottom",
+							"of": "#homeall_movement"
 						},
-						"direction": "column",
-						"axes": [
-							{"label": "X:  ", "gcode_axis": "X", "index": 0},
-							{"label": "Y:  ", "gcode_axis": "Y", "index": 1},
-							{"label": "Z:  ", "gcode_axis": "Z", "index": 2}
+						"style": {"width": "130px", "height": "2.5em"},
+						"actions": [
+							{"type": "gcode", "gcode": "G32 S3"}
 						]
 					},
 					{
@@ -1328,7 +1375,7 @@ DueUIConfig({
 						"position": {
 							"my": "left top",
 							"at": "left bottom",
-							"of": "#homeall_movement"
+							"of": "#bed_compensation"
 						}
 					},
 					{
@@ -1392,11 +1439,18 @@ DueUIConfig({
 						"type": "select",
 						"enabled": true,
 						"position": {
-							"my": "left top",
-							"at": "left bottom+10",
-							"of": "#jog_y_speed_label"
+							"my": "right top",
+							"at": "left-75 top+30",
+							"of": "#jog_y"
 						},
-						"options": [ 600,1200,3200,6400,8000,12000],
+						"options": [
+							{"label": "10 mm/sec", "value": 600},
+							{"label": "20 mm/sec", "value": 1200},
+							{"label": "30 mm/sec", "value": 1800},
+							{"label": "60 mm/sec", "value": 3600},
+							{"label": "90 mm/sec", "value": 5400},
+							{"label": "120 mm/sec", "value": 7200}
+						],
 						"submit_on_change": true,
 						"actions": [
 							{"type": "setting", "setting": "jog_y_speed", "fire_on_startup": true},
@@ -1461,11 +1515,18 @@ DueUIConfig({
 						"type": "select",
 						"enabled": true,
 						"position": {
-							"my": "left top",
-							"at": "left bottom+10",
-							"of": "#jog_z_speed_label"
+							"my": "right top",
+							"at": "left-75 top+30",
+							"of": "#jog_z"
 						},
-						"options": [ 600,1200,3200,6400,8000,12000],
+						"options": [
+							{"label": "10 mm/sec", "value": 600},
+							{"label": "20 mm/sec", "value": 1200},
+							{"label": "30 mm/sec", "value": 1800},
+							{"label": "60 mm/sec", "value": 3600},
+							{"label": "90 mm/sec", "value": 5400},
+							{"label": "120 mm/sec", "value": 7200}
+						],
 						"submit_on_change": true,
 						"actions": [
 							{"type": "setting", "setting": "jog_z_speed", "fire_on_startup": true},
@@ -1478,9 +1539,9 @@ DueUIConfig({
 						"enabled": true,
 						"value": "+/-",
 						"position": {
-							"my": "left top",
-							"at": "left bottom+10",
-							"of": "#jog_z_speed"
+							"my": "right top",
+							"at": "left-45 top+60",
+							"of": "#jog_z"
 						},
 						"style": {
 							"height": "2em", "padding-left": "9px",
@@ -1492,24 +1553,37 @@ DueUIConfig({
 					},
 					{
 						/*
-						 * A button that kicks off bed compensation probing.
-						 * You could just add the gcode action to the probe button
-						 * and save the space.
+						 * This is a selectbox that allows you to set
+						 * how you want endstop sensing and move-before-homed
+						 * configured.  Because it sends events on startup to
+						 * the axis jog widgets it must be defined after
+						 * them.
 						 */
-						"id": "bed_compensation",
-						"type": "button",
+						"id": "jog_endstop_sense",
+						"type": "select",
 						"enabled": true,
-						"value": "Level<br>Bed",
 						"position": {
-							"my": "right bottom",
-							"at": "left-75 bottom-15",
-							"of": "#jog_z"
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#movement_position"
 						},
-						"style": {
-							"height": "4em"
-						},
+						/*
+						 * The "S" parameters to add to the GCode in the '${sense}' variable.
+						 */
+						"options": [
+							{ "value": "S0", "label": "Ignore Endstops"},
+							{ "value": "S1", "label": "Sense Endstops"},
+							{ "value": "S2", "label": "Ignore Endstops and Homed"},
+							{ "value": "S3", "label": "Sense Length (delta only)"},
+						],
+						"submit_on_change": true,
 						"actions": [
-							{"type": "gcode", "gcode": "G32 S3"}
+							{"type": "setting", "setting": "jog_endstop_sense", "fire_on_startup": true},
+							/*
+							 * We're sending this event to the 3 axis jog widgets.
+							 * You could have 3 separate sense widgets if you wanted to.
+							 */
+							{"type": "event", "event": "jog_sense", "target": "#jog_x,#jog_y,#jog_z,#jog_e", "fire_on_startup": true}
 						]
 					},
 					{
@@ -1533,6 +1607,11 @@ DueUIConfig({
 							}
 						},
 						"axis": "E",
+						/*
+						 * This jog command uses M83 to set relative extruder movement
+						 * and automatically selects tool 0.
+						 */
+						"jog_command": "M120;M83;T0;G1 ${axis}${position} F${speed} ${sense};M121",
 						"values": [
 							[-50,-25,-10,-5,-1,"&nbsp",1,5,10,25,50],
 							[-100,-50,-25,-10,-1,"&nbsp",1,10,25,50,100]
@@ -1565,7 +1644,13 @@ DueUIConfig({
 							"at": "left bottom+10",
 							"of": "#jog_e_speed_label"
 						},
-						"options": [ 5,10,15,20,25,35,45,50],
+						"options": [ 
+							{"label": "1 mm/sec", "value": 60},
+							{"label": "5 mm/sec", "value": 300},
+							{"label": "15 mm/sec", "value": 900},
+							{"label": "30 mm/sec", "value": 1800},
+							{"label": "60 mm/sec", "value": 3600}
+						],
 						"submit_on_change": true,
 						"actions": [
 							{"type": "setting", "setting": "jog_e_speed", "fire_on_startup": true},

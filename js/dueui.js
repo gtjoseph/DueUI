@@ -293,6 +293,7 @@ class DueUI{
 		seconds -= (h * 3600);
 		let m = Math.floor(seconds / 60);
 		seconds -= (m * 60);
+		seconds = seconds.toFixed(0);
 		if (m < 10) m = "0" + m;
 		if (seconds < 10) seconds = "0" + seconds;
 		return `${h}:${m}:${seconds}`;

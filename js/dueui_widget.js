@@ -791,11 +791,14 @@ class DueuiJogWidget extends DueuiPanel {
 			"style": {"border": "0px", "display": "flex", "flex-direction": config.direction ? config.direction : "row"},
 			"speed_change_event": "jog_speed",
 			"scale_change_event": "jog_scale",
+			"sense_change_event": "jog_sense",
+			"jog_command": "M120;G91;G1 ${axis}${position} F${speed} ${sense};M121",
 			"element_defaults": config.button_defaults
 		}, config), parent);
 		var _this = this;
 		this.current_scale = 0;
 		this.current_speed = 0;
+		this.current_sense = "";
 		this.scales = this.values.length;
 		this.value_count = this.values[this.current_scale].length;
 
@@ -809,13 +812,11 @@ class DueuiJogWidget extends DueuiPanel {
 				"read_only": ((typeof(val) === 'string') || (typeof(val) === 'number' && val === 0)),
 				"val": function(val) {
 					if (typeof(val) === 'undefined') {
-						let v = _this.values[_this.current_scale][ix];
-						let f = _this.current_speed;
-						let fspeed = "";
-						if (f > 0) {
-							fspeed = ` F${f}`;
-						}
-						let gc = `M120;G91;G1 ${_this.axis}${v}${fspeed};M121`;
+						let position = _this.values[_this.current_scale][ix];
+						let speed = _this.current_speed;
+						let axis = _this.axis;
+						let sense = _this.current_sense;
+						let gc = eval("`" + _this.jog_command + "`");
 						console.log(gc);
 						return gc;
 					} else {
@@ -837,6 +838,13 @@ class DueuiJogWidget extends DueuiPanel {
 			this.jq.on(this.speed_change_event, (ea, data, event) => {
 				console.log(`${this.axis} speed ${data}`);
 				this.current_speed = data;
+			});
+		}
+
+		if (this.sense_change_event) {
+			this.jq.on(this.sense_change_event, (ea, data, event) => {
+				console.log(`${this.axis} sense${data}`);
+				this.current_sense = data;
 			});
 		}
 	}

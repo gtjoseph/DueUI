@@ -152,7 +152,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_warning",
 				"type": "label",
-				"style": {"width": "50ch", "position": "fixed"},
+				"style": {"width": "100%", "position": "fixed"},
 				"position": {"my": "left top", "at": "left+10 top+10", "of": "#dueui_settings"},
 				"value": `<b>Don't forget to click the Save button below to save the new values!
 				You should also refresh the browser.
@@ -180,7 +180,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"type": "input",
 				"label": "Duet password:",
 				"style": {"width": "50ch"},
-				"position": {"my": "left top", "at": "left bottom+10", "of": "#duet_url"},
+				"position": {"my": "left top", "at": "left bottom+5", "of": "#duet_url"},
 				"input": {
 					"id": `${this.id}_password_input`,
 					"classes": "dueui-settings-field",
@@ -197,7 +197,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"type": "input",
 				"label": "URL of the DueUI JSON config file:",
 				"style": {"width": "50ch"},
-				"position": {"my": "left top", "at": "left bottom+10", "of": "#duet_password"},
+				"position": {"my": "left top", "at": "left bottom+5", "of": "#duet_password"},
 				"input": {
 					"id": `${this.id}_config_url_input`,
 					"classes": "dueui-settings-field",
@@ -212,7 +212,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_poll_intervals",
 				"type": "label",
-				"position": {"my": "left top", "at": "left bottom+10", "of": "#dueui_config_url"},
+				"position": {"my": "left top", "at": "left bottom+5", "of": "#dueui_config_url"},
 				"value": "Status poll intervals (ms):"
 			},
 			{
@@ -220,7 +220,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"type": "input",
 				"label": "Level 1:",
 				"style": {"width": "10ch"},
-				"position": {"my": "left top", "at": "left bottom+10", "of": "#dueui_settings_poll_intervals"},
+				"position": {"my": "left top", "at": "left bottom+5", "of": "#dueui_settings_poll_intervals"},
 				"input": {
 					"id": `${this.id}_poll_interval_1`,
 					"classes": "dueui-settings-field",
