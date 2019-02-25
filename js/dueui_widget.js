@@ -178,8 +178,6 @@ class DueuiLabelWidget extends DueuiWidget {
 		super("div", $.extend(true, {
 			"classes": "ui-widget"
 		}, config), parent);
-//		this.jq_label = $(`<label id='${this.id}_label' ${this.for ? `for='${this.for}'` : ""}>${this.label}</label>`);
-//		this.jq.append(this.jq_label);
 		this.jq.html(this.value);
 		this.value_function = "html";
 		this.value_object = this.jq; 
@@ -773,7 +771,7 @@ class DueuiPositionWidget extends DueuiPanel {
 				"type": "button",
 				"title": this.axes[ix].title || "Home " + this.axes[ix].gcode_axis,
 				"state_field": "${status.coords.axesHomed["+this.axes[ix].index+"]}",
-				"actions": [ {"type": "gcode", "gcode": "G28 " + this.axes[ix].gcode_axis } ]
+				"actions": [ {"type": "gcode", "gcode": "G28 " + this.axes[ix].gcode_axis, "get_reply": true } ]
 			});
 		}
 		this.populate();

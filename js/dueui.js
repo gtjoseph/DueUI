@@ -483,18 +483,18 @@ class DueUI{
 		var uri = `${this.settings.duet_url}/rr_reply`;
 		console.log(`Getting gcode reply`);
 		$.get(uri, (response) => {
-			console.log(`Sent ${uri}   Response: ${response.trim()}`);
+			response = response.trim();
+			console.log(`Sent ${uri}   Response: ${response}`);
 			let d = new Date();
 			let r = response.trim();
-			if (r.startsWith("Error")) {
+			if (r.match(/Error/)) {
 				this.logMessage("E", r);
-			} else {
+			} else if (response.length > 0){
 				$(".gcode-reply-listener").trigger("gcode_reply", {
 					"timestamp": d,
 					"gcode": (gc.no_echo ? "" : gc.gcode),
-					"response": response.trim()
-					}
-				);
+					"response": response
+				});
 			}
 		}).fail((xhr, reason, error) => {
 			this.logMessage("E", reason);
