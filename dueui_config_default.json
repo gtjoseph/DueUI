@@ -1769,6 +1769,7 @@ DueUIConfig({
 		"B": {"label": "Busy","style": {"background": "lightgreen","color": "black"}},
 		"F": {"label": "Updating","style": {"background": "lightgreen","color": "black"}},
 		"H": {"label": "Halted","style": {"background": "red","color": "black"}},
+		"O": {"label": "Off","style": {"background": "red","color": "black"}},
 		"connected": {"label": "Connected","style": {"background": "lightgreen","color": "black"}},
 		"disconnected": {"label": "Disconnected","style": {"background": "red","color": "white"}},
 		"retrying": {"label": "Retrying","style": {"background": "yellow","color": "black"}},
