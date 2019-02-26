@@ -94,8 +94,8 @@ searches for config files in this order:
 * The config file URL in DueUI Settings.
 * /sys/dueui_config.json on your Duet.
 * /sys/dueui_config_default.json on your Duet.
-* /DueUI/dueui_config_default.json on the web server you're hosting DueUI on.
 * /DueUI/dueui_config.json on the web server you're hosting DueUI on.
+* /DueUI/dueui_config_default.json on the web server you're hosting DueUI on.
 * dueui_config.json on the web server you're hosting DueUI on.
 * dueui_config_default.json on the web server you're hosting DueUI on.
 

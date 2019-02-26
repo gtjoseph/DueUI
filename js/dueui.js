@@ -304,7 +304,7 @@ class DueUI{
 		if (!this.settings) {
 			this.settings = {};
 			this.settings.theme = "base";
-			this.settings.duet_url = `http://${document.location.hostname}`;
+			this.settings.duet_url = `http://${document.location.host}`;
 			this.settings.duet_password = "reprap";
 			this.settings.dueui_config_url = `${this.settings.duet_url}/rr_download?name=/sys/dueui_config.json`;
 			this.settings.duet_poll_interval_1 = 2000;
@@ -314,7 +314,7 @@ class DueUI{
 			Cookies.set("dueui_settings", this.settings, {"expires": 3650});
 		}
 		this.settings.theme = this.settings.theme || "base";
-		this.settings.duet_url = this.settings.duet_url || document.location.hostname;
+		this.settings.duet_url = this.settings.duet_url || document.location.host;
 		this.settings.duet_password = this.settings.duet_password || "reprap";
 		this.settings.dueui_config_url = this.settings.dueui_config_url || `${this.settings.duet_url}/rr_download?name=/sys/dueui_config.json`;
 		this.settings.duet_poll_interval_1 = this.settings.duet_poll_interval_1 || 2000;
