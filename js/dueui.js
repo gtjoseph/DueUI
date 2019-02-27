@@ -105,12 +105,32 @@ class DueuiElement {
 			if (this.onsubmit) {
 				this.onsubmit(event);
 			}
-			if (this.actions) {
-				this.runActions(this.actions, false);
+			if (this.actions && this.actions_type !== "choose") {
+				if (this.actions_type === "state") {
+					if (typeof(this.last_state) === 'undefined' || this.last_state.length == 0) {
+						this.last_state = 0;
+					} else {
+						if (!this.state_field) {
+							this.last_state++;
+							if (this.last_state >= this.actions.length) {
+								this.last_state = 0;
+							}
+						}
+					}
+					this.runActions(this.actions[ this.last_state ], false);
+					if (this.state_styles && this.state_styles[this.last_state]) {
+						this.css(this.state_styles[this.last_state]);
+					}
+				} else {
+					this.runActions(this.actions, false);
+				}
 			}
 		});
 		if (this.actions && run_startup_actions) {
 			this.runActions(this.actions, true);
+			if (this.state_styles && this.state_styles[this.last_state]) {
+				this.css(this.state_styles[this.last_state]);
+			}
 		}
 	}
 	setActions(actions, trigger, startup) {
@@ -123,6 +143,9 @@ class DueuiElement {
 		});
 	}
 	runActions(actions, run_on_startup) {
+		if (!Array.isArray(actions)) {
+			actions = [ actions ];
+		}
 		loop:
 		for(let a of actions) {
 			if (run_on_startup && !a.fire_on_startup) {
@@ -150,9 +173,18 @@ class DueuiElement {
 				break;
 			case "setting": {
 				if (run_on_startup) {
-					this.val(dueui.getSetting(a2.setting));
+					if (this.actions_type === "state") {
+						this.last_state = dueui.getSetting(a2.setting);
+					} else {
+						this.val(dueui.getSetting(a2.setting));
+					}
 				} else {
-					let val = (a2.value ? DueUI.evalValue(a2.value, this.val()) : this.val());
+					let val;
+					if (this.actions_type === "state") {
+						val = this.last_state;
+					} else {
+						val = (a2.value ? DueUI.evalValue(a2.value, this.val()) : this.val());
+					}
 					dueui.setSetting(a2.setting, val);
 				}
 				break;
@@ -310,7 +342,10 @@ class DueUI{
 			this.settings.duet_poll_interval_1 = 2000;
 			this.settings.duet_poll_interval_2 = 5000;
 			this.settings.duet_poll_interval_3 = 10000;
-			this.settings.show_tooltips = true;
+			this.settings.duet_debug_polling_enabled = 0;
+			this.settings.dueui_settings_dont_send_gcode = 0;
+			this.settings.duet_polling_enabled = 0;
+			this.settings.show_tooltips = 1;
 			Cookies.set("dueui_settings", this.settings, {"expires": 3650});
 		}
 		this.settings.theme = this.settings.theme || "base";
@@ -320,11 +355,27 @@ class DueUI{
 		this.settings.duet_poll_interval_1 = this.settings.duet_poll_interval_1 || 2000;
 		this.settings.duet_poll_interval_2 = this.settings.duet_poll_interval_2 || 5000;
 		this.settings.duet_poll_interval_3 = this.settings.duet_poll_interval_3 || 10000;
+		if (typeof(this.settings.duet_debug_polling_enabled) === 'undefined') {
+			this.settings.duet_debug_polling_enabled = 0;
+		}
+		if (typeof(this.settings.dueui_settings_dont_send_gcode) === 'undefined') {
+			this.settings.dueui_settings_dont_send_gcode = 0;
+		}
+		if (typeof(this.settings.duet_polling_enabled) === 'undefined') {
+			this.settings.duet_polling_enabled = 0;
+		}
+		if (typeof(this.settings.show_tooltips) === 'undefined') {
+			this.settings.show_tooltips = 1;
+		}
 		
 		this.current_status = "";
 		this.poll_ids = [];
 		this.connected = false;
 		this.connect_retry = 0;
+		this.duet_connect_retries = {
+				"number": 3,
+				"interval": 2000
+		};
 
 		this.config_file_preference = [
 			this.settings.dueui_config_url,
@@ -338,6 +389,7 @@ class DueUI{
 		this.configured = false;
 		this.config_retry = 0;
 
+		$("head > title").html(`DueUI - ${this.settings.duet_url.replace("http://", "")}`);
 	}
 
 	logMessage(severity, message) {
@@ -447,7 +499,7 @@ class DueUI{
 			this.connected = true;
 			this.connect_retry = 0;
 			$(".connection-listener").trigger("duet_connection_status", { "status": "connected", "response": response });
-		}).fail(function(xhr, reason, error){
+		}).fail((xhr, reason, error) => {
 			console.log({xhr, reason, error})
 			this.connected = false;
 			if (this.connect_retry < this.duet_connect_retries.number) {

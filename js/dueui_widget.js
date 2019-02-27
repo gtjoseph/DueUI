@@ -3,13 +3,8 @@ class DueuiWidget extends DueuiElement {
 	constructor(html_element, config, parent){
 		super(html_element, config, parent);
 		
-		if (this.actions) {
-			let gcode_actions = this.actions.filter((action) => action.type === "gcode");
-			let actions;
-			if (gcode_actions.length > 1) {
-				this.setupMultiGcodeDialog(gcode_actions);
-				this.actions = this.actions.filter((action) => action.type !== "gcode");
-			}
+		if (this.actions && this.actions.length > 1 && this.actions_type === "choose") {
+			this.setupMultiActionDialog();
 		}
 		
 		if (this.tolerances && !this.onstatus) {
@@ -44,13 +39,15 @@ class DueuiWidget extends DueuiElement {
 				|| this.state_field || this.onstatus)) {
 			this.jq.addClass(`status-poll-listener-${this.status_level || 1}`);
 			this.jq.on("duet_poll_response", (event, status) => {
-				var val = DueUI.evalStatus(status, this.value, this);
-				this.val(val);
+				if (this.value.indexOf("${") >= 0) {
+					var val = DueUI.evalStatus(status, this.value, this);
+					this.val(val);
+				}
 				if (this.state_field) {
 					var state = DueUI.evalStatus(status, this.state_field);
 					if (state !== this.last_state) {
 						if (this.state_styles && this.state_styles[state]) {
-							this.jq.css(this.state_styles[state]);
+							this.css($.extend(true, {}, this.style, this.state_styles[state]));
 						}
 						this.last_state = state;
 					}
@@ -61,14 +58,13 @@ class DueuiWidget extends DueuiElement {
 			});
 		}
 	}
-	setupMultiGcodeDialog(gcode_actions) {
+	setupMultiActionDialog() {
 		this.setOnEvent("click", () => {
 			this.jq.append(`<div id='${this.id}_dialog' title='${this.value}'/>`);
-			var jq_dialog = $(`#${this.id}_dialog`);
-			var buttons = [];
-			var width = 0;
-			var te = this.target_element;
-			gcode_actions.forEach(function(action, ix){
+			let jq_dialog = $(`#${this.id}_dialog`);
+			let buttons = [];
+			let width = 0;
+			for (let action of this.actions) {
 				var a = $.extend(true, {}, action);
 				buttons.push({
 					"value": a.label || a.action,
@@ -76,15 +72,15 @@ class DueuiWidget extends DueuiElement {
 					"style": {
 						"height": "2.5em"
 					},
-					"actions": [ $.extend(true, {"fire_on_startup": false}, a) ],
+					"actions": [ $.extend(true, {}, a, {"fire_on_startup": false}) ],
 					"onsubmit": () => {
 						jq_dialog.dialog("close");
 					}
 				});
 				width = Math.max(width, action.label ? action.label.length : action.action.length);
-			});
+			};
 			width += 5;
-			var bgdialog = new DueuiPanel({
+			let bgdialog = new DueuiPanel({
 				"id": `${this.id}_dialog_buttons`,
 				"style": {
 					"display": "flex",
@@ -109,9 +105,12 @@ class DueuiWidget extends DueuiElement {
 		});
 	}
 
-	css(val) {
+	css(style) {
 		let css_object = this.css_object || this.jq;
-		return css_object.css(val);
+		if (style.content) {
+			this.val(style.content);
+		}
+		return css_object.css(style);
 	}
 	val(val, skipcheck) {
 		var value_object = this.value_object || this.jq;
@@ -553,6 +552,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 	            	{ "background": "voilet", "color": "black" }
 	            ],
 				"state_field": "${status.temps.state["+this.heater_index+"]}",
+				"actions_type": "choose",
 				"actions": [
 					{"type": "gcode", "label": "Off", "gcode":
 						(this.state_commands && this.state_commands.off)

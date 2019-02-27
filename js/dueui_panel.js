@@ -332,50 +332,66 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			},
 			{
 				"id": "dueui_settings_debug_polling",
-				"type": "checkbox",
-				"style": {"height": "2.5em", "width": "20ch", "background": "red"},
-				"on_style": {"background": "lightgreen"},
-				"off_style": {"background": "red"},
+				"type": "button",
+				"style": {"height": "2.5em", "width": "25ch", "background": "red"},
+				"state_styles": [
+					{"background": "red", "content": "Turn Debug Polling On"},
+					{"background": "lightgreen", "content": "Turn Debug Polling Off"}
+				],
 				"value": "Debug Polling",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_theme"},
+				"actions_type": "state",
 				"actions": [
-					{"type": "setting", "setting": "duet_debug_polling_enabled", "fire_on_startup": true}
+					{"type": "setting", "setting": "duet_debug_polling_enabled", "value": 1, "fire_on_startup": true},
+					{"type": "setting", "setting": "duet_debug_polling_enabled", "value": 0,}
 				]
 			},
 			{
 				"id": "dueui_settings_dont_send_gcode",
-				"type": "checkbox",
-				"style": {"height": "3.5em", "width": "20ch", "background": "red"},
-				"on_style": {"background": "lightgreen"},
-				"off_style": {"background": "red"},
+				"type": "button",
+				"style": {"height": "2.5em", "width": "25ch", "background": "red"},
+				"state_styles": [
+					{"background": "red", "content": "Turn Send GCode On"},
+					{"background": "lightgreen", "content": "Turn Send GCode Off"}
+				],
 				"value": "Don't Send GCode<br>Log Only",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_debug_polling"},
+				"actions_type": "state",
 				"actions": [
-					{"type": "setting", "setting": "dueui_settings_dont_send_gcode", "fire_on_startup": true}
+					{"type": "setting", "setting": "dueui_settings_dont_send_gcode", "value": 1, "fire_on_startup": true},
+					{"type": "setting", "setting": "dueui_settings_dont_send_gcode", "value": 0,}
 				]
 			},
 			{
 				"id": "dueui_settings_polling",
-				"type": "checkbox",
-				"style": {"height": "2.5em", "width": "20ch", "background": "red"},
-				"on_style": {"background": "lightgreen"},
-				"off_style": {"background": "red"},
+				"type": "button",
+				"style": {"height": "2.5em", "width": "25ch", "background": "red"},
+				"state_styles": [
+					{"background": "red", "content": "Turn Polling On"},
+					{"background": "lightgreen", "content": "Turn Polling Off"}
+				],
 				"value": "Polling",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_dont_send_gcode"},
+				"actions_type": "state",
 				"actions": [
-					{"type": "setting", "setting": "duet_polling_enabled", "fire_on_startup": true}
+					{"type": "setting", "setting": "duet_polling_enabled", "value": 1, "fire_on_startup": true},
+					{"type": "setting", "setting": "duet_polling_enabled", "value": 0,}
 				]
 			},
 			{
 				"id": "dueui_settings_tooltips",
-				"type": "checkbox",
-				"style": {"height": "2.5em", "width": "20ch"},
-				"on_style": {"background": "lightgreen"},
-				"off_style": {"background": "red"},
-				"value": "Show Tooltips",
+				"type": "button",
+				"style": {"height": "2.5em", "width": "25ch"},
+				"state_styles": [
+					{"background": "red", "content": "Turn Tooltips On"},
+					{"background": "lightgreen", "content": "Turn Tooltips Off"}
+				],
+				"value": "Show Tooltips ??",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_polling"},
+				"actions_type": "state",
 				"actions": [
-					{"type": "setting", "setting": "show_tooltips", "fire_on_startup": true}
+					{"type": "setting", "setting": "show_tooltips", "value": 1, "fire_on_startup": true},
+					{"type": "setting", "setting": "show_tooltips", "value": 0,}
 				]
 			}
 		];

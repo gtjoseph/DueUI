@@ -202,6 +202,51 @@ DueUIConfig({
 				},
 				{
 					/*
+					 * This is an example of a button where the style
+					 * and it's text are driven by state AND when you
+					 * click the button, the GCode command corresponding
+					 * to the current state is executed.
+					 */
+					"id": "atx_power",
+					"type": "button",
+					"enabled": true,
+					"style": {
+						"width": "15ch",
+					},
+					/*
+					 * atxPower is in the level 1 message.
+					 */
+					"status_level": 1,
+					/*
+					 * The field with the state is params.atxPower.
+					 */
+					"state_field": "${status.params.atxPower}",
+					/*
+					 * An array of styles.  All arrays start with item
+					 * 0 and count upwards.
+					 */
+					"state_styles": [
+						/* The stye applied when the state changes to 0 (atxPower off). */
+						{"background": "red", "content": "ATX Off"},
+						/* The stye applied when the state changes to 1 (atxPower on). */
+						{"background": "lightgreen", "content": "ATX On"}
+					],
+					/* This will be the value before we receive the first poll response. */
+					"value": "ATX Pwr",
+					/*
+					 * "actions_type" MUST be state or both commands will be
+					 * sent when the button is clicked.
+					 */
+					"actions_type": "state",
+					"actions": [
+						/* Turn the power ON when the current state is 0 (off) */
+						{"type": "gcode", "gcode": "M80"},
+						/* Turn the power OFF when the current state is 1 (on) */
+						{"type": "gcode", "gcode": "M81"}
+					]
+				},
+				{
+					/*
 					 * Finally the header has the log area which will actually
 					 * appear first in the header.  Remember "row-reverse"?
 					 */
