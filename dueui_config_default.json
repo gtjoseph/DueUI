@@ -586,7 +586,13 @@ DueUIConfig({
 						 */
 						"id": "fan_0_label",
 						"type": "label",
-						"value": "<b>Fan 0</b>",
+						"status_level": 1,
+						"initial_value": "<b>Fan 0<br>---%</b>",
+						/*
+						 * Well, not quite dumb.  You can still have the
+						 * label display dynamic values.
+						 */
+						"value": "<b>Fan 0<br>${status.params.fanPercent[0]}%</b>",
 						/*
 						 * In the "Global Positioning Stupidity" section
 						 * of the README I talked about how the "right" and
@@ -657,7 +663,9 @@ DueUIConfig({
 					{
 						"id": "fan_1_label",
 						"type": "label",
-						"value": "<b>Fan 1</b>",
+						"status_level": 1,
+						"initial_value": "<b>Fan 1<br>---%</b>",
+						"value": "<b>Fan 1<br>${status.params.fanPercent[1]}%</b>",
 						"position": {
 							"my": "left top",
 							"at": "right+10 top",
@@ -691,7 +699,9 @@ DueUIConfig({
 					{
 						"id": "leds_label",
 						"type": "label",
-						"value": "<b>LEDs</b>",
+						"status_level": 1,
+						"initial_value": "<b>LEDs<br>---%</b>",
+						"value": "<b>LEDs<br>${status.params.fanPercent[3]}%</b>",
 						"position": {
 							"my": "left top",
 							"at": "right+10 top",

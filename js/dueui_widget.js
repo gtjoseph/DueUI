@@ -177,9 +177,17 @@ class DueuiLabelWidget extends DueuiWidget {
 		super("div", $.extend(true, {
 			"classes": "ui-widget"
 		}, config), parent);
+
+		var value = this.value;
+		if (value.indexOf("${") >= 0) {
+			value = this.initial_value;
+		}
+		this.last_value = "";
+		this.last_state = "";
 		this.jq.html(this.value);
 		this.value_function = "html";
 		this.value_object = this.jq; 
+		this.val(value);
 	}
 }
 DueuiElement.addElementType('label', DueuiLabelWidget);
