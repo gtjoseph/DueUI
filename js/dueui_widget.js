@@ -67,19 +67,31 @@ class DueuiWidget extends DueuiElement {
 			for (let action of this.actions) {
 				var a = $.extend(true, {}, action);
 				buttons.push({
-					"value": a.label || a.action,
+					"value": (a.label || a.gcode),
 					"type": "button",
 					"style": {
-						"height": "2.5em"
+						"height": "2.5em",
+						"width": "100%"
 					},
 					"actions": [ $.extend(true, {}, a, {"fire_on_startup": false}) ],
 					"onsubmit": () => {
 						jq_dialog.dialog("close");
 					}
 				});
-				width = Math.max(width, action.label ? action.label.length : action.action.length);
+				if (a.label) {
+					width = Math.max(width, a.label.length);
+				}
 			};
-			width += 5;
+			width += 4;
+	
+			jq_dialog.dialog({
+				"autoOpen": true,
+				"modal": true,
+				"position": {"my": "center", "at": "center", "of": this.jq},
+				"width": width * 15,
+				"height": (buttons.length * 48) + 64
+			});
+			
 			let bgdialog = new DueuiPanel({
 				"id": `${this.id}_dialog_buttons`,
 				"style": {
@@ -87,16 +99,8 @@ class DueuiWidget extends DueuiElement {
 					"flex-direction": "column"
 				},
 				"element_configs": buttons
-			});
-			jq_dialog.append(bgdialog.jq);
+			}, jq_dialog);
 
-			jq_dialog.dialog({
-				"autoOpen": true,
-				"modal": true,
-				"position": {"my": "center", "at": "center", "of": this.jq},
-				"width": width * 15,
-				"height": buttons.length * 64
-			})
 			jq_dialog.dialog({"close": () => {
 					jq_dialog.dialog("destroy");
 					jq_dialog.remove();
