@@ -234,15 +234,29 @@ DueUIConfig({
 					/* This will be the value before we receive the first poll response. */
 					"value": "ATX Pwr",
 					/*
-					 * "actions_type" MUST be state or both commands will be
+					 * "actions_type" MUST be state or all commands will be
 					 * sent when the button is clicked.
 					 */
 					"actions_type": "state",
+					/*
+					 * This actions array actually contains 2 sub-arrays.
+					 * When the state is "0", both actions in the first
+					 * sub-array will be triggered.  When the state is "1",
+					 * both actions in the second sub-array wil be triggered. 
+					 */
 					"actions": [
-						/* Turn the power ON when the current state is 0 (off) */
-						{"type": "gcode", "gcode": "M80"},
-						/* Turn the power OFF when the current state is 1 (on) */
-						{"type": "gcode", "gcode": "M81"}
+						[
+							/* Turn the power ON when the current state is 0 (off) */
+							{"type": "gcode", "gcode": "M80", "label": "Power ON"},
+							/* AND post a log message to that effect */
+							{"type": "log", "severity": "I", "value": "Power ON"}
+						],
+						[
+							/* Turn the power OFF when the current state is 1 (on) */
+							{"type": "gcode", "gcode": "M81", "label": "Power OFF"},
+							/* AND post a log message to that effect */
+							{"type": "log", "severity": "I", "value": "Power OFF"}
+						]
 					]
 				},
 				{

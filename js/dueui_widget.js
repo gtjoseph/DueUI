@@ -65,7 +65,16 @@ class DueuiWidget extends DueuiElement {
 			let buttons = [];
 			let width = 0;
 			for (let action of this.actions) {
-				var a = $.extend(true, {}, action);
+				let a;
+				let aa;
+				if (Array.isArray(action)) {
+					a = $.extend(true, {}, action[0]);
+					aa = action.slice(0);
+				} else {
+					a = $.extend(true, {}, action);
+					aa = [ a ];
+				}
+ 
 				buttons.push({
 					"value": (a.label || a.gcode),
 					"type": "button",
@@ -73,7 +82,7 @@ class DueuiWidget extends DueuiElement {
 						"height": "2.5em",
 						"width": "100%"
 					},
-					"actions": [ $.extend(true, {}, a, {"fire_on_startup": false}) ],
+					"actions": aa,
 					"onsubmit": () => {
 						jq_dialog.dialog("close");
 					}

@@ -200,6 +200,11 @@ class DueuiElement {
 				}, t);
 				break;
 			}
+			case "log": {
+				let val = (a2.value ? DueUI.evalValue(a2.value, this.val()) : this.val());
+				dueui.logMessage(a2.severity || "I", val);
+				break;
+			}
 			case "callback":
 				a2.callback();
 				break;
@@ -229,32 +234,32 @@ class DueuiElement {
 		this.jq.append(`<div id='${this.id}_dialog' title='${this.value}'/>`);
 		var jq_dialog = $(`#${this.id}_dialog`);
 		var width = 0;
-		var te = this.target_element;
 		for (let b of buttons) {
 			b.onsubmit = () => {
 				jq_dialog.dialog("close");
 			};
-			width = Math.max(width, b.value);
+			width = Math.max(width, b.value.length);
 			$.extend(true, b.actions, {"fire_on_startup": false});
-			
 		}
-		width += 5;
+		width += 4;
 		
-		var bgdialog = new DueuiPanel({
+		jq_dialog.dialog({
+			"autoOpen": true,
+			"modal": true,
+			"position": {"my": "center", "at": "center", "of": this.jq},
+			"width": width * 15,
+			"height": (buttons.length * 48) + 64
+		});
+		
+		let bgdialog = new DueuiPanel({
 			"id": `${this.id}_dialog_buttons`,
 			"style": {
 				"display": "flex",
 				"flex-direction": "column"
 			},
 			"element_configs": buttons
-		});
-		jq_dialog.append(bgdialog.jq);
+		}, jq_dialog);
 
-		jq_dialog.dialog({
-			"autoOpen": true,
-			"modal": true,
-			"position": {"my": "center", "at": "center", "of": this.jq}
-		})
 		jq_dialog.dialog({"close": () => {
 				jq_dialog.dialog("destroy");
 				jq_dialog.remove();
