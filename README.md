@@ -38,6 +38,12 @@ The "reprap" password is the default if you have no password set.
 * Click the "Polling" button to enable polling.
 * Refresh your browser page.
 
+If you're using a tablet running Android 5.1 (Lollipop) or better, or an
+Amazon Fire tablet 7th generation or better, try the DueUI app! You'll have to
+set "Allow Apps from Unknown Sources" in Settings, Security before
+installing.  Then you should just be able to browse to the APK file
+in [Releases](https://github.com/gtjoseph/DueUI/releases) and click it.
+
 ### Installation Notes:
 
 DueUI uses the [jQuery](https://jquery.com) Framework, the
