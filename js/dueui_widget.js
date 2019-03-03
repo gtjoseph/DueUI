@@ -592,7 +592,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 
 			let temp_button = {
 				"type": "button",
-				"value": this.current_temp_field || "${status.temps.current["+this.heater_index+"]}",
+				"value": this.current_temp_field || "${status.temps.current["+this.heater_index+"].toFixed(1)}",
 				"initial_value": 0,
 				"status_level": this.status_level || 1,
 				"read_only": true,

@@ -423,8 +423,11 @@ DueUIConfig({
 						 * is the field in the status message. See
 						 * https://duet3d.dozuki.com/Wiki/Gcode#Section_M408_Report_JSON_style_response
 						 * for a list of the fields.
+						 * 
+						 * For the current temp, we're also using standard
+						 * Javascript to force 1 decimal place.
 						 */
-						"current_temp_field": "${status.temps.bed.current}",
+						"current_temp_field": "${status.temps.bed.current.toFixed(1)}",
 						"active_temp_field": "${status.temps.bed.active}",
 						"standby_temp_field": "${status.temps.bed.standby}",
 						/*
@@ -509,9 +512,8 @@ DueUIConfig({
 						 * is the field in the status message. See
 						 * https://duet3d.dozuki.com/Wiki/Gcode#Section_M408_Report_JSON_style_response
 						 * for a list of the fields.
-						 * 
 						 */
-						"current_temp_field": "${status.temps.current[1]}",
+						"current_temp_field": "${status.temps.current[1].toFixed(1)}",
 						/*
 						 * It's heater 1 but tool 0.
 						 */
@@ -800,7 +802,7 @@ DueUIConfig({
 						 * known.
 						 */
 			            "button_defaults": {
-							"style": {"height": "2.5em"},
+							"style": {"height": "2.5em", "margin-top": "5px"},
 							"status_level": 1,
 							"state_styles": [
 			    				{ "background": "red", "color": "white" },
@@ -859,7 +861,7 @@ DueUIConfig({
 						"style": {"width": "130px", "height": "2.5em"},
 						"position": {
 							"my": "left top",
-							"at": "left bottom",
+							"at": "left bottom+5",
 							"of": "#main_position"
 						}
 					},
