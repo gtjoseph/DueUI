@@ -221,6 +221,9 @@ class DueuiElement {
 					$(".dueui-panel-tab").hide();
 					a2.panel.show();
 					break
+				case "refresh":
+					location.reload(true);
+					break
 				default:
 					console.log(`Invalid UI action: ${a.action}`);
 				}

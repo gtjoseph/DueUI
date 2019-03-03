@@ -271,15 +271,24 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"id": "dueui_settings_submit",
 				"type": "button",
 				"style": {"height": "2.5em", "width": "15ch"},
-				"icon": "ui-icon-check",
-				"icon-position": "left",
-				"icon_style": {"zoom": "150%"},
 				"value": "Save",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_poll_interval_1"},
 				"actions": [
 					{"type": "event", "event": "dueui-submit", "target": ".dueui-settings-field"}
 				]
 			},
+
+			{
+				"id": "dueui_settings_refresh",
+				"type": "button",
+				"style": {"height": "2.5em", "width": "15ch"},
+				"value": "Refresh",
+				"position": {"my": "left top", "at": "right+25 top", "of": "#dueui_settings_submit"},
+				"actions": [
+					{"type": "ui", "action": "refresh"}
+				]
+			},
+			
 			{
 				"id": "dueui_theme_label",
 				"type": "label",
