@@ -1,11 +1,11 @@
 <resources>
-    <string name="app_name">DueUI</string>
+	<string name="app_name">DueUI</string>
 
-    <string name="url_prompt">Enter the URL of your DueUI installation and press "Go"</string>
-    <string name="url_button_label">Go</string>
-    <string name="show_at_startup">Always show this screen at startup</string>
-    <string name="title">Welcome to DueUI</string>
-    <string name="url_hint">DueUI URL</string>
-    <string name="yes">Yes</string>
-    <string name="no">No</string>
+	<string name="url_prompt">Enter the URL of your DueUI installation and press "Go"</string>
+	<string name="url_button_label">Go</string>
+	<string name="show_at_startup">Always show this screen at startup</string>
+	<string name="title">Welcome to DueUI</string>
+	<string name="url_hint">DueUI URL</string>
+	<string name="yes">Yes</string>
+	<string name="no">No</string>
 </resources>

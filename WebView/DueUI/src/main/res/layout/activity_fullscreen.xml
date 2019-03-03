@@ -1,89 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="#0099cc">
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="#0099cc">
 
-    <!-- The primary full-screen view. This can be replaced with whatever view
-         is needed to present your content, e.g. VideoView, SurfaceView,
-         TextureView, etc. -->
+	<!-- The primary full-screen view. This can be replaced with whatever view
+		 is needed to present your content, e.g. VideoView, SurfaceView,
+		 TextureView, etc. -->
 
-    <WebView
-        android:id="@+id/webview"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:fitsSystemWindows="true"
-        android:keepScreenOn="true"
-        android:nestedScrollingEnabled="true"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+	<WebView
+		android:id="@+id/webview"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:fitsSystemWindows="true"
+		android:keepScreenOn="true"
+		android:nestedScrollingEnabled="true"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent">
 
-    </WebView>
+	</WebView>
 
-    <android.support.constraint.ConstraintLayout
-        android:id="@+id/urlView"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#ffffff"
-        app:layout_constraintStart_toStartOf="parent">
+	<androidx.constraintlayout.widget.ConstraintLayout
+		android:id="@+id/urlView"
+		android:layout_width="match_parent"
+		android:layout_height="match_parent"
+		android:background="#ffffff"
+		app:layout_constraintStart_toStartOf="parent">
 
-        <TextView
-            android:id="@+id/textView2"
-            android:layout_width="394dp"
-            android:layout_height="40dp"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="8dp"
-            android:text="@string/title"
-            android:textColor="#000000"
-            android:textSize="32sp"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
+		<TextView
+			android:id="@+id/textView2"
+			android:layout_width="394dp"
+			android:layout_height="40dp"
+			android:layout_marginStart="8dp"
+			android:layout_marginTop="8dp"
+			android:text="@string/title"
+			android:textColor="#000000"
+			android:textSize="32sp"
+			app:layout_constraintStart_toStartOf="parent"
+			app:layout_constraintTop_toTopOf="parent" />
 
-        <EditText
-            android:id="@+id/dueuiURL"
-            android:layout_width="545dp"
-            android:layout_height="42dp"
-            android:ems="10"
-            android:hint="@string/url_hint"
-            android:inputType="textUri"
-            android:singleLine="true"
-            app:layout_constraintStart_toStartOf="@+id/textView"
-            app:layout_constraintTop_toBottomOf="@+id/textView" />
+		<EditText
+			android:id="@+id/dueuiURL"
+			android:layout_width="545dp"
+			android:layout_height="42dp"
+			android:ems="10"
+			android:hint="@string/url_hint"
+			android:inputType="textUri"
+			android:singleLine="true"
+			app:layout_constraintStart_toStartOf="@+id/textView"
+			app:layout_constraintTop_toBottomOf="@+id/textView" />
 
-        <Switch
-            android:id="@+id/show_at_startup"
-            android:layout_width="304dp"
-            android:layout_height="33dp"
-            android:showText="true"
-            android:text="@string/show_at_startup"
-            android:textColor="#000000"
-            android:textOff="@string/no"
-            android:textOn="@string/yes"
-            app:layout_constraintStart_toStartOf="@+id/dueuiURL"
-            app:layout_constraintTop_toBottomOf="@+id/dueuiURL" />
+		<Switch
+			android:id="@+id/show_at_startup"
+			android:layout_width="304dp"
+			android:layout_height="33dp"
+			android:showText="true"
+			android:text="@string/show_at_startup"
+			android:textColor="#000000"
+			android:textOff="@string/no"
+			android:textOn="@string/yes"
+			app:layout_constraintStart_toStartOf="@+id/dueuiURL"
+			app:layout_constraintTop_toBottomOf="@+id/dueuiURL" />
 
-        <Button
-            android:id="@+id/goButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/url_button_label"
-            app:layout_constraintStart_toStartOf="@+id/show_at_startup"
-            app:layout_constraintTop_toBottomOf="@+id/show_at_startup" />
+		<Button
+			android:id="@+id/goButton"
+			android:layout_width="wrap_content"
+			android:layout_height="wrap_content"
+			android:text="@string/url_button_label"
+			app:layout_constraintStart_toStartOf="@+id/show_at_startup"
+			app:layout_constraintTop_toBottomOf="@+id/show_at_startup" />
 
-        <TextView
-            android:id="@+id/textView"
-            android:layout_width="547dp"
-            android:layout_height="31dp"
-            android:text="@string/url_prompt"
-            android:textColor="#000000"
-            android:textStyle="bold"
-            app:layout_constraintStart_toStartOf="@+id/textView2"
-            app:layout_constraintTop_toBottomOf="@+id/textView2" />
-    </android.support.constraint.ConstraintLayout>
+		<TextView
+			android:id="@+id/textView"
+			android:layout_width="547dp"
+			android:layout_height="31dp"
+			android:text="@string/url_prompt"
+			android:textColor="#000000"
+			android:textStyle="bold"
+			app:layout_constraintStart_toStartOf="@+id/textView2"
+			app:layout_constraintTop_toBottomOf="@+id/textView2" />
+	</androidx.constraintlayout.widget.ConstraintLayout>
 
-    <!-- This FrameLayout insets its children based on system windows using
-         android:fitsSystemWindows. -->
+	<!-- This FrameLayout insets its children based on system windows using
+		 android:fitsSystemWindows. -->
 
-</android.support.constraint.ConstraintLayout>
+</androidx.constraintlayout.widget.ConstraintLayout>

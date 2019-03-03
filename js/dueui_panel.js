@@ -152,8 +152,8 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_warning",
 				"type": "label",
-				"style": {"width": "100%", "position": "fixed"},
-				"position": {"my": "left top", "at": "left+10 top+10", "of": "#dueui_settings"},
+				"style": {"width": "98%"},
+//				"position": {"my": "left top", "at": "left+10 top+10", "of": "#dueui_settings"},
 				"value": `<b>Don't forget to click the Save button below to save the new values!
 				You should also refresh the browser.
 						</b>`
