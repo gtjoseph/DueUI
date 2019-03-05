@@ -340,7 +340,13 @@ class DueUI{
 	}
 
 	constructor(){
-		this.settings = Cookies.getJSON("dueui_settings");
+		this.settings = this.getSettings();
+		if (!this.settings) {
+			this.settings = Cookies.getJSON("dueui_settings");
+			this.setSettings(this.settings);
+			Cookies.remove("dueui_settings");
+		}
+
 		if (!this.settings) {
 			this.settings = {};
 			this.settings.theme = "base";
@@ -354,7 +360,6 @@ class DueUI{
 			this.settings.dueui_settings_dont_send_gcode = 0;
 			this.settings.duet_polling_enabled = 0;
 			this.settings.show_tooltips = 1;
-			Cookies.set("dueui_settings", this.settings, {"expires": 3650});
 		}
 		this.settings.theme = this.settings.theme || "base";
 		this.settings.duet_url = this.settings.duet_url || document.location.host;
@@ -375,6 +380,8 @@ class DueUI{
 		if (typeof(this.settings.show_tooltips) === 'undefined') {
 			this.settings.show_tooltips = 1;
 		}
+
+		this.setSettings(this.settings);
 		
 		this.current_status = "";
 		this.poll_ids = [];
@@ -396,7 +403,7 @@ class DueUI{
 		];
 		this.configured = false;
 		this.config_retry = 0;
-
+		console.log(Object.keys(this.settings));
 		$("head > title").html(`DueUI - ${this.settings.duet_url.replace("http://", "")}`);
 	}
 
@@ -408,15 +415,40 @@ class DueUI{
 	}
 
 	getSetting(setting) {
+		if (typeof(this.settings[setting]) !== 'undefined') {
+			return this.settings[setting];
+		}
+		this.settings[setting] = localStorage.getItem(setting);
 		return this.settings[setting];
 	}
+
+	getSettings() {
+		let l = localStorage.length;
+		if (l == 0) {
+			return undefined;
+		}
+		var settings = {};
+		for (let i = 0; i < l; i++) {
+			let name = localStorage.key(i);
+			settings[name] = localStorage.getItem(name);
+		}
+		return settings;
+	}
+
 	setSetting(setting, value) {
 		this.settings[setting] = value;
+		localStorage.setItem(setting, value);
 		console.log(`Saving setting: ${setting} : ${value}`);
 		if (setting === "theme") {
 			DueUI.setCurrentTheme(value);
 		}
-		Cookies.set("dueui_settings", this.settings, {"expires": 3650});
+	}
+
+	setSettings(settings) {
+		let keys = Object.keys(settings);
+		for(let name of keys) {
+			localStorage.setItem(name, settings[name]);
+		}
 	}
 
 	getJSON(url) {
