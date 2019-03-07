@@ -342,14 +342,6 @@ class DueUI{
 	constructor(){
 		this.settings = this.getSettings();
 		if (!this.settings) {
-			this.settings = Cookies.getJSON("dueui_settings");
-			if (this.settings) {
-				this.setSettings(this.settings);
-				Cookies.remove("dueui_settings");
-			}
-		}
-
-		if (!this.settings) {
 			this.settings = {};
 			this.settings.theme = "base";
 			this.settings.duet_url = `http://${document.location.host}`;
@@ -476,14 +468,14 @@ class DueUI{
 
 		if ( interval > 0) {
 			this.poll_ids[poll_level] = setInterval(() => {
-				if (!this.settings.duet_polling_enabled) {
+				if (this.settings.duet_polling_enabled != 1) {
 					return;
 				}
-				if (this.settings.duet_debug_polling_enabled) {
+				if (this.settings.duet_debug_polling_enabled == 1) {
 					console.log(`Polling type ${poll_level}`);
 				}
 				$.getJSON(`${this.settings.duet_url}/rr_status?type=${poll_level}`).then((response) => {
-					if (this.settings.duet_debug_polling_enabled) {
+					if (this.settings.duet_debug_polling_enabled == 1) {
 						console.log(response);
 					}
 					if (response.status !== this.current_status) {
@@ -616,7 +608,7 @@ class DueUI{
 		var g = encodeURI(gc.gcode.replace(/;/g,"\n"));
 		var uri = `${this.settings.duet_url}/rr_gcode?gcode=${g.replace(/[+]/, "%2B")}`;
 		console.log(`Sending gcode: ${uri}`);
-		if (this.settings.dueui_settings_dont_send_gcode) {
+		if (this.settings.dueui_settings_dont_send_gcode == 1) {
 			this.logMessage("(D)", `GCode: ${gc.gcode}`);
 			return;
 		}
@@ -698,7 +690,7 @@ class DueUI{
 		DueUI.setCurrentTheme(this.settings.theme);
 		this.id = "dueui";
 		this.jq = $("#dueui");
-		$(document).tooltip({"disabled": !this.settings.show_tooltips});
+		$(document).tooltip({"disabled": this.settings.show_tooltips != 1});
 
 		$("body").addClass(`connection-listener`);
 		$("body").on("duet_connection_status", (event, response) => {
@@ -709,7 +701,7 @@ class DueUI{
 			}
 		});
 
-		if (this.settings.duet_polling_enabled) {
+		if (this.settings.duet_polling_enabled == 1) {
 			this.connect();
 		} else {
 			this.showStartupSettings();
