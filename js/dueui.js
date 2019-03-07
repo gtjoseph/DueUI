@@ -343,8 +343,10 @@ class DueUI{
 		this.settings = this.getSettings();
 		if (!this.settings) {
 			this.settings = Cookies.getJSON("dueui_settings");
-			this.setSettings(this.settings);
-			Cookies.remove("dueui_settings");
+			if (this.settings) {
+				this.setSettings(this.settings);
+				Cookies.remove("dueui_settings");
+			}
 		}
 
 		if (!this.settings) {
@@ -540,17 +542,19 @@ class DueUI{
 			this.connect_retry = 0;
 			$(".connection-listener").trigger("duet_connection_status", { "status": "connected", "response": response });
 		}).fail((xhr, reason, error) => {
-			console.log({xhr, reason, error})
+			console.log({xhr, reason, error});
+			console.log(xhr.getAllResponseHeaders());
 			this.connected = false;
 			if (this.connect_retry < this.duet_connect_retries.number) {
 				this.connect_retry++;
-				this.reconnect_timer = setTimeout(function(){
-					this.logMessage("(W)", `Attempting reconnection ${_this.connect_retry} of ${_this.duet_connect_retries.number}`);
+				this.reconnect_timer = setTimeout(() => {
+					this.logMessage("(W)", `Attempting reconnection ${this.connect_retry} of ${this.duet_connect_retries.number}`);
 					this.connect();
 				}, this.duet_connect_retries.interval);
-				$(".connection-listener").trigger("duet_connection_status", { "status": "retrying", "retry": _this.connect_retry });
-				this.logMessage("(W)", `Connection attempt ${_this.connect_retry} of ${_this.duet_connect_retries.number} failed`);
+				$(".connection-listener").trigger("duet_connection_status", { "status": "retrying", "retry": this.connect_retry });
+				this.logMessage("(W)", `Connection attempt ${this.connect_retry} of ${this.duet_connect_retries.number} failed`);
 			} else {
+				alert("There was an error attempting to connect to "+this.settings.duet_url+"\nPlease see the javascript console for more information.");
 				$(".connection-listener").trigger("duet_connection_status", { "status": "failed", "reason": reason });
 				this.logMessage("(E)", `Final connection attempt failed.  Refresh to restart.`);
 			}
