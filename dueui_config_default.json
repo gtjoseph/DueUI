@@ -20,6 +20,10 @@ DueUIConfig({
 	 * Another common element attribute is "style" which can contain any CSS
 	 * styles you want set for the object.  If you see something you don't
 	 * understand in a style, check https://www.w3schools.com/css/default.asp.
+	 *
+	 * Actually, the better way to specify things like colors is to use the
+	 * "classes" attribute and add the Bootstrap CSS classes of your choice.
+	 * More info in README.md.
 	 * 
 	 * Element types:
 	 * 
@@ -57,9 +61,8 @@ DueUIConfig({
 	 * widget that consists of a panel containing 2 buttons and 2 input fields
 	 * plus logic to change the colors of the buttons, turn the heater
 	 * on or off, set the temps, etc.
-	 * 
 	 */
-	
+
 	/* 
 	 * "dueui_content" is a key looked for by DueUI as the "root" element.
 	 * It MUST exist and is must be named "dueui_content".
@@ -131,16 +134,37 @@ DueUIConfig({
 					"enabled": true,
 					"style": {
 						"width": "96px",
-						"background": "red"
+						/*
+						 * You "can" set the color here but a better way is to
+						 * use the Bootstrap button class.  This way both the
+						 * foreground and background colors will be appropriate
+						 * for the theme you're using.
+						 *
+						 * "background": "red"
+						 */
 					},
-					/* 
-					 * It has an icon as well as a display value.  The icon
-					 * can be any icon in the jQuery UI palette.  To see the
-					 * available icon names, visit https://jqueryui.com/themeroller/
-					 * then scroll down to the icons.  If you hover over an icon
-					 * it's name will pop up.
+					/*
+					 * This is a standard Bootstrap button class. Since the
+					 * default theme is  "Cerulean", you can visit
+					 * https://bootswatch.com/cerulean/ to see how things will
+					 * be displayed.  If you hover over one of the button
+					 * examples, you'll see a "<>" appear off to the right.
+					 * Click it and you'll be shown the classes.
+					 *
+					 * If you supply "classes", you have to supply all of them
+					 * so to use "btn-danger" you also have to use "btn".
+					 * Well, you don't "have" to but if you want the button
+					 * to look like the others, you should.
 					 */
-					"icon": "ui-icon-alert",
+					"classes": "btn btn-danger",
+
+					/* 
+					 * It has an icon as well as a display value.
+					 * The icons are from Google's Material Icon set
+					 * https://material.io/tools/icons/?style=baseline.
+					 * You can use any icon on that page.
+					 */
+					"icon": "report",
 					/* The text to display in the button. */
 					"value": "STOP",
 					/*
@@ -165,9 +189,9 @@ DueUIConfig({
 					"enabled": true,
 					"style": {
 						"width": "96px",
-						"background": "lightgreen"
 					},
-					"icon": "ui-icon-refresh",
+					"classes": "btn btn-warning",
+					"icon": "replay",
 					"value": "Restart",
 					"actions": [
 						{"type": "gcode", "gcode": "M999"}
@@ -220,17 +244,15 @@ DueUIConfig({
 					/*
 					 * The field with the state is params.atxPower.
 					 */
-					"state_field": "${status.params.atxPower}",
-					/*
-					 * An array of styles.  All arrays start with item
-					 * 0 and count upwards.
-					 */
-					"state_styles": [
-						/* The stye applied when the state changes to 0 (atxPower off). */
-						{"background": "red", "content": "ATX Off"},
-						/* The stye applied when the state changes to 1 (atxPower on). */
-						{"background": "lightgreen", "content": "ATX On"}
-					],
+					"state": {
+						"field": "${status.params.atxPower}",
+						"classes": [
+							/* The classes applied when the state changes to 0 (atxPower off). */
+							"btn btn-danger",
+							/* The classes applied when the state changes to 1 (atxPower on). */
+							"btn btn-success"
+						]
+					},
 					/* This will be the value before we receive the first poll response. */
 					"value": "ATX Pwr",
 					/*
@@ -338,7 +360,7 @@ DueUIConfig({
 							"of": "#dueui_panel_main"
 						},
 						"style": {
-							"width": "96px"
+							"width": "90px"
 						},
 						/*
 						 * These defaults are applied to each of the 4 buttons.
@@ -347,6 +369,7 @@ DueUIConfig({
 						 * I didn't make the CSS stuff up.
 						 */
 						"button_defaults": {
+							"classes": "btn btn-secondary",
 							"style": {
 								"height": "2.5em"							
 							}
@@ -378,27 +401,28 @@ DueUIConfig({
 							"at": "right+5 top",
 							"of": "#heater_labels"
 						},
+						"style": { "width": "120px" },
 						"button_defaults": {
 							"style": {
 								"height": "2.5em"							
 							}
 						},
 						/*
-						 * Tolerances allow you to change the style of a button
-						 * based on it's value.  In this case, the button in
+						 * Tolerances allow you to change the style or class of
+						 * a button based on it's value.  In this case, the button in
 						 * question is the one that displays the current temperature.
-						 * The background will be lightgreen if the temp is within 2
-						 * degrees of the set point, yellow if more than 2 but
-						 * less than 5 degrees and red if more than 5.  The set
-						 * point is determined by the state of the heater.  If off
-						 * no special styling is performed, if it's in standby, the
-						 * standby set point is used and if active, the active
-						 * set point is used.
+						 * With the default theme, the background will be green
+						 * if the temp is within 2 degrees of the set point,
+						 * orange if more than 2 but less than 5 degrees and
+						 * red if more than 5.  The set point is determined by
+						 * the state of the heater.  If off no special styling
+						 * is performed, if it's in standby, the standby set
+						 * point is used and if active, the active set point is used.
 						 */
 						"tolerances": [
-							{"limit": 2, "style": {"background": "lightgreen"}},
-							{"limit": 5, "style": {"background": "yellow"}},
-							{"limit": 999, "style": {"background": "red"}}
+							{"limit": 2, "classes": "btn btn-success"},
+							{"limit": 5, "classes": "btn btn-warning"},
+							{"limit": 999, "classes": "btn btn-danger"}
 						],
 						/*
 						 * "heater_index" is the actual heater number on the Duet
@@ -464,7 +488,7 @@ DueUIConfig({
 							"at": "right top",
 							"of": "#bed_heater"
 						},
-						"style": { "width": "100px" },
+						"style": { "width": "120px" },
 						"button_defaults": {
 							"style": {
 								"height": "2.5em"
@@ -474,20 +498,23 @@ DueUIConfig({
 						 * What do you want the button with the label in
 						 * it to look like when the heater is in various states?
 						 * In order, the states are off, standby, on, fault,
-						 * tuning.
+						 * tuning.  We could use "classes" here instead of styles
+						 * but we'll use styles for illustration purposes.
 						 */
-						"state_styles": [
-							{"background": "gray", "color": "white"},
-							{"background": "green", "color": "white"},
-							{"background": "lightgreen", "color": "black"},
-							{"background": "red", "color": "black"},
-							{"background": "voilet", "color": "black"}
-						],
+						"state": {
+							"styles": [
+								{"background": "gray", "color": "white"},
+								{"background": "green", "color": "white"},
+								{"background": "lightgreen", "color": "black"},
+								{"background": "red", "color": "black"},
+								{"background": "voilet", "color": "black"}
+							],
+						},
 						/* Same as above. */
 						"tolerances": [
-							{"limit": 2, "style": {"background": "lightgreen"}},
-							{"limit": 5, "style": {"background": "yellow"}},
-							{"limit": 999, "style": {"background": "red"}}
+							{"limit": 2, "classes": "btn btn-success"},
+							{"limit": 5, "classes": "btn btn-warning"},
+							{"limit": 999, "classes": "btn btn-danger"}
 						],
 						/*
 						 * Same as above. It's not really needed here because
@@ -558,7 +585,9 @@ DueUIConfig({
 							"of": "#extr1_heater"
 						},
 						"button_defaults": {
-							"style": { "width": "12ch", "height": "2.5em" }
+							/* Let's give these buttons a slightly different look */
+							"classes": "btn btn-info",
+							"style": { "width": "12ch", "height": "2.5em", "margin": "2px" }
 						},
 						/*
 						 * How big should the grid be and should it be 
@@ -621,7 +650,7 @@ DueUIConfig({
 						 */
 						"position": {
 							"my": "left top",
-							"at": "right+190 top+10",
+							"at": "right+170 top+10",
 							"of": "#main_macros"
 						}
 					},
@@ -804,10 +833,12 @@ DueUIConfig({
 			            "button_defaults": {
 							"style": {"height": "2.5em", "margin-top": "5px"},
 							"status_level": 1,
-							"state_styles": [
-			    				{ "background": "red", "color": "white" },
-			    				{ "background": "lightgreen", "color": "black" }
-			    			]
+							"state": {
+								"classes": [
+									"btn btn-warning",
+									"btn btn-success"
+								]
+							}
 			            },
 						"direction": "column",
 						"axes": [
@@ -844,9 +875,9 @@ DueUIConfig({
 						 * colors I like.  You don't have to have any.
 						 */
 						"tolerances": [
-							{"limit": 400, "style": {"background": "lightgreen"}},
-							{"limit": 500, "style": {"background": "yellow"}},
-							{"limit": 999, "style": {"background": "red"}}
+							{"limit": 400, "classes": "btn btn-success"},
+							{"limit": 500, "classes": "btn btn-warning"},
+							{"limit": 999, "classes": "btn btn-danger"}
 						],
 						/*
 						 * We didn't need to set "tolerance_value" for the
@@ -917,7 +948,7 @@ DueUIConfig({
 						"value": "Elapsed Time:",
 						"position": {
 							"my": "left top",
-							"at": "left bottom+10",
+							"at": "left bottom+20",
 							"of": "#print_progress"
 						}
 					},
@@ -949,8 +980,8 @@ DueUIConfig({
 						},
 						"position": {
 							"my": "left top",
-							"at": "right-250 bottom+10",
-							"of": "#print_progress"
+							"at": "right+20 top",
+							"of": "#elapsed"
 						}
 					},
 					{
@@ -977,7 +1008,7 @@ DueUIConfig({
 						"initial_value": "0:00:00",
 						"position": {
 							"my": "left top",
-							"at": "left bottom",
+							"at": "left bottom+8",
 							"of": "#byfile"
 						}
 					},
@@ -991,7 +1022,7 @@ DueUIConfig({
 						"initial_value": "0:00:00",
 						"position": {
 							"my": "left top",
-							"at": "left bottom",
+							"at": "left bottom+8",
 							"of": "#byfilament"
 						}
 					},
@@ -1008,7 +1039,7 @@ DueUIConfig({
 						},
 						"position": {
 							"my": "left top",
-							"at": "left bottom+10",
+							"at": "left bottom+25",
 							"of": "#elapsed_label"
 						},
 						"actions": [
@@ -1230,7 +1261,7 @@ DueUIConfig({
 						"enabled": true,
 						"position": {
 							"my": "left top",
-							"at": "left+10 top+210",
+							"at": "left+30 top+210",
 							"of": "#dueui_panel_movement"
 						},
 						/*
@@ -1337,7 +1368,7 @@ DueUIConfig({
 						"value": "X Speed",
 						"position": {
 							"my": "left bottom",
-							"at": "left top-25",
+							"at": "left top-35",
 							"of": "#jog_x"
 						}
 					},
@@ -1349,9 +1380,12 @@ DueUIConfig({
 						"id": "jog_x_speed",
 						"type": "select",
 						"enabled": true,
+						"style": {
+							"width": "15ch"
+						},
 						"position": {
-							"my": "left top",
-							"at": "right+10 top",
+							"my": "left center",
+							"at": "right+10 center",
 							"of": "#jog_x_speed_label"
 						},
 						/*
@@ -1398,56 +1432,12 @@ DueUIConfig({
 						"style": {"width": "130px", "height": "2.5em"},
 						"position": {
 							"my": "left top",
-							"at": "left bottom+25",
+							"at": "left-20 bottom+25",
 							"of": "#jog_x_scale"
 						},
 						"actions": [
 							{"type": "gcode", "gcode": "G28"}
 						]
-					},
-					{
-						/*
-						 * A button that kicks off bed compensation probing.
-						 * You could just add the gcode action to the probe button
-						 * and save the space.
-						 */
-						"id": "bed_compensation",
-						"type": "button",
-						"enabled": true,
-						"value": "Level Bed",
-						"position": {
-							"my": "left top",
-							"at": "left bottom",
-							"of": "#homeall_movement"
-						},
-						"style": {"width": "130px", "height": "2.5em"},
-						"actions": [
-							{"type": "gcode", "gcode": "G32 S3"}
-						]
-					},
-					{
-						/*
-						 * Another Probe button.
-						 */
-						"id": "probe_movement",
-						"type": "button",
-						"enabled": true,
-						"read_only": true,
-						"status_level": 1,
-						"value": "Probe: ${status.sensors.probeValue}",
-						"initial_value": "Probe",
-						"tolerances": [
-							{"limit": 400, "style": {"background": "lightgreen"}},
-							{"limit": 500, "style": {"background": "yellow"}},
-							{"limit": 999, "style": {"background": "red"}}
-						],
-						"tolerance_value": "${status.sensors.probeValue}",
-						"style": {"width": "130px", "height": "2.5em"},
-						"position": {
-							"my": "left top",
-							"at": "left bottom",
-							"of": "#bed_compensation"
-						}
 					},
 					{
 						/*
@@ -1458,7 +1448,7 @@ DueUIConfig({
 						"enabled": true,
 						"position": {
 							"my": "left top",
-							"at": "left+285 top+5",
+							"at": "left+275 top+20",
 							"of": "#dueui_panel_movement"
 						},
 						"button_defaults": {
@@ -1487,8 +1477,7 @@ DueUIConfig({
 							"of": "#jog_y"
 						},
 						"style": {
-							"height": "2em", "padding-left": "9px",
-							"background": "lightgray"
+							"height": "2em", "width": "5ch"
 						},
 						"actions": [
 							{"type": "event", "event": "jog_scale", "target": "#jog_y"}
@@ -1509,9 +1498,12 @@ DueUIConfig({
 						"id": "jog_y_speed",
 						"type": "select",
 						"enabled": true,
+						"style": {
+							"width": "15ch"
+						},
 						"position": {
 							"my": "right top",
-							"at": "left-75 top+30",
+							"at": "left top+30",
 							"of": "#jog_y"
 						},
 						"options": [
@@ -1585,9 +1577,12 @@ DueUIConfig({
 						"id": "jog_z_speed",
 						"type": "select",
 						"enabled": true,
+						"style": {
+							"width": "15ch"
+						},
 						"position": {
 							"my": "right top",
-							"at": "left-75 top+30",
+							"at": "left-10 top+30",
 							"of": "#jog_z"
 						},
 						"options": [
@@ -1611,12 +1606,11 @@ DueUIConfig({
 						"value": "+/-",
 						"position": {
 							"my": "right top",
-							"at": "left-45 top+60",
-							"of": "#jog_z"
+							"at": "right bottom+10",
+							"of": "#jog_z_speed"
 						},
 						"style": {
-							"height": "2em", "padding-left": "9px",
-							"background": "lightgray"
+							"height": "2em", "width": "5ch"
 						},
 						"actions": [
 							{"type": "event", "event": "jog_scale", "target": "#jog_z"}
@@ -1624,19 +1618,66 @@ DueUIConfig({
 					},
 					{
 						/*
+						 * A button that kicks off bed compensation probing.
+						 * You could just add the gcode action to the probe button
+						 * and save the space.
+						 */
+						"id": "bed_compensation",
+						"type": "button",
+						"enabled": true,
+						"value": "Level Bed",
+						"position": {
+							"my": "right top",
+							"at": "left-25 bottom-130",
+							"of": "#jog_z"
+						},
+						"style": {"width": "130px", "height": "2.5em"},
+						"actions": [
+							{"type": "gcode", "gcode": "G32 S3"}
+						]
+					},
+					{
+						/*
+						 * Another Probe button.
+						 */
+						"id": "probe_movement",
+						"type": "button",
+						"enabled": true,
+						"read_only": true,
+						"status_level": 1,
+						"value": "Probe: ${status.sensors.probeValue}",
+						"initial_value": "Probe",
+						"tolerances": [
+							{"limit": 400, "classes": "btn btn-success"},
+							{"limit": 500, "classes": "btn btn-warning"},
+							{"limit": 999, "classes": "btn btn-danger"}
+						],
+						"tolerance_value": "${status.sensors.probeValue}",
+						"style": {"width": "130px", "height": "2.5em"},
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#bed_compensation"
+						}
+					},
+					{
+						/*
 						 * This is a selectbox that allows you to set
 						 * how you want endstop sensing and move-before-homed
 						 * configured.  Because it sends events on startup to
-						 * the axis jog widgets it must be defined after
+						 * the axis jog widgets, it must be defined after
 						 * them.
 						 */
 						"id": "jog_endstop_sense",
 						"type": "select",
 						"enabled": true,
+						"style": {
+							"width": "30ch"
+						},
 						"position": {
 							"my": "left top",
-							"at": "left bottom+10",
-							"of": "#movement_position"
+							"at": "left bottom+25",
+							"of": "#homeall_movement"
 						},
 						/*
 						 * The "S" parameters to add to the GCode in the '${sense}' variable.
@@ -1710,6 +1751,9 @@ DueUIConfig({
 						"id": "jog_e_speed",
 						"type": "select",
 						"enabled": true,
+						"style": {
+							"width": "15ch"
+						},
 						"position": {
 							"my": "left top",
 							"at": "left bottom+10",
@@ -1739,8 +1783,7 @@ DueUIConfig({
 							"of": "#jog_e_speed"
 						},
 						"style": {
-							"height": "2em", "padding-left": "9px",
-							"background": "lightgray"
+							"height": "2em", "width": "5ch"
 						},
 						"actions": [
 							{"type": "event", "event": "jog_scale", "target": "#jog_e"}
@@ -1830,25 +1873,26 @@ DueUIConfig({
 	},
 	/* The status_map has the long names and styles associated with each status */
 	"status_map": {
-		"I": {"label": "Idle","style": {"background": "lightgreen",	"color": "black"}},
-		"P": {"label": "Printing","style": {"background": "lightgreen",	"color": "black"}},
-		"S": {"label": "Stopped","style": {"background": "red","color": "white"}},
-		"C": {"label": "Starting Up","style": {"background": "yellow","color": "black"}},
-		"A": {"label": "Paused","style": {"background": "lightgreen","color": "black"}},
-		"D": {"label": "Pausing","style": {"background": "lightgreen","color": "black"}},
-		"R": {"label": "Resuming","style": {"background": "lightgreen","color": "black"}},
-		"B": {"label": "Busy","style": {"background": "lightgreen","color": "black"}},
-		"F": {"label": "Updating","style": {"background": "lightgreen","color": "black"}},
-		"H": {"label": "Halted","style": {"background": "red","color": "black"}},
-		"O": {"label": "Off","style": {"background": "red","color": "black"}},
-		"connected": {"label": "Connected","style": {"background": "lightgreen","color": "black"}},
-		"disconnected": {"label": "Disconnected","style": {"background": "red","color": "white"}},
-		"retrying": {"label": "Retrying","style": {"background": "yellow","color": "black"}},
-		"failed": {"label": "Failed","style": {"background": "red","color": "white"}}
+		"I": {"label": "Idle", "classes": "btn btn-success"},
+		"P": {"label": "Printing", "classes": "btn btn-success"},
+		"S": {"label": "Stopped", "classes": "btn btn-warning"},
+		"C": {"label": "Starting Up", "classes": "btn btn-success"},
+		"A": {"label": "Paused", "classes": "btn btn-primary"},
+		"D": {"label": "Pausing", "classes": "btn btn-success"},
+		"R": {"label": "Resuming", "classes": "btn btn-success"},
+		"B": {"label": "Busy", "classes": "btn btn-success"},
+		"F": {"label": "Updating", "classes": "btn btn-danger"},
+		"H": {"label": "Halted", "classes": "btn btn-danger"},
+		"O": {"label": "Off", "classes": "btn btn-danger"},
+		"connected": {"label": "Connected", "classes": "btn btn-success"},
+		"disconnected": {"label": "Disconnected", "classes": "btn btn-warning"},
+		"retrying": {"label": "Retrying", "classes": "btn btn-warning"},
+		"failed": {"label": "Failed", "classes": "btn btn-danger"},
+		"unknown": {"label": "?", "classes": "btn btn-secondary"},
 	}
 })
 /*
- * 1700 lines of config seems like a lot but you get a lot of flexibility
+ * 1900 lines of config seems like a lot but you get a lot of flexibility
  * with them.  If you find things that don't make sense, could have been
  * named, explained or organized better, let me know.
  */

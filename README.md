@@ -24,61 +24,70 @@ user interface that could run on any modern browser:  The DueUI.
 
 ## Quick Start
 
-*  Download the latest DueUI zip file from https://github.com/gtjoseph/DueUI/releases
-*  Upload the zip file to your Duet using Duet Web Control (DWC), Settings, Upload Files.
-*  Point your browser at http://<your_duet>/dueui.html
-*  If this is the first time you've tried this, you should get the settings
+* If your display device is connected to the Internet,
+go to the [DueUI Online](http://dueui.org/) website!
+[DueUI Online](http://dueui.org/) hosts the DueUI software only.
+Your settings are always stored locally in your browser and
+all communication with your printer travels directly between your browser
+and your printer.  No data is EVER sent to [DueUI Online](http://dueui.org/).
+
+#### OR:
+
+* Install DueUI on your Duet:
+	*  Download the latest DueUI zip file from https://github.com/gtjoseph/DueUI/releases
+	*  Upload the zip file to your Duet using Duet Web Control (DWC), Settings, Upload Files.
+	*  Point your browser at http://<your_duet>/dueui.html
+
+#### OR:
+
+* Install DueUI in the web server environment of your choice.
+
+#### AND OPTIONALLY:
+
+* If you're using a tablet running Android 5.1 (Lollipop) or better, or an
+Amazon Fire tablet 7th generation or better, try the DueUI app! You'll have to
+set "Allow Apps from Unknown Sources" in Settings, Security before
+installing.  Then you should just be able to browse to the APK file
+in [Releases](https://github.com/gtjoseph/DueUI/releases) and click it.
+Once installed, start the app and point it to the DueUI install of your
+choice. It's preconfigured to connect to [DueUI Online](http://dueui.org/)
+
+
+If this is the first time you've tried this, you should get the settings
 panel:
 
 ![DueUI Settings](img/settings.png) 
 
-The URLs should be prefilled with the URL you used to get to your Duet.
+The URLs should be prefilled with the URL you used to get to DueUI so
+you may have to change it to point to your Duet if DueUI isn't installed
+on the Duet.
+ 
 The "reprap" password is the default if you have no password set.
 
 * Click the "Polling" button to enable polling.
 * Refresh your browser page.
 
-If you're using a tablet running Android 5.1 (Lollipop) or better, or an
-Amazon Fire tablet 7th generation or better, try the DueUI app! You'll have to
-set "Allow Apps from Unknown Sources" in Settings, Security before
-installing.  Then you should just be able to browse to the APK file
-in [Releases](https://github.com/gtjoseph/DueUI/releases) and click it.
+### Installation Notes
+* Earlier versions of DueUI relied on Javascript libraries that were fetched
+from the public Internet each time you started DueUI.  To facilitate running
+DueUI on a browser that isn't Internet-connected, all support libraries are
+now packages with DueUI.  Internet connectivity is now only required if you
+want to use  [DueUI Online](http://dueui.org/). 
 
-### Installation Notes:
-
-DueUI uses the [jQuery](https://jquery.com) Framework, the
-[jQuery-UI](https://jqueryui.com) User Interface Framework
-and the [js-cookie](https://github.com/js-cookie/js-cookie)
-library.  Those libraries are retrieved by your browser from
-public content delivery networks instead of the Duet itself
-to help save processing and network resources on the Duet.
-If the browser you're going to use to access DueUI doesn't,
-or won't have access to the Internet, it won't work.  If you
-need this capability, let me know by filing an issue.  I can
-create an alternate zip file that has the jQuery and js-cookie
-libraries embedded in it but I'd have to make sure it doesn't
-interfere with the DWC which also uses the jQuery libraries.
-
-If you find yourself in trouble and need to start over, simply
-delete the "dueui_settings" cookie from your browser and refresh.
-You'll be taken back to the initial settings screen.
-
-### Alternate Installation
-
-You don't *have* to install DueUI on your Duet.  You can install
-it anywhere it can be served by a standard web server.  A
+* As indicated above, You don't *have* to install DueUI on your Duet.
+You can install it anywhere it can be served by a standard web server.  A
 Raspberry Pi for instance.  There's even a neat little
 Chrome app that acts as a web server:
 [Web Server for Chrome](https://chrome.google.com/webstore/detail/web-server-for-chrome/ofhbbkphhbklhfoeikjpcbhemlocgigb)
 (no affiliation on my part).
 
-Just unzip the DueUI zip file to the folder of your choice,
+	Just unzip the DueUI zip file to the folder of your choice,
 point your web server at that, then point your browser at *that*.
  
-When you get to the DueUI settings page, just correct the Duet and
+	When you get to the DueUI settings page, just correct the Duet and
 config file URLs.
 
-Actually, your `dueui_config.json` file doesn't even have to be
+* Actually, your `dueui_config.json` file doesn't even have to be
 on the same web server as the DueUI itself or on the Duet.  It
 doesn't even have to be named `dueui_config.json`.  The only
 restriction is that you can't use "file://" URLs because of
@@ -95,7 +104,7 @@ you to customize the layout so it works for YOU.
 Before you go any further... **Don't modify the
 `/sys/dueui_config_default.json` file.**
 It will be overwritten each time you upgrade DueUI.  Copy
-the file to `/sys/dueui_config.json` and modify *that*.  DueUI
+the file to `/sys/dueui_config.json` on your Duet and modify *that*.  DueUI
 searches for config files in this order:
 * The config file URL in DueUI Settings.
 * /sys/dueui_config.json on your Duet.
@@ -114,8 +123,8 @@ when you upgraded, I'm going to simply point you here. :)
 
 Take some time now to familiarize yourself with the default config
 file.  It's (hold on to your knickers) about 1700 lines but it's
-heavily commented and includes things you don't actually need for
-illustration purposes.
+heavily commented and includes things for illustration purposes that you
+don't actually need.
 
 ### A few notes about dimensions and position:
 
@@ -158,12 +167,45 @@ for the next, etc.
 ### Theming
 
 The settings panel has a dropdown for selecting a theme.  These are the
-standard jQuery-UI themes found on their [ThemeRoller](https://jqueryui.com/themeroller/)
-website.  I don't have a mechanism for uploading your own theme because
-you can customize pretty much anything in the config file using the "style"
-parameters.  I _do_ have some work to do making the classes assigned to widgets
-a little more consistent.  If you decide to customize DueUI with your own style
-sheet, better class names will help.  
+standard Bootstrap themes found on [Bootswatch](https://bootswatch.com/).
+
+You should get to know those themes because the easiest way to configure
+element shapes and colors is by using the Bootstrap standard classes like
+"btn btn-danger-sm" which would give you a small button using the "danger"
+colors. 
+
+You can create your own themes but because there are multiple ways to run DueUI
+I can't realistically create a way for you to upload them.  It's not hard to
+do that yourself though.  
+
+To create a basic theme like the ones on [Bootswatch](https://bootswatch.com/)
+that only have a CSS file:
+
+* Start by downloading one of their themes by clicking on the "down arrow" of
+one of the theme's DOWNLOAD buttons.  Select `bootstrap.css` and save the file
+to `YourTheme.theme.css`.
+
+* Modify the CSS file to your heart's content.
+
+* Create a file named `themes_custom.css` with the following content:
+```
+DueUICustomThemes({
+"themes": [
+	{"label": "YourTheme", "value": "css/YourTheme.theme.css"}
+]
+});
+``` 
+That's not really a CSS file but it has the `css` file extension so the DWC
+uploads it to the correct place.  Of course, you can replace "YourTheme" with
+anything you like.  You can add as many custom themes as you like.  Just
+separate them with commas.
+
+* Upload both files to your Duet (or wherever you're hosting DueUI).
+You can use the DWC "Upload File(s)" function or you can use FTP to put
+both files in `/www/css/`.  
+
+* Refresh DueUI.  The new theme should show up in the Settings Theme
+dropdown.
 
 ### Basic Configuration   
 

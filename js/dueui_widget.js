@@ -2,55 +2,66 @@
 class DueuiWidget extends DueuiElement {
 	constructor(html_element, config, parent){
 		super(html_element, config, parent);
-		
-		if (this.actions && this.actions.length > 1 && this.actions_type === "choose") {
-			this.setupMultiActionDialog();
-		}
-		
-		if (this.tolerances && !this.onstatus) {
+
+		if (this.tolerances) {
 			this.last_tolerance = -1;
 			if (!this.default_tolerance_style) {
 				let style_keys = {};
-				for (let t of config.tolerances) {
+				for (let t of this.tolerances) {
 					$.extend(style_keys, t.style);
 				}
 				style_keys = Object.keys(style_keys);
 				this.default_tolerance_style = this.jq.css(style_keys);
 			}
-			this.onstatus = (status) => {
-				let val = (typeof(this.tolerance_value) === 'undefined' ? this.val() : this.tolerance_value);
-				val = DueUI.evalStatus(status, val, this);
-				let ix = 0;
-				for (let t of config.tolerances) {
-					if (val <= t.limit) {
-						if (ix != this.last_tolerance) {
-							this.jq.css(t.style);
-							this.last_tolerance = ix;
+			
+			if (this.tolerances[0].classes) {
+				this.merged_tolerance_classes = [];
+				for (let t of this.tolerances) {
+					let sc = t.classes;
+					for (let c of sc.split(" ")) {
+						if (!this.merged_tolerance_classes.includes(c)) {
+							this.merged_tolerance_classes.push(c);
 						}
-						break;
 					}
-					ix++;
 				}
-			};
+			}			
+			
+			if (!this.onstatus) {
+				this.onstatus = (status) => {
+					this.processTolerance(status);
+				};
+			}
 		}
+		
+		if (this.state) {
+			this.state.last = -2;
+			this.state.current = -1;
+			if (this.state.classes) {
+				this.state.merged_classes = [];
+				for (let sc of this.state.classes) {
+					for (let c of sc.split(" ")) {
+						if (!this.state.merged_classes.includes(c)) {
+							this.state.merged_classes.push(c);
+						}
+					}
+				}
+			}
+		} 
 		
 		if (this.status_level 
 				&& ((this.value && typeof(this.value) === 'string' && this.value.indexOf("${") >= 0)
-				|| this.state_field || this.onstatus)) {
-			this.jq.addClass(`status-poll-listener-${this.status_level || 1}`);
+				|| (this.state && this.state.field) || this.onstatus)) {
+			
+			this.addClasses(`status-poll-listener-${this.status_level || 1}`);
+			
 			this.jq.on("duet_poll_response", (event, status) => {
 				if (this.value.indexOf("${") >= 0) {
 					var val = DueUI.evalStatus(status, this.value, this);
 					this.val(val);
 				}
-				if (this.state_field) {
-					var state = DueUI.evalStatus(status, this.state_field);
-					if (state !== this.last_state) {
-						if (this.state_styles && this.state_styles[state]) {
-							this.css($.extend(true, {}, this.style, this.state_styles[state]));
-						}
-						this.last_state = state;
-					}
+				if (this.state && this.state.field) {
+					this.state.current = DueUI.evalStatus(status, this.state.field);
+					this.applyState(this.state.current);
 				}
 				if (this.onstatus) {
 					this.onstatus(status);
@@ -58,73 +69,43 @@ class DueuiWidget extends DueuiElement {
 			});
 		}
 	}
-	setupMultiActionDialog() {
-		this.setOnEvent("click", () => {
-			this.jq.append(`<div id='${this.id}_dialog' title='${this.value}'/>`);
-			let jq_dialog = $(`#${this.id}_dialog`);
-			let buttons = [];
-			let width = 0;
-			for (let action of this.actions) {
-				let a;
-				let aa;
-				if (Array.isArray(action)) {
-					a = $.extend(true, {}, action[0]);
-					aa = action.slice(0);
-				} else {
-					a = $.extend(true, {}, action);
-					aa = [ a ];
-				}
- 
-				buttons.push({
-					"value": (a.label || a.gcode),
-					"type": "button",
-					"style": {
-						"height": "2.5em",
-						"width": "100%"
-					},
-					"actions": aa,
-					"onsubmit": () => {
-						jq_dialog.dialog("close");
-					}
-				});
-				if (a.label) {
-					width = Math.max(width, a.label.length);
-				}
-			};
-			width += 4;
-	
-			jq_dialog.dialog({
-				"autoOpen": true,
-				"modal": true,
-				"position": {"my": "center", "at": "center", "of": this.jq},
-				"width": width * 15,
-				"height": (buttons.length * 48) + 64
-			});
-			
-			let bgdialog = new DueuiPanel({
-				"id": `${this.id}_dialog_buttons`,
-				"style": {
-					"display": "flex",
-					"flex-direction": "column"
-				},
-				"element_configs": buttons
-			}, jq_dialog);
 
-			jq_dialog.dialog({"close": () => {
-					jq_dialog.dialog("destroy");
-					jq_dialog.remove();
-				}
-			});
-		});
-	}
-
-	css(style) {
-		let css_object = this.css_object || this.jq;
-		if (style.content) {
-			this.val(style.content);
+	clearTolerance() {
+		if (this.default_tolerance_style) {
+			this.css(this.default_tolerance_style);
 		}
-		return css_object.css(style);
+		if (this.merged_tolerance_classes) {
+			this.removeClasses(this.merged_tolerance_classes);
+		}
+		
 	}
+	
+	processTolerance(status, val) {
+		if (typeof(val) === 'undefined') {
+			var val = (typeof(this.tolerance_value) === 'undefined' ? this.val() : this.tolerance_value);
+		}
+		if (typeof(val) === 'string') {
+			val = DueUI.evalStatus(status, val, this);
+		}
+		let ix = 0;
+		for (let t of this.tolerances) {
+			if (val <= t.limit) {
+				if (ix != this.last_tolerance) {
+					if (t.style) {
+						this.jq.css(t.style);
+					}
+					if (t.classes) {
+						this.removeClasses(this.merged_tolerance_classes);
+						this.addClasses(t.classes);
+					}
+					this.last_tolerance = ix;
+				}
+				break;
+			}
+			ix++;
+		}
+	}
+	
 	val(val, skipcheck) {
 		var value_object = this.value_object || this.jq;
 		if (typeof(val) === 'undefined') {
@@ -147,15 +128,52 @@ class DueuiWidget extends DueuiElement {
 
 class DueuiButtonWidget extends DueuiWidget {
 	constructor(config, parent){
-		super("button", $.extend(true,
+		if (config.actions && config.actions_type === "choose") {
+			super("div", $.extend(true,
 			{
-				"classes": "dueui-widget-button",
+				"classes": "dropdown",
+				"initial_value": "",
+				"value": "",
+				"style": {
+					"pointer-events": config.read_only ? "none" : null
+				}
+			}, config, {"style": {}, "classes": ""}), parent);
+
+			this.jq_btn_id = `${this.id}_btn`;
+			this.jq_btn = $(
+			`<button id='$[this.jq_btn_id}' class="btn dropdown-toggle" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">${this.value}</button>`);
+			this.css_object = this.jq_btn;
+			this.value_function = "html";
+			this.value_object = this.jq_btn;
+			this.jq.append(this.jq_btn);
+			this.jq_btn.addClass(config.classes || "");
+			this.jq_btn.css(config.style || {});
+			this.jq_drop = $(`<div class="dropdown-menu" aria-labelledby='${this.jq_btn_id}'/>`);
+			this.jq.append(this.jq_drop);
+			for (let a of this.actions) {
+				let l = Array.isArray(a) ? a[0].label : a.label;
+				let a_jq = $(`<a class="dropdown-item" href="#">${l}</a>`);
+				this.jq_drop.append(a_jq);
+				a_jq.on('click', (event) =>{
+					this.runActions(a, false);
+				});
+			}
+		} else {
+			super("button", $.extend(true,
+			{
+				"classes": "btn" + (config.state_classes ? "" : " btn-primary"),
 				"initial_value": "",
 				"value": "",
 				"style": {
 					"pointer-events": config.read_only ? "none" : null
 				}
 			}, config), parent);
+			this.value_function = "html";
+			this.value_object = this.jq;
+
+			this.setupEvents("click", true);
+		}
+
 		var value = this.value;
 		if (value.indexOf("${") >= 0) {
 			value = this.initial_value;
@@ -163,24 +181,24 @@ class DueuiButtonWidget extends DueuiWidget {
 		this.last_value = "";
 		this.last_state = "";
 
-		this.value_function = "html";
-		this.value_object = this.jq;
-		var options = {};
-		if (this.value) {
-			options.label = value;
+		let v = "";
+
+		if (this.icon && this.icon.length > 0 && this.icon_position !== 'right') {
+			v = `<i class="material-icons">${this.icon}</i>`;
 		}
-		if (this.icon) {
-			options.icon = this.icon;
-			options.iconPosition = this.icon_position || "right";
+		if (value && value.length > 0) {
+			v += value;
 		}
-		this.jq.button(options);
+		if (this.icon && this.icon.length > 0 && this.icon_position === 'right') {
+			v += `<i class="material-icons">${this.icon}</i>`;
+		}
+
+		this.val(v);
+
 		if (this.icon_style) {
-			let x = this.jq.children().filter(".ui-icon");
+			let x = this.jq.children().filter(".material-icons");
 			x.css(this.icon_style);
 		}
-
-		this.setupEvents("click", true);
-
 	}
 }
 DueuiElement.addElementType('button', DueuiButtonWidget);
@@ -188,7 +206,7 @@ DueuiElement.addElementType('button', DueuiButtonWidget);
 class DueuiLabelWidget extends DueuiWidget {
 	constructor(config, parent) {
 		super("div", $.extend(true, {
-			"classes": "ui-widget"
+			"classes": ""
 		}, config), parent);
 
 		var value = this.value;
@@ -208,7 +226,7 @@ DueuiElement.addElementType('label', DueuiLabelWidget);
 class DueuiInputFieldWidget extends DueuiWidget {
 	constructor(config, parent) {
 		super("input", $.extend(true, {
-			"classes": "dueui-widget-input-field",
+			"classes": "form-control form-control-sm",
 			"style": Object.assign({"height": "2.5em"}, config.style),
 			"attr": {
 				"type": config.field_type
@@ -222,24 +240,29 @@ class DueuiInputFieldWidget extends DueuiWidget {
 		if (this.autocomplete_key) {
 			this.jq.on("dueui-submit", (event) => {
 				let val = this.jq.val();
-				let ac = dueui.getSetting(`ac_${this.jq.autocomplete_key}`) || [];
+				let ac = dueui.getSetting(`ac_${this.autocomplete_key}`) || [];
+				if (!Array.isArray(ac)) {
+					ac = [ ac ];
+				}
 				if (!ac.includes(val)) {
 					ac.push(val);
-					ac.sort();
-					dueui.setSetting(`ac_${this.jq.autocomplete_key}`, ac);
+					dueui.setSetting(`ac_${this.autocomplete_key}`, ac);
 				}
 			});
 
-			this.jq.autocomplete({
-				source: (req, resp) => {
-					let ac = dueui.getSetting(`ac_${this.jq.autocomplete_key}`) || [];
-					let search = $.ui.autocomplete.escapeRegex(req.term);
-					let r = new RegExp(`^${search}`);
-					resp(ac.filter((term) => {
-						return r.test(term);
-					}));
+			this.jq.autoComplete({
+				"minLength": 1,
+				"resolver": "custom",
+				"events": {
+					"search": (query, callback) => {
+						let ac = dueui.getSetting(`ac_${this.autocomplete_key}`) || [];
+						if (!Array.isArray(ac)) {
+							ac = [ ac ];
+						}
+						callback(ac);
+					}
 				}
-			})
+			});
 		}
 
 		if (this.status_level) {
@@ -329,8 +352,10 @@ class DueuiSelectWidget extends DueuiWidget {
 	constructor(config, parent) {
 		super("select", $.extend(true,
 		{
+			"classes": "form-control form-control-sm",
 			"options": []
 		}, config), parent);
+		
 		this.value_function = "val";
 		this.value_object = this.jq;
 		for (let option of this.options) {
@@ -353,7 +378,7 @@ DueuiElement.addElementType('select', DueuiSelectWidget);
 class DueuiTextAreaWidget extends DueuiWidget {
 	constructor(config, parent) {
 		super("textarea", $.extend(true, {
-			"classes": "dueui-widget-textarea",
+			"classes": "form-control form-control-sm",
 			"new_entries_at_top": false,
 			"attr": {
 				"readonly": config.read_only
@@ -387,9 +412,9 @@ class DueuiTextAreaWidget extends DueuiWidget {
 				var v = this.jq.val();
 				var d = log.timestamp;
 				if (this.new_entries_at_top) {
-					v = `${DueUI.formatTime(d)} ${log.severity}: ${log.message}\n` + v;
+					v = `${DueUI.formatTime(d)} (${log.severity}): ${log.message}\n` + v;
 				} else {
-					v += `\n${DueUI.formatTime(d)} ${log.severity}: ${log.message}`;
+					v += `\n${DueUI.formatTime(d)} (${log.severity}): ${log.message}`;
 				}
 				this.jq.val(v);
 				if (!this.new_entries_at_top) {
@@ -405,11 +430,10 @@ class DueuiStatusWidget extends DueuiButtonWidget {
 	constructor(config, parent){
 		super(Object.assign(
 			{
-				"classes": "dueui-widget-status",
 				"style": {"height": "3.0em"},
 				"noclick": true
 			}, config), parent);
-		this.last_status = "";
+		this.last_status = "unknown";
 		if (dueui.connected) {
 			this.update("connected");
 		} else {
@@ -428,7 +452,8 @@ class DueuiStatusWidget extends DueuiButtonWidget {
 	}
 	update(status) {
 		if (status != this.last_status) {
-			this.css(dueui.status_map[status].style);
+			this.removeClasses(dueui.status_map[this.last_status].classes);
+			this.addClasses(dueui.status_map[status].classes);
 			this.val(dueui.status_map[status].label);
 			this.last_status = status;
 		}
@@ -465,12 +490,14 @@ class DueuiFileGridWidget extends DueuiGridWidget {
 	constructor(config, parent){
 		super($.extend(true,
 		{
-			"classes": "dueui-widget-button-grid",
 			"skip_population": true,
 			"directory": "/gcodes",
 			"action_type": "print",
 			"rows": 999,
-			"refresh_event": "refresh_list"
+			"refresh_event": "refresh_list",
+			"element_defaults": {
+				"classes": "btn btn-primary"
+			}
 		}, config, {"element_defaults": config.button_defaults}), parent);
 
 		this.refresh();
@@ -497,9 +524,11 @@ class DueuiFileGridWidget extends DueuiGridWidget {
 						"actions": []
 					};
 					if (this.confirm_message) {
-						b.actions.push({"type": "confirm", "message": this.confirm_message}) 
+						b.actions_type = "choose";
+						b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`, "label": this.confirm_message});
+					} else {
+						b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`});
 					}
-					b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`});
 					this.element_configs.push(b);
 				}
 			}
@@ -563,16 +592,20 @@ class DueuiHeaterWidget extends DueuiPanel {
 
 			let state_button = {
 				"value": this.label,
+				"icon": this.icon,
+				"icon_position": this.icon_position,
 				"type": "button",
 				"status_level": this.status_level || 1,
-				"state_styles": this.state_styles || [
-	            	{ "background": "gray", "color": "white" },
-	            	{ "background": "green", "color": "white" },
-	            	{ "background": "lightgreen", "color": "black" },
-	            	{ "background": "red", "color": "black" },
-	            	{ "background": "voilet", "color": "black" }
-	            ],
-				"state_field": "${status.temps.state["+this.heater_index+"]}",
+				"state": {
+					"classes": (this.state && this.state.classes) ? this.state.classes : [
+		            	"btn-secondary",
+		            	"btn-warning",
+		            	"btn-success",
+		            	"btn-danger",
+		            	"btn-info"
+		            ],
+					"field": "${status.temps.state["+this.heater_index+"]}"
+				},
 				"actions_type": "choose",
 				"actions": [
 					{"type": "gcode", "label": "Off", "gcode":
@@ -596,19 +629,12 @@ class DueuiHeaterWidget extends DueuiPanel {
 				"initial_value": 0,
 				"status_level": this.status_level || 1,
 				"read_only": true,
+				"classes": "btn",
 				"tolerances": this.tolerances,
 				"onstatus": this.tolerances ? function(status) {
 					var state = status.temps.state[config.heater_index];
 					let current_temp = this.val();
 
-					if (!this.default_tolerance_style) {
-						let style_keys = {};
-						for (let t of config.tolerances) {
-							$.extend(style_keys, t.style);
-						}
-						style_keys = Object.keys(style_keys);
-						this.default_tolerance_style = this.jq.css(style_keys);
-					}
 					if (0 < state && state < 3) {
 						let active_temp = (config.active_temp_field 
 								? DueUI.evalStatus(status, config.active_temp_field, this)
@@ -618,22 +644,10 @@ class DueuiHeaterWidget extends DueuiPanel {
 								: status.temps.standby[config.heater_index]);
 						
 						let set_temp = state == 1 ? standby_temp : active_temp;
-						var ix;
-						for (ix = 0; ix < this.tolerances.length; ix++) {
-							let l = this.tolerances[ix].limit;
-							if ((set_temp - l) <= current_temp && current_temp <= (set_temp + l)) {
-								break;
-							}
-						}
-						if (ix != this.last_tolerance && ix < this.tolerances.length) {
-							this.jq.css(this.tolerances[ix].style);
-							this.last_tolerance = ix;
-						}
+						let diff = Math.abs(set_temp - current_temp);
+						this.processTolerance(status, diff);
 					} else {
-						if (this.last_tolerance != -1) {
-							this.jq.css(this.default_tolerance_style);
-							this.last_tolerance = -1;
-						}
+						this.clearTolerance();
 					}
 				} : false
 			};
@@ -654,9 +668,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 				},
 				"button": {
 					"style": {"width": "50px"},
-					"icon": "ui-icon-check",
-					"icon-position": "left",
-					"icon_style": {"zoom": "150%"},
+					"icon": "done",
 					"actions": [
 						{"type": "event", "event": "dueui-submit", "target": `#${this.id}_input_active`}
 					]
@@ -679,9 +691,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 				},
 				"button": {
 					"style": {"width": "50px"},
-					"icon": "ui-icon-check",
-					"icon-position": "left",
-					"icon_style": {"zoom": "150%"},
+					"icon": "done",
 					"actions": [
 						{"type": "event", "event": "dueui-submit", "target": `#${this.id}_input_standby`}
 					]
@@ -694,8 +704,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 			active_input,
 			standby_input
 		];
-		
-		
+
 		this.populate();
 	}
 }
@@ -716,7 +725,7 @@ class DueuiHeaterLabelsWidget extends DueuiPanel {
                 	"read_only": true,
                 	"style": {
     					"margin": "1px",
-                    	"width": "9ch",
+    					"width": "9ch",
                     	"padding-right": "5px",
                     	"text-align": "right",
                     	"vertical-align": "middle"
@@ -778,10 +787,12 @@ class DueuiPositionWidget extends DueuiPanel {
             "element_defaults": {
                 "style": {"width": "100%", "font-size": "100%", "margin": "0px", "padding": "0px"},
 				"status_level": 1,
-				"state_styles": [
-    				{ "background": "red", "color": "white" },
-    				{ "background": "lightgreen", "color": "black" }
-    			]
+				"state": {
+					"classes": [
+	    				"btn-warning",
+	    				"btn-success"
+	    			]
+				}
             }
 		}, config, {"element_defaults": config.button_defaults}), parent);
 		this.axes = this.axes || [];
@@ -791,7 +802,9 @@ class DueuiPositionWidget extends DueuiPanel {
 				"initial_value": `${this.axes[ix].label} 0.000`,
 				"type": "button",
 				"title": this.axes[ix].title || "Home " + this.axes[ix].gcode_axis,
-				"state_field": "${status.coords.axesHomed["+this.axes[ix].index+"]}",
+				"state": {
+					"field": "${status.coords.axesHomed["+this.axes[ix].index+"]}",
+				},
 				"actions": [ {"type": "gcode", "gcode": "G28 " + this.axes[ix].gcode_axis, "get_reply": true } ]
 			});
 		}
@@ -889,22 +902,50 @@ DueuiElement.addElementType('html', DueuiHtmlWidget);
 
 class DueuiSliderWidget extends DueuiWidget {
 	constructor(config, parent) {
-		super("div", config, parent);
-		this.jq.slider(this.slider);
+
+		if (config.slider.orientation === "vertical") {
+			config.style.height = config.style.height || "30ch";
+			config.style.width = config.style.width || "3ch";
+		} else {
+			config.style.height = config.style.height || "3ch";
+			config.style.width = config.style.width || "30ch";
+		}
+
+		super("input", $.extend(true, {
+			"attr": {
+				"type": "range",
+				"min": config.slider.min || 0,
+				"max": config.slider.max || 100,
+				"step": config.slider.step || 5
+			},
+			"classes": "custom-range"
+		}, config), parent);
+
+		if (this.slider.orientation === "vertical") {
+			let s = {
+				"height": this.style.width,
+				"width": this.style.height,
+				"transform": "rotate(-90deg)",
+				"transform-origin": "50% 500%"
+			}
+			this.jq.css(s);
+		}
+
 		this.value_object = this.jq;
 		this.value_function = (val) => {
 			if (typeof(val) === 'undefined') {
-				return this.jq.slider("value")
+				return this.jq.val();
 			} else {
-				this.jq.slider("value", val);
+				this.jq.val(val);
 			}
 		};
+
 		var value = this.value;
 		if (value.indexOf("${") >= 0) {
 			value = this.initial_value;
 		}
 		this.val(value);
-		
+
 		this.last_value = "";
 		this.last_state = "";
 
@@ -916,27 +957,33 @@ class DueuiSliderWidget extends DueuiWidget {
 		this.obsubmit = (event) => {
 			console.log(event);
 		};
-		this.setupEvents("slidestop", false);
 
+		this.setupEvents("change", false);
 	}
 }
 DueuiElement.addElementType('slider', DueuiSliderWidget);
 
 class DueuiProgressWidget extends DueuiWidget {
 	constructor(config, parent) {
-		super("div", $.extend(true, {
-		}, config), parent);
+		super("div", $.extend( true, {
+		}, config, {"classes": "progress"}),parent);
 		
-		this.jq.progressbar({
-			"value": (typeof(this.value) === 'string' ? this.initial_value || 0 : this.value),
-			"max": this.max || 100
+		this.jq.append(`<div class="progress-bar" role="progressbar"></div>`);
+		this.jq_pb = $(`#${this.id} .progress-bar`);
+		if (this.classes) {
+			this.jq_pb.addClass(this.classes);
+		}
+		this.jq_pb.attr({
+			 "aria-valuenow": this.initial_value || 0,
+			 "aria-valuemin": this.min || 0,
+			 "aria-valuemax": this.max || 100
 		});
 		
 		this.value_function = (val) => {
 			if (typeof(val) === 'undefined') {
-				return this.jq.progressbar("value");
+				return this.jq_pb.attr("aria-valuenow");
 			} else {
-				this.jq.progressbar("value", parseInt(val));
+				this.jq_pb.attr({"aria-valuenow": parseInt(val)});
 			}
 		};
 	}

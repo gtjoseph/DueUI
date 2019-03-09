@@ -5,7 +5,7 @@ class DueuiPanel extends DueuiElement {
 				"width": "auto"
 			},
 		}, config, {
-			"classes": "ui-widget-content dueui-panel " 
+			"classes": "bg-light "
 				+ (config.classes || "")
 			}), parent);
 		
@@ -64,7 +64,7 @@ DueuiElement.addElementType("tab_panel", DueuiTabPanel);
 class DueuiTabbedPanel extends DueuiPanel {
 	constructor(config, parent) {
 		super($.extend(true, {}, config, 
-			{"classes": "dueui-tabbed-container ui-widget-content " + (config.classes || "")}), parent);
+			{"classes": "dueui-tabbed-container " + (config.classes || "")}), parent);
 	}
 	populate() {
 		if (this.header_panel) {
@@ -73,14 +73,14 @@ class DueuiTabbedPanel extends DueuiPanel {
 				"style": {
 					"border": "1px", "border-color": "black"
 				}
-			}, this.header_panel, {"classes": "dueui-header ui-widget-content " + (this.header_panel.classes || "")}), this);
+			}, this.header_panel, {"classes": "dueui-header " + (this.header_panel.classes || "")}), this);
 		}
 		
 		this.panel_area_widget = new DueuiPanel({
 			"id": "dueui_panel_area",
-			"classes": "dueui-panel-area ui-widget-content",
+			"classes": "dueui-panel-area",
 			"style": {
-				"border": "1px", "border-color": "black"
+				"border": "1px", "border-color": "black", "height": "calc(100% - 6em)"
 			},
 			"element_configs": this.element_configs,
 			"skip_population": true
@@ -91,12 +91,31 @@ class DueuiTabbedPanel extends DueuiPanel {
 			"style": {
 				"border": "1px", "border-color": "black"
 			}
-		}, this.menubar || {}, {"classes": "dueui-menubar ui-widget-content "
+		}, this.menubar || {}, {"classes": "nav "
 			+ (this.menubar ? (this.menubar.classes || "") : "")}), this);
-
 		
 		this.panel_area_widget.populate();
 		
+		this.menubar_widget.append($(`<span class='ml-auto'></span>`));
+
+		this.refresh_button = new DueuiButtonWidget(
+		{
+			"id": `${this.id}_refresh_button`,
+			"icon": "aspect_ratio",
+			"actions": [
+				{"type": "ui", "action": "fullscreen_toggle"}
+			]
+		}, this.menubar_widget);
+
+		this.fullscreen_button = new DueuiButtonWidget(
+		{
+			"id": `${this.id}_fullscreen_button`,
+			"icon": "autorenew",
+			"actions": [
+				{"type": "ui", "action": "refresh"}
+			]
+		}, this.menubar_widget);
+
 		this.settings_panel = new DueuiSettingsPanel(
 		{
 			"id": "settings_panel",
@@ -107,44 +126,41 @@ class DueuiTabbedPanel extends DueuiPanel {
 		this.settings_panel.makeTabbed(`#${this.menubar_widget.id}`, this.settings_panel.menu_button);
 
 		$(".dueui-panel-tab:eq(0)").show();
-		
-		this.fullscreen_button = new DueuiButtonWidget(
-		{
-			"id": `${this.id}_fullscreen_button`,
-			"icon": "ui-icon-arrow-4-diag",
-			"icon_style": {"zoom": "150%"},
-			"style": {
-				"position": "relative",
-				"padding": "0px",
-				"width": "5ch",
-				"height": "100%",
-				"float": "right"
-			},
-			"actions": [
-				{"type": "ui", "action": "fullscreen_toggle"}
-			]
-		}, this.menubar_widget);
-
-
 	}
 }
 DueuiElement.addElementType("tabbed_panel", DueuiTabbedPanel);
 
 class DueuiSettingsPanel extends DueuiTabPanel {
+
+	getThemes(custom) {
+		let t = this.element_configs.find(element => element.id === 'dueui_theme');
+		$.ajax({
+			url: custom ? "css/dueui-themes_custom.css" : "css/dueui-themes.css",
+			dataType: "jsonp",
+			jsonp: "callback",
+			jsonpCallback: custom ? "DueUICustomThemes" : "DueUIThemes"
+		}).done((data) => {
+			let t = $("#dueui_theme");
+			for (let theme of data.themes) {
+				t.append(`<option value="${theme.value}">${theme.label}</option>`);
+			}
+			if (!custom) {
+				this.getThemes(true);
+			} else {
+				t.val(dueui.getSetting("theme"));
+			}
+		}).catch((err) => {
+			console.log(err);
+		});
+	}
+	
 	constructor(config, parent){
 		super(Object.assign(config,
 			{
 				"id": "dueui_settings",
 				"skip_population": true,
 				"menu_button":  {
-					"icon": "ui-icon-gear",
-					"icon_style": {"zoom": "150%"},
-					"style": {
-						"padding": "0px",
-						"width": "5ch",
-						"height": "100%",
-						"float": "right"
-					}
+					"icon": "settings",
 				}
 			}), parent);
 		
@@ -290,6 +306,15 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			},
 			
 			{
+				"id": "dueui_settings_download_default",
+				"type": "button",
+				"classes": "btn btn-secondary-sm",
+				"style": {"height": "3.5em", "width": "20ch"},
+				"value": "<a href='dueui_config_default.json'>Download Default<br>Config File</a>",
+				"position": {"my": "left center", "at": "right+25 center", "of": "#dueui_settings_refresh"}
+			},
+			
+			{
 				"id": "dueui_theme_label",
 				"type": "label",
 				"style": {"position": "fixed"},
@@ -300,40 +325,13 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				},
 				"value": "Theme:"
 			},
-			
 			{
 				"id": "dueui_theme",
 				"type": "select",
 				"enabled": true,
 				"position": {"my": "left top", "at": "left bottom+10", "of": "#dueui_theme_label"},
 				"style": {"width": "25ch", "height": "2.5em"},
-				"options": [
-					{"value": "base", "label": "Base"},
-					{"value": "black-tie", "label": "Black Tie"},
-					{"value": "blitzer", "label": "Blitzer"},
-					{"value": "cupertino", "label": "Cupertino"},
-					{"value": "dark-hive", "label": "Dark Hive"},
-					{"value": "dot-luv", "label": "Dot Luv"},
-					{"value": "eggplant", "label": "Eggplant"},
-					{"value": "excite-bike", "label": "Excite Bike"},
-					{"value": "flick", "label": "Flick"},
-					{"value": "hot-sneaks", "label": "Hot Sneaks"},
-					{"value": "humanity", "label": "Humanity"},
-					{"value": "le-frog", "label": "Le Frog"},
-					{"value": "mint-choc", "label": "Mint Chocolate"},
-					{"value": "overcast", "label": "Overcast"},
-					{"value": "pepper-grinder", "label": "Pepper Grinder"},
-					{"value": "redmond", "label": "Redmond"},
-					{"value": "smoothness", "label": "Smoothness"},
-					{"value": "south-street", "label": "South Street"},
-					{"value": "start", "label": "Start"},
-					{"value": "sunny", "label": "Sunny"},
-					{"value": "swanky-purse", "label": "Swanky Purse"},
-					{"value": "trontastic", "label": "Trontastic"},
-					{"value": "ui-darkness", "label": "UI Darkness"},
-					{"value": "ui-lightness", "label": "UI Lightness"},
-					{"value": "vader", "label": "Vader"},
-				],
+				"options": [],
 				"submit_on_change": true,
 				"actions": [
 					{"type": "setting", "setting": "theme", "fire_on_startup": true},
@@ -342,11 +340,17 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_debug_polling",
 				"type": "button",
-				"style": {"height": "2.5em", "width": "25ch", "background": "red"},
-				"state_styles": [
-					{"background": "red", "content": "Turn Debug Polling On"},
-					{"background": "lightgreen", "content": "Turn Debug Polling Off"}
-				],
+				"style": {"height": "2.5em", "width": "25ch"},
+				"state": {
+					"classes": [
+						"btn-danger",
+						"btn-success"
+					],
+					"contents": [
+						"Turn Debug Polling On",
+						"Turn Debug Polling Off"
+					],
+				},
 				"value": "Debug Polling",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_theme"},
 				"actions_type": "state",
@@ -358,12 +362,18 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_dont_send_gcode",
 				"type": "button",
-				"style": {"height": "2.5em", "width": "25ch", "background": "red"},
-				"state_styles": [
-					{"background": "red", "content": "Turn Send GCode On"},
-					{"background": "lightgreen", "content": "Turn Send GCode Off"}
-				],
-				"value": "Don't Send GCode<br>Log Only",
+				"style": {"height": "2.5em", "width": "25ch"},
+				"state": {
+					"classes": [
+						"btn-danger",
+						"btn-success"
+					],
+					"contents": [
+						"Turn Send GCode On",
+						"Turn Send GCode Off"
+					],
+				},
+				"value": "Send GCode",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_debug_polling"},
 				"actions_type": "state",
 				"actions": [
@@ -374,11 +384,17 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_polling",
 				"type": "button",
-				"style": {"height": "2.5em", "width": "25ch", "background": "red"},
-				"state_styles": [
-					{"background": "red", "content": "Turn Polling On"},
-					{"background": "lightgreen", "content": "Turn Polling Off"}
-				],
+				"style": {"height": "2.5em", "width": "25ch"},
+				"state": {
+					"classes": [
+						"btn-danger",
+						"btn-success"
+					],
+					"contents": [
+						"Turn Polling On",
+						"Turn Polling Off"
+					],
+				},
 				"value": "Polling",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_dont_send_gcode"},
 				"actions_type": "state",
@@ -386,27 +402,12 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					{"type": "setting", "setting": "duet_polling_enabled", "value": 1, "fire_on_startup": true},
 					{"type": "setting", "setting": "duet_polling_enabled", "value": 0,}
 				]
-			},
-			{
-				"id": "dueui_settings_tooltips",
-				"type": "button",
-				"style": {"height": "2.5em", "width": "25ch"},
-				"state_styles": [
-					{"background": "red", "content": "Turn Tooltips On"},
-					{"background": "lightgreen", "content": "Turn Tooltips Off"}
-				],
-				"value": "Show Tooltips ??",
-				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_polling"},
-				"actions_type": "state",
-				"actions": [
-					{"type": "setting", "setting": "show_tooltips", "value": 1, "fire_on_startup": true},
-					{"type": "setting", "setting": "show_tooltips", "value": 0,}
-				]
 			}
 		];
-		
+
 		this.populate();
-		
+		this.getThemes(false);
+
 	}
 }
 DueuiElement.addElementType("settings_panel", DueuiSettingsPanel);
