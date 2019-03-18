@@ -9,6 +9,7 @@ import android.preference.PreferenceManager;
 import android.view.View;
 import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
@@ -134,11 +135,13 @@ public class DueUI extends AppCompatActivity implements View.OnClickListener {
 	}
 
 	public void showWebView(String url) {
+		WebSettings settings = mWebView.getSettings();
 		mUrlView.setVisibility(View.GONE);
 		mWebView.setVisibility(View.VISIBLE);
 		mWebView.setWebViewClient(new DueUIWebView());
-		mWebView.getSettings().setJavaScriptEnabled(true);
-		mWebView.getSettings().setLoadsImagesAutomatically(true);
+		settings.setJavaScriptEnabled(true);
+		settings.setLoadsImagesAutomatically(true);
+		settings.setDomStorageEnabled(true);
 		mWebView.loadUrl(url);
 	}
 
