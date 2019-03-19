@@ -229,7 +229,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"id": "dueui_settings_poll_intervals",
 				"type": "label",
 				"position": {"my": "left top", "at": "left bottom+5", "of": "#dueui_config_url"},
-				"value": "Status poll intervals (ms):"
+				"value": "Status poll intervals (ms):  (minimum 250ms, 0=disabled)"
 			},
 			{
 				"id": "dueui_poll_interval_1",

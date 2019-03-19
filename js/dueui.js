@@ -399,9 +399,9 @@ class DueUI{
 		this.settings.duet_url = this.settings.duet_url || document.location.host;
 		this.settings.duet_password = this.settings.duet_password || "reprap";
 		this.settings.dueui_config_url = this.settings.dueui_config_url || `${this.settings.duet_url}/rr_download?name=/sys/dueui_config.json`;
-		this.settings.duet_poll_interval_1 = this.settings.duet_poll_interval_1 || 2000;
-		this.settings.duet_poll_interval_2 = this.settings.duet_poll_interval_2 || 5000;
-		this.settings.duet_poll_interval_3 = this.settings.duet_poll_interval_3 || 10000;
+		this.settings.duet_poll_interval_1 = this.settings.duet_poll_interval_1 || 1000;
+		this.settings.duet_poll_interval_2 = this.settings.duet_poll_interval_2 || 0;
+		this.settings.duet_poll_interval_3 = this.settings.duet_poll_interval_3 || 5000;
 		if (typeof(this.settings.duet_debug_polling_enabled) === 'undefined') {
 			this.settings.duet_debug_polling_enabled = 0;
 		}
@@ -418,7 +418,7 @@ class DueUI{
 		this.setSettings(this.settings);
 		
 		this.current_status = "";
-		this.poll_ids = [];
+		this.last_poll = [0, 0, 0, 0];
 		this.connected = false;
 		this.connect_retry = 0;
 		this.duet_connect_retries = {
@@ -488,66 +488,53 @@ class DueUI{
 		return $.getJSON(dueui.getSetting("duet_url") + url);
 	}
 
-	startPolling(poll_level) {
-		if (!this.connected) {
-			return;
-		}
-		if (typeof poll_level === 'undefined') {
-			for (var i = 1; i <= 3; i++) {
-				this.startPolling(i);
+	pollOnce(poll_level) {
+		$.getJSON(`${this.settings.duet_url}/rr_status?type=${poll_level}`).then((response) => {
+			if (this.settings.duet_debug_polling_enabled == 1) {
+				console.log({"poll_level": poll_level, "response": response});
 			}
-			return;
-		}
-		if (typeof this.poll_ids[poll_level] !== 'undefined') {
-			console.log(`Polling already enabled for level ${poll_level}`);
-			return;
-		}
-		var _this = this;
-		let interval = this.settings[`duet_poll_interval_${poll_level}`]; 
-
-		if ( interval > 0) {
-			this.poll_ids[poll_level] = setInterval(() => {
-				if (this.settings.duet_polling_enabled != 1) {
-					return;
-				}
-				if (this.settings.duet_debug_polling_enabled == 1) {
-					console.log(`Polling type ${poll_level}`);
-				}
-				$.getJSON(`${this.settings.duet_url}/rr_status?type=${poll_level}`).then((response) => {
-					if (this.settings.duet_debug_polling_enabled == 1) {
-						console.log(response);
-					}
-					if (response.status !== this.current_status) {
-						this.logMessage("I", `Status change: ${this.status_map[response.status].label}`);
-						$(`.status-change-listener`).trigger("duet_status_change", response.status);
-						this.current_status = response.status;
-					}
-					$(`.status-poll-listener-${poll_level}`).trigger("duet_poll_response", response);
-				}).fail((xhr, reason, error) => {
-					this.logMessage("W", `Poll type ${poll_level} failed`);
-				});
-			}, interval);
-			console.log(`Polling enabled for level ${poll_level} at interval ${interval}`);
-		} else {
-			console.log(`Polling not enabled for level ${poll_level}`);
-		}
+			if (response.status !== this.current_status) {
+				this.logMessage("I", `Status change: ${this.status_map[response.status].label}`);
+				$(`.status-change-listener`).trigger("duet_status_change", response.status);
+				this.current_status = response.status;
+			}
+			$(`.status-poll-listener-${poll_level}`).trigger("duet_poll_response", response);
+		}).fail((xhr, reason, error) => {
+			this.logMessage("W", `Poll type ${poll_level} failed`);
+		});
 	}
 
-	stopPolling(poll_type) {
-		if (typeof poll_type === 'undefined') {
-			var l;
-			while ((l = this.poll_ids.pop())) {
-				clearInterval(l);
-				console.log(`Polling stopped for level ${l}`);
+	schedulePoll() {
+		let interval = Math.min(
+			this.settings.duet_poll_interval_1,
+			this.settings.duet_poll_interval_2,
+			this.settings.duet_poll_interval_3
+		);
+
+		setInterval(() => {
+			if (!this.connected || this.settings.duet_polling_enabled != 1) {
+				return;
 			}
-			return;
-		}
-		if (typeof this.poll_ids[poll_type] === 'undefined') {
-			console.log(`Polling already stopped for level ${poll_type}`);
-			return;
-		}
-		clearInterval(this.poll_ids[poll_type]);
-		delete this.poll_ids[poll_type];
+
+			let now = Date.now();
+			let poll_level = -1;
+			if (this.settings.duet_poll_interval_3 > 250
+					&& now - this.last_poll[3] >= this.settings.duet_poll_interval_3) {
+				poll_level = 3;
+				this.last_poll[3] = now;
+			} else if (this.settings.duet_poll_interval_2 > 250
+					&& now - this.last_poll[2] >= this.settings.duet_poll_interval_2) {
+				poll_level = 2;
+				this.last_poll[2] = now;
+			} else if (this.settings.duet_poll_interval_1 > 250
+					&& now - this.last_poll[1] >= this.settings.duet_poll_interval_1) {
+				poll_level = 1;
+				this.last_poll[1] = now;
+			}
+			if (this.connected && poll_level > 0 && this.settings.duet_polling_enabled == 1) {
+				this.pollOnce(poll_level);
+			}
+		}, interval);
 	}
 
 	connect() {
@@ -598,7 +585,6 @@ class DueUI{
 			cancelTimeout(this.reconnect_timer);
 			delete this.reconnect_timer;
 		}
-		this.stopPolling();
 		this.connected = false;
 		$(".connection-listener").trigger("duet_connection_status", {"status": "disconnected"});
 		$.getJSON(`${this.settings.duet_url}/rr_disconnect`).then((response) => {
@@ -713,7 +699,7 @@ class DueUI{
 			this.configured = true;
 			console.log(config_data);
 			this.populate(config_data);
-			this.startPolling();
+			this.schedulePoll();
 		}).fail((data, reason, xhr) => {
 			if (reason === "parsererror") {
 				try {
