@@ -932,6 +932,7 @@ DueUIConfig({
 						 */
 						"value": "${((status.printDuration / ((status.timesLeft.layer + status.printDuration) || 1)) * 100)}",
 						"max": 100,
+						"classes": "bg-success",
 						"style": {
 							"width": "55ch"
 						},

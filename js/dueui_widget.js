@@ -970,20 +970,24 @@ class DueuiProgressWidget extends DueuiWidget {
 		
 		this.jq.append(`<div class="progress-bar" role="progressbar"></div>`);
 		this.jq_pb = $(`#${this.id} .progress-bar`);
-		if (this.classes) {
-			this.jq_pb.addClass(this.classes);
+		if (config.classes) {
+			this.jq_pb.addClass(config.classes);
 		}
 		this.jq_pb.attr({
 			 "aria-valuenow": this.initial_value || 0,
 			 "aria-valuemin": this.min || 0,
 			 "aria-valuemax": this.max || 100
 		});
+		if (this.initial_value) {
+			this.jq_pb.width( this.jq.width() * (this.initial_value / 100.0))
+		}
 		
 		this.value_function = (val) => {
 			if (typeof(val) === 'undefined') {
 				return this.jq_pb.attr("aria-valuenow");
 			} else {
-				this.jq_pb.attr({"aria-valuenow": parseInt(val)});
+				this.jq_pb.width( this.jq.width() * (parseInt(val) / 100.0));
+				this.jq_pb.attr("aria-valuenow", parseInt(val));
 			}
 		};
 	}
