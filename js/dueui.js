@@ -1,4 +1,8 @@
-
+/*
+ * These jQuery extensions provide the ability to set an element's
+ * position using the same syntax as jQuery-UI (without the overhead
+ * of jQuery-UI)
+ */
 jQuery.fn.extend({
 	calcOffset: function calcOffset(pos) {
 		let n = pos.match(/(left|center|right)(([+-])(\d+))?\s+(top|center|bottom)(([+-])(\d+))?/i);
@@ -421,6 +425,8 @@ class DueUI{
 		this.last_poll = [0, 0, 0, 0];
 		this.connected = false;
 		this.connect_retry = 0;
+		this.sequence = -1;
+		this.current_poll_response = {};
 		this.duet_connect_retries = {
 				"number": 3,
 				"interval": 2000
@@ -490,15 +496,21 @@ class DueUI{
 
 	pollOnce(poll_level) {
 		$.getJSON(`${this.settings.duet_url}/rr_status?type=${poll_level}`).then((response) => {
+			this.current_poll_response = response;
 			if (this.settings.duet_debug_polling_enabled == 1) {
 				console.log({"poll_level": poll_level, "response": response});
 			}
 			if (response.status !== this.current_status) {
-				this.logMessage("I", `Status change: ${this.status_map[response.status].label}`);
 				$(`.status-change-listener`).trigger("duet_status_change", response.status);
 				this.current_status = response.status;
 			}
 			$(`.status-poll-listener-${poll_level}`).trigger("duet_poll_response", response);
+			if (this.sequence < 0) {
+				this.sequence = response.seq;
+			}
+			if (response.seq > this.sequence) {
+				this.getGcodeReply();
+			}
 		}).fail((xhr, reason, error) => {
 			this.logMessage("W", `Poll type ${poll_level} failed`);
 		});
@@ -594,20 +606,21 @@ class DueUI{
 
 	getGcodeReply(gc) {
 		var uri = `${this.settings.duet_url}/rr_reply`;
-		console.log(`Getting gcode reply`);
+		let tempgc = gc || { no_echo: true, gcode: ""};
 		$.get(uri, (response) => {
 			response = response.trim();
-			console.log(`Sent ${uri}   Response: ${response}`);
 			let d = new Date();
 			let r = response.trim();
-			if (r.match(/Error/)) {
-				this.logMessage("E", r);
-			} else if (response.length > 0){
-				$(".gcode-reply-listener").trigger("gcode_reply", {
-					"timestamp": d,
-					"gcode": (gc.no_echo ? "" : gc.gcode),
-					"response": response
-				});
+			$(".gcode-reply-listener").trigger("gcode_reply", {
+				"timestamp": d,
+				"gcode": (tempgc.no_echo ? "" : tempgc.gcode),
+				"response": response
+			});
+			this.sequence++;
+			if (this.sequence < this.current_poll_response.seq) {
+				setTimeout(() => {
+					this.getGcodeReply();
+				}, 0);
 			}
 		}).fail((xhr, reason, error) => {
 			this.logMessage("E", reason);
@@ -632,16 +645,12 @@ class DueUI{
 
 		var g = encodeURI(gc.gcode.replace(/;/g,"\n"));
 		var uri = `${this.settings.duet_url}/rr_gcode?gcode=${g.replace(/[+]/, "%2B")}`;
-		console.log(`Sending gcode: ${uri}`);
 		if (this.settings.dueui_settings_dont_send_gcode == 1) {
 			this.logMessage("(D)", `GCode: ${gc.gcode}`);
 			return;
 		}
 		$.getJSON(uri).then((response) => {
 			console.log(uri, response);
-			if (gc.get_reply) {
-				this.getGcodeReply(gc);
-			}
 			if (more) {
 				this.sendGcode(gcode.slice(1));
 			}
