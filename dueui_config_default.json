@@ -1791,10 +1791,173 @@ DueUIConfig({
 						]
 					}
 				]
+			},
+			{
+				"id": "dueui_panel_heightmap",
+				"type": "tab_panel",
+				"enabled": true,
+				"menubar_label": "HeightMap",
+				"element_configs": [
+					{
+						"id": "position_heightmap",
+						"type": "position",
+						"enabled": true,
+						"style": {
+							"width": "15ch"
+						},
+						"button_defaults": {
+							"style": {"height": "2.5em"}
+						},
+						"position": {
+							"my": "left top",
+							"at": "left top+10",
+							"of": "#dueui_panel_heightmap"
+						},
+						"direction": "column",
+						"axes": [
+							{"label": "X:  ", "gcode_axis": "X", "index": 0},
+							{"label": "Y:  ", "gcode_axis": "Y", "index": 1},
+							{"label": "Z:  ", "gcode_axis": "Z", "index": 2}
+						]
+					},
+					{
+						"id": "heightmap_buttons1",
+						"type": "grid",
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#position_heightmap"
+						},
+						"cols": 1,
+						"rows": 4,
+						"style": {
+						},
+						"element_defaults": {
+							"type": "button",
+							"enabled": true,
+							"style": {
+								"margin-top": "0px", "margin-bottom": "10px",
+								"width": "15ch",
+								"height": "2.5em"
+							}
+						},
+						"element_configs": [
+							{
+								"id": "probe_heightmap",
+								"type": "button",
+								"enabled": true,
+								"read_only": true,
+								"status_level": 1,
+								"value": "Probe: ${status.sensors.probeValue}",
+								"initial_value": "Probe",
+								"tolerances": [
+									{"limit": 400, "classes": "btn-success"},
+									{"limit": 500, "classes": "btn-warning"},
+									{"limit": 999, "classes": "btn-danger"}
+								],
+								"tolerance_value": "${status.sensors.probeValue}",
+							},
+							{
+								"value": "Home All",
+								"actions": [
+									{"type": "gcode", "gcode": "G28"}
+									]
+							},
+							{
+								"value": "Home XY",
+								"actions": [
+									{"type": "macro", "file": "09_Home XY"}
+								]
+							},
+							{
+								"value": "Reload Map",
+								"actions": [
+									{"type": "event", "event": "heightmap_refresh", "target": "#heightmap"}
+								]
+							}
+						]
+					},
+					{
+						/*
+						 * The heightmap itself is pretty simple,  It automatically
+						 * sets the correct number of cells based on the contents
+						 * of heightmap.csv.
+						 */
+						"id": "heightmap",
+						"type": "heightmap",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#position_heightmap"
+						},
+						/*
+						 * This style applies to each individual cell in the matrix.
+						 * You will probably have to tweak these to get a good
+						 * looking display of your own heightmap. 
+						 */
+						"point_style": {
+							"height": "1em", "width": "2.5ch", "font-size": "13px"
+						},
+						/*
+						 * When the widget gets this event, it will automatically
+						 * fetch and re-display the current heightmap.csv file.
+						 * The widget will also automatically refresh when a message
+						 * is received indicating that a mesh probe completed successfully.
+						 */
+						"refresh_event": "heightmap_refresh"
+					},
+					{
+						"id": "heightmap_buttons2",
+						"type": "grid",
+						"position": {
+							"my": "left top",
+							"at": "right+500 top",
+							"of": "#heightmap"
+						},
+						"cols": 1,
+						"rows": 4,
+						"style": {
+						},
+						"element_defaults": {
+							"style": {
+								"margin": "5px",
+								"width": "20ch",
+								"height": "3.5em"
+							}
+						},
+						"element_configs": [
+							{
+								"value": "Disable Bed Compensation",
+								"actions": [
+									{"type": "gcode", "gcode": "M561"}
+								]
+							},
+							{
+								"value": "Level Bed",
+								"actions": [
+									{"type": "gcode", "gcode": "G32 S3"}
+								]
+							},
+							{
+								"value": "Clear Mesh Compensation",
+								"actions": [
+									{"type": "gcode", "gcode": "G29 S2"}
+								]
+							},
+							{
+								"value": "Start Mesh Probe",
+								"actions": [
+									{"type": "gcode", "gcode": "G29 S0"}
+								]
+							}
+						]
+					}
+				]
+			},
 			/*
 			 * Getting close to the end...
 			 */
-			},
 			{
 				/*
 				 * This panel just has the console and a twist.

@@ -251,7 +251,7 @@ class DueuiElement {
 				dueui.sendGcode(a2);
 				break;
 			case "macro":
-				dueui.sendGcode({"gcode": `M98 P${a2.file}`, "get_reply": true});
+				dueui.sendGcode({"gcode": `M98 P/macros/${a2.file}`, "get_reply": true});
 				break;
 			case "print":
 				dueui.sendGcode({"gcode": `M23 ${a2.file} ; M24`, "get_reply": true});
@@ -338,6 +338,15 @@ class DueUI{
 			return eval(value);
 		}
 		return value;
+	}
+
+	static rgb2hex(c) {
+		return `rgb(${c[0]},${c[1]},${c[2]})`; 
+	}
+	
+	static pointInCircle(x, y, cx, cy, radius) {
+		let dsq = (x - cx) * (x - cx) + (y - cy) * (y - cy);
+		return dsq < (radius * radius);
 	}
 
 	static evalValue(str, value) {
@@ -443,6 +452,7 @@ class DueUI{
 		];
 		this.configured = false;
 		this.config_retry = 0;
+		this.active_config_url = "";
 		$("head > title").html(`DueUI - ${this.settings.duet_url.replace("http://", "")}`);
 	}
 
@@ -611,11 +621,13 @@ class DueUI{
 			response = response.trim();
 			let d = new Date();
 			let r = response.trim();
-			$(".gcode-reply-listener").trigger("gcode_reply", {
-				"timestamp": d,
-				"gcode": (tempgc.no_echo ? "" : tempgc.gcode),
-				"response": response
-			});
+			if (r.length) {
+				$(".gcode-reply-listener").trigger("gcode_reply", {
+					"timestamp": d,
+					"gcode": (tempgc.no_echo ? "" : tempgc.gcode),
+					"response": response
+				});
+			}
 			this.sequence++;
 			if (this.sequence < this.current_poll_response.seq) {
 				setTimeout(() => {
@@ -705,6 +717,7 @@ class DueUI{
 			jsonpCallback: "DueUIConfig"
 		}).done((config_data) => {
 			this.logMessage("I", `Retrieved config from ${config}`);
+			this.active_config_url = config;
 			this.configured = true;
 			console.log(config_data);
 			this.populate(config_data);

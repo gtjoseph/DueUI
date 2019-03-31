@@ -994,5 +994,291 @@ class DueuiProgressWidget extends DueuiWidget {
 }
 DueuiElement.addElementType('progress', DueuiProgressWidget);
 
+class DueuiHeightmapWidget extends DueuiWidget {
+	constructor(config, parent) {
+		super("table", $.extend( true, {
+			"high_point_char": "&and;",
+			"low_point_char": "&or;",
+			"zero_point_char": "&radic;",
+			"point_style": {
+				"width": "15px",
+				"height": "10px",
+				"font-size": "10px"
+			}
+		}, config, {"classes": ""}),parent);
+		
+		this.refresh();
+		
+		if (this.refresh_event) {
+			this.jq.on(this.refresh_event, (ea, data, event) => {
+				this.refresh();
+			});
+		}
+		
+		this.jq.addClass("log-message-listener");
+		this.jq.on("log_message", (event, log) => {
+			if (log.message.indexOf("points probed, mean error") >= 0) {
+				this.refresh();
+			}
+		});
+	}
+
+	refresh() {
+		this.jq.empty();
+		this.jq.append(`
+				<tr>
+				<td><table id="${this.id}_map" border=0></table></td>
+				<td><table id="${this.id}_legend" style='margin-left: 20px;' border=0></table></td>
+				</tr>
+				<tr><td id="${this.id}_stats" style='padding-left: 0ch; height: 4em; vertical-align: bottom;'/></tr>
+				`.trim());
+		
+		this.jq_map = $(`#${this.id}_map`); 
+		this.jq_legend = $(`#${this.id}_legend`);
+		let last_slash = dueui.active_config_url.lastIndexOf('/');
+		if (last_slash < 0) {
+			dueui.logMessage("E", `Unable to construct a heightmap url from ${dueui.active_config_url} and heightmap.csv`);
+			return;
+		}
+		let base_url = dueui.active_config_url.substring(0, last_slash);
+		this.config_url = base_url + '/heightmap.csv';  
+		$.ajax({
+			url: this.config_url,
+			cache: false,
+			timeout: 2000,
+		}).then( (rows) => {
+			rows = rows.split('\n');
+			this.local_hm(rows);	
+		});
+	}
+	
+	generateColorGradient(len){
+		let colors = { "high": [], "low": []};
+		let break_point = Math.floor(len / 2);
+		let inc = Math.floor(256 / (len / 2));
+			
+		for (let i = 0; i < len; i++) {
+			let ch = [];
+			let cl = [];
+			cl[0] = 0x00;
+			if (i < break_point) {
+				ch[0] = i * inc;
+				ch[1] = 0xff;
+				cl[1] = ch[1];
+				cl[2] = i * inc;
+			} else {
+				ch[0] = 0xff;
+				ch[1] = 255 - ((i - break_point) * inc);
+				cl[1] = ch[1];
+				cl[2] = 0xff;
+			}
+			ch[2] = 0x00;
+			colors.high.push(DueUI.rgb2hex(ch));
+			colors.low.push(DueUI.rgb2hex(cl));
+		}
+		return colors;
+	}
+
+	local_hm(rows) {
+
+		let precision = 8;
+		
+		let colors = this.generateColorGradient(precision);
+
+		let control = rows[2].split(',');
+		let xMin = parseFloat(control[0]);
+		let xMax = parseFloat(control[1]);
+		let yMin = parseFloat(control[2]);
+		let yMax = parseFloat(control[3]);
+		let radius = parseFloat(control[4]);
+		let xSpacing = parseFloat(control[5]);
+		let ySpacing = parseFloat(control[6]);
+		let xPoints = parseInt(control[7]);
+		let yPoints = parseInt(control[8]);
+		let zMin = 0;
+		let zMax = 0;
+		let int_rows = [];
+		
+		let points = 0;
+		let mean_all = 0;
+		let rms_all = 0;
+		let std_dev_all = 0;
+		let z_all = [];
+		
+		let points_high = 0;
+		let mean_high = 0
+		let rms_high = 0;
+		let std_dev_high = 0;
+		let z_high = [];
+		
+		let points_low = 0;
+		let mean_low = 0
+		let rms_low = 0;
+		let std_dev_low = 0;
+		let z_low = [];
+		
+		for(let i=0; i < yPoints; i++)
+		{
+			let dr = rows[3 + i].split(',');
+			for (let j = 0; j < xPoints; j++) {
+				if (radius > 0 && dr[j] == 0) {
+					if (!DueUI.pointInCircle(j, i, xPoints / 2, xPoints / 2, (xPoints - 1) / 2)) {
+						dr[j] = NaN;
+					}
+				} else {
+					dr[j] = parseFloat(dr[j]);
+					points++;
+					mean_all += dr[j];
+					rms_all += (dr[j] * dr[j]);
+					z_all.push(dr[j]);
+					if (dr[j] > 0) {
+						points_high++;
+						z_high.push(dr[j]);
+						mean_high += dr[j];
+						rms_high += (dr[j] * dr[j]);
+					} else if (dr[j] < 0) {
+						points_low++;
+						z_low.push(dr[j]);
+						mean_low += dr[j];
+						rms_low += (dr[j] * dr[j]);
+					}
+					dr[j] *= 1000.0;
+					zMin = Math.min(zMin, dr[j]);
+					zMax = Math.max(zMax, dr[j]);
+				}
+			}
+			int_rows.push(dr);
+		}
+		
+		mean_all /= points;
+		rms_all = Math.sqrt(rms_all / points);
+		std_dev_all = z_all.reduce((acc, cv) => {
+			return acc + ((cv - mean_high) * (cv - mean_all));
+		});
+		std_dev_all = Math.sqrt(std_dev_all / points);  
+		
+		mean_high /= points_high;
+		rms_high = Math.sqrt(rms_high / points_high);
+		std_dev_high = z_high.reduce((acc, cv) => {
+			return acc + ((cv - mean_high) * (cv - mean_high));
+		});
+		std_dev_high = Math.sqrt(std_dev_high / points_high);  
+
+		mean_low /= -points_low;
+		rms_low = Math.sqrt(rms_low / points_low);
+		std_dev_low = z_high.reduce((acc, cv) => {
+			return acc + ((cv - mean_low) * (cv - mean_low));
+		});
+		std_dev_low = Math.sqrt(std_dev_low / points_low);  
+
+		let jq_tb = $('<tbody/>');
+		
+		for(let y = yPoints-1; y >= 0; y--) {
+			let jq_row = $("<tr/>");
+			let r = int_rows[y];
+			let y_scale = (y % 2) == 0 ? ((y * ySpacing) + yMin).toFixed(0) : "";
+			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${y_scale}</td>`);
+			
+			for (let x = 0; x < xPoints; x++) {
+				let z = r[x];
+				let fgcolor = "#000000";
+				let bgcolor = "#e0e0e0";
+				let v = '&nbsp;';
+				
+				if (isNaN(z)) {
+					bgcolor = "#e0e0e0";
+				} else if (z < 0) {
+					let cix = Math.abs( Math.floor((z / (zMin - 1)) * (precision) ));
+					bgcolor = colors.low[ cix ];
+					fgcolor = bgcolor;
+					v = this.low_point_char;
+					if (z <= zMin) {
+						fgcolor = "#ffffff";
+					}
+				} else if (z == 0) {
+					bgcolor = "#00ff00";
+					fgcolor = "#000000";
+					v = this.zero_point_char;
+				} else {
+					let cix = Math.abs( Math.floor((z / (zMax + 1)) * (precision) ));
+					bgcolor = colors.high[ cix ];				
+					fgcolor = bgcolor;
+					v = this.high_point_char;
+					if (z >= zMax) {
+						fgcolor = "#ffffff";
+					}
+				}
+				let tooltip = `X: ${((x * xSpacing) + xMin).toFixed(2)}<br>Y: ${((y * ySpacing) + yMin).toFixed(2)}<br>Z: ${(z / 1000.0).toFixed(3)}`;
+				let jq_col = $(`<td data-toggle='tooltip' data-html='true' data-title='${tooltip}'
+					style='text-align: center; vertical-align: middle; margin: 0px; padding: 0px; color: ${fgcolor}; background: ${bgcolor};'>${v}</td>`);
+				jq_col.css(this.point_style);
+				jq_row.append(jq_col);
+			}
+			jq_tb.append(jq_row);
+		}
+		let jq_row = $('<tr/>');
+		jq_row.append('<td/>');
+		for (let x = 0; x < xPoints; x++) {
+			let v = ((xSpacing * x) + xMin).toFixed(0);
+			jq_row.append(`<td><div style='width: 1ch; font-family: monospace; transform: rotate(90deg); transform-style: preserve-3d;'>${(x % 2 == 0) ? v : ""}</div></td>`);		
+		}
+		jq_tb.append(jq_row);
+
+		$(`#${this.id}_map`).append(jq_tb);
+		this.jq_map.find("td").tooltip();
+		
+		$(`#${this.id}_stats`).append(`
+<span style='font-family: monospace;'>
+&nbsp;All Points:  ${points.toString().padStart(' ', 5)} Mean: ${mean_all.toFixed(3)} RMS: ${rms_all.toFixed(3)} STDDEV: ${std_dev_all.toFixed(3)}<br>
+High Points: ${points_high.toString().padStart(' ', 5)} Mean: ${mean_high.toFixed(3)} RMS: ${rms_high.toFixed(3)} STDDEV: ${std_dev_high.toFixed(3)}<br>
+&nbsp;Low Points:  ${points_low.toString().padStart(' ', 5)} Mean: ${mean_low.toFixed(3)} RMS: ${rms_low.toFixed(3)} STDDEV: ${std_dev_low.toFixed(3)}</span>
+		`.trim());
+		
+		
+		let inc = Math.ceil(zMax / precision);
+		for (let i = precision - 1; i > 0; i--) {
+			let vm = i * inc;
+			let v = Math.ceil((vm / zMax) * precision);
+			let c =  colors.high[v - 1];
+			if (c === undefined) {
+				continue;
+			}
+	 		vm += inc;
+			let jq_row = $("<tr/>");
+			this.jq_legend.append(jq_row);
+			let q = "&nbsp;";
+			if (i == precision - 1) {
+				q = `&nbsp;${this.high_point_char}&nbsp;`;
+			}
+			jq_row.append(`<td style='width: 2ch; padding: 2px; color: #ffffff; background: ${c}'>${q}</td>`);
+			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${Math.min((zMax / 1000), (vm / 1000)).toFixed(3)}</td>`);
+		}
+		
+		this.jq_legend.append(`<tr><td style='background: #00ff00;'>&nbsp;${this.zero_point_char}&nbsp;</td><td style='text-align: right; font-family: monospace;'>&nbsp;0.000</td></tr>`);
+		
+		inc = Math.floor(zMin / precision);
+		for (let i = 1; i < precision; i++) {
+			let vm = i * inc;
+			let v = Math.round((vm / (zMin)) * precision);
+			let c =  colors.low[v ];
+			if (c === undefined) {
+				continue;
+			}
+			vm += inc;
+			let jq_row = $("<tr/>");
+			this.jq_legend.append(jq_row);
+			let q = "&nbsp;";
+			if (i == precision - 1) {
+				q = `&nbsp;${this.high_point_char}&nbsp;`;
+			}
+			jq_row.append(`<td style='width: 2ch; padding: 2px; color: #ffffff; background: ${c}'>${q}</td>`);
+			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${Math.max((zMin / 1000), (vm / 1000)).toFixed(3)}</td>`);
+		}
+		
+	}
+	
+}
+DueuiElement.addElementType('heightmap', DueuiHeightmapWidget);
+
 
 
