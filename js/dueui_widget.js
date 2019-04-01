@@ -1229,9 +1229,9 @@ class DueuiHeightmapWidget extends DueuiWidget {
 		
 		$(`#${this.id}_stats`).append(`
 <span style='font-family: monospace;'>
-&nbsp;All Points:  ${points.toString().padStart(' ', 5)} Mean: ${mean_all.toFixed(3)} RMS: ${rms_all.toFixed(3)} STDDEV: ${std_dev_all.toFixed(3)}<br>
-High Points: ${points_high.toString().padStart(' ', 5)} Mean: ${mean_high.toFixed(3)} RMS: ${rms_high.toFixed(3)} STDDEV: ${std_dev_high.toFixed(3)}<br>
-&nbsp;Low Points:  ${points_low.toString().padStart(' ', 5)} Mean: ${mean_low.toFixed(3)} RMS: ${rms_low.toFixed(3)} STDDEV: ${std_dev_low.toFixed(3)}</span>
+&nbsp;All Points:  ${points.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_all.toFixed(3)} RMS: ${rms_all.toFixed(3)} STDDEV: ${std_dev_all.toFixed(3)}<br>
+High Points: ${points_high.toString().padStart(4, ' ', 4).replace(' ', '&nbsp;')} Mean: ${mean_high.toFixed(3)} RMS: ${rms_high.toFixed(3)} STDDEV: ${std_dev_high.toFixed(3)}<br>
+&nbsp;Low Points:  ${points_low.toString().padStart(5, ' ').replace(' ', '&nbsp;')} Mean: ${mean_low.toFixed(3)} RMS: ${rms_low.toFixed(3)} STDDEV: ${std_dev_low.toFixed(3)}</span>
 		`.trim());
 		
 		
@@ -1269,7 +1269,7 @@ High Points: ${points_high.toString().padStart(' ', 5)} Mean: ${mean_high.toFixe
 			this.jq_legend.append(jq_row);
 			let q = "&nbsp;";
 			if (i == precision - 1) {
-				q = `&nbsp;${this.high_point_char}&nbsp;`;
+				q = `&nbsp;${this.low_point_char}&nbsp;`;
 			}
 			jq_row.append(`<td style='width: 2ch; padding: 2px; color: #ffffff; background: ${c}'>${q}</td>`);
 			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${Math.max((zMin / 1000), (vm / 1000)).toFixed(3)}</td>`);
