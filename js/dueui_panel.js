@@ -369,8 +369,8 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 						"btn-success"
 					],
 					"contents": [
-						"Turn Send GCode On",
-						"Turn Send GCode Off"
+						"Turn Simulate GCode On",
+						"Turn Simulate GCode Off"
 					],
 				},
 				"value": "Send GCode",
