@@ -242,7 +242,7 @@ class DueuiInputFieldWidget extends DueuiWidget {
 				let val = this.jq.val();
 				let ac = dueui.getSetting(`ac_${this.autocomplete_key}`) || [];
 				if (!Array.isArray(ac)) {
-					ac = [ ac ];
+					ac = ac.split(',');
 				}
 				if (!ac.includes(val)) {
 					ac.push(val);
@@ -251,15 +251,16 @@ class DueuiInputFieldWidget extends DueuiWidget {
 			});
 
 			this.jq.autoComplete({
-				"minLength": 1,
+				"minLength": 2,
 				"resolver": "custom",
 				"events": {
 					"search": (query, callback) => {
 						let ac = dueui.getSetting(`ac_${this.autocomplete_key}`) || [];
 						if (!Array.isArray(ac)) {
-							ac = [ ac ];
+							ac = ac.split(',');
 						}
-						callback(ac);
+						let filtered = ac.filter(c => c.toLowerCase().startsWith(query.toLowerCase()));
+						callback(filtered);
 					}
 				}
 			});
