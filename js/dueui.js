@@ -722,6 +722,8 @@ class DueUI{
 			console.log(config_data);
 			this.populate(config_data);
 			this.schedulePoll();
+			this.sendGcode("M115");
+			this.getGcodeReply({ no_echo: true, gcode: "M115"});
 		}).fail((data, reason, xhr) => {
 			if (reason === "parsererror") {
 				try {
