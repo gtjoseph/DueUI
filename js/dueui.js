@@ -331,16 +331,17 @@ class DueuiElement {
 				}
 				$.getJSON(uri).then((response) => {
 					if (a2.message) {
-						dueui.logMessage("I", message);
+						dueui.logMessage("I", a2.message);
 					}
 				}).fail((xhr, reason, error) => {
 					dueui.logMessage("E", reason);
 				});
 				break;
 			case "http":
+				var m = a2.message;
 				$.getJSON(encodeURI(a2.uri)).then((response) => {
 					if (a2.message) {
-						dueui.logMessage("I", message);
+						dueui.logMessage("I", a2.message);
 					} else {
 						dueui.logMessage("I", response);
 					}
@@ -692,8 +693,11 @@ class DueUI{
 		var g = encodeURI(gc.gcode.replace(/;/g,"\n"));
 		var uri = `${this.settings.duet_url}/rr_gcode?gcode=${g.replace(/[+]/, "%2B")}`;
 		if (this.settings.dueui_settings_dont_send_gcode == 1) {
-			this.logMessage("(D)", `GCode: ${gc.gcode}`);
+			this.logMessage("D", `GCode: ${gc.gcode}`);
 			return;
+		}
+		if (gc.message) {
+			this.logMessage("I", gc.message);
 		}
 		$.getJSON(uri).then((response) => {
 			console.log(uri, response);
