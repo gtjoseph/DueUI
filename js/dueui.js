@@ -313,6 +313,40 @@ class DueuiElement {
 					console.log(`Invalid UI action: ${a.action}`);
 				}
 				break;
+			case "cgi":
+				var uri = `${dueui.settings.duet_url}/${a2.cgi}`;
+				if (a2.params) {
+					uri += '?';
+					if (typeof(a2.params) === 'string') {
+						uri += encodeURI(a2.params);
+					} else {
+						let names = a2.params.getOwnPropertyNames();
+						names.forEach((name, ix) => {
+							if (ix > 0) {
+								uri += '&';
+							}
+							uri += `${encodeURIComponent(name)}=${encodeURIComponent(a2.params[name])}`;
+						});
+					}
+				}
+				$.getJSON(uri).then((response) => {
+					if (a2.message) {
+						dueui.logMessage("I", message);
+					}
+				}).fail((xhr, reason, error) => {
+					dueui.logMessage("E", reason);
+				});
+				break;
+			case "http":
+				$.getJSON(encodeURI(a2.uri)).then((response) => {
+					if (a2.message) {
+						dueui.logMessage("I", message);
+					} else {
+						dueui.logMessage("I", response);
+					}
+				}).fail((xhr, reason, error) => {
+					dueui.logMessage("E", reason);
+				});
 			default:
 				console.log(`Invalid action: ${a.type}`);
 			}
