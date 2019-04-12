@@ -1016,9 +1016,9 @@ class DueuiHeightmapWidget extends DueuiWidget {
 			});
 		}
 		
-		this.jq.addClass("log-message-listener");
-		this.jq.on("log_message", (event, log) => {
-			if (log.message.indexOf("points probed, mean error") >= 0) {
+		this.jq.addClass("gcode-reply-listener");
+		this.jq.on("gcode_reply", (event, reply) => {
+			if (reply.response.indexOf("Height map saved to file") >= 0) {
 				this.refresh();
 			}
 		});
