@@ -251,7 +251,13 @@ class DueuiElement {
 				dueui.sendGcode(a2);
 				break;
 			case "macro":
-				dueui.sendGcode({"gcode": `M98 P/macros/${a2.file}`, "get_reply": true});
+				if (a2.file) {
+					dueui.sendGcode({"gcode": `M98 P${a2.file}`, "get_reply": true});
+				} else if (a2.macro) {
+					dueui.sendGcode({"gcode": `M98 P/macros/${a2.macro}`, "get_reply": true});
+				} else {
+					dueui.logMessage("E", "No 'file' or 'macro' parameter present");
+				}
 				break;
 			case "print":
 				dueui.sendGcode({"gcode": `M23 ${a2.file} ; M24`, "get_reply": true});
