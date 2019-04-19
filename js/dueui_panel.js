@@ -33,22 +33,24 @@ class DueuiPanel extends DueuiElement {
 		}
 	}
 	makeTabbed(addTo, config) {
-		let c = config;
+		let c;
 		this.jq.hide();
-		if (!c) {
-			c = {
+		let menu = $(addTo).data();
+		if (!config) {
+			c = $.extend({
 				"id": `${this.id}_menubar_button}`,
 				"value": this.menubar_label,
 				"icon": this.menubar_icon,
 				"style": {"width": "12ch"}
-			}
+			}, menu.button_defaults);
+		} else {
+			c = $.extend({}, config, menu.button_defaults);
 		}
 		if (!c.actions) {
 			c.actions = [
 				{"type": "ui", "action": "tab_change", "panel": this.jq}
 			];
 		}
-		let menu = $(addTo).data();
 		this.menubar_button_widget = new DueuiButtonWidget(c, menu.jq);
 	}
 }
@@ -99,30 +101,33 @@ class DueuiTabbedPanel extends DueuiPanel {
 		this.menubar_widget.append($(`<span class='ml-auto'></span>`));
 
 		this.refresh_button = new DueuiButtonWidget(
+		$.extend(
 		{
 			"id": `${this.id}_refresh_button`,
 			"icon": "aspect_ratio",
 			"actions": [
 				{"type": "ui", "action": "fullscreen_toggle"}
 			]
-		}, this.menubar_widget);
+		}, this.menubar_widget.button_defaults), this.menubar_widget);
 
 		this.fullscreen_button = new DueuiButtonWidget(
+		$.extend(
 		{
 			"id": `${this.id}_fullscreen_button`,
 			"icon": "autorenew",
 			"actions": [
 				{"type": "ui", "action": "refresh"}
 			]
-		}, this.menubar_widget);
+		}, this.menubar_widget.button_defaults), this.menubar_widget);
 
 		this.settings_panel = new DueuiSettingsPanel(
+		$.extend(
 		{
 			"id": "settings_panel",
 			"type": "settings_panel",
 			"classes": "dueui-panel-tab",
 			"enabled": true
-		}, this.panel_area_widget);
+		}, this.menubar_widget.button_defaults), this.panel_area_widget);
 		this.settings_panel.makeTabbed(`#${this.menubar_widget.id}`, this.settings_panel.menu_button);
 
 		$(".dueui-panel-tab:eq(0)").show();
