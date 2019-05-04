@@ -513,7 +513,7 @@ class DueuiFileGridWidget extends DueuiGridWidget {
 		this.jq.empty();
 		this.element_configs = [];
 		this.jq.append("<span>Loading...</span>");
-		dueui.getJSON(`/rr_filelist?dir=0:${this.directory}`).then((data) => {
+		dueui.getFileList(this.directory).then((data) => {
 			for (let fe of data.files) {
 				if (fe.type === "f") {
 					let b = {

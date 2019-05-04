@@ -542,6 +542,27 @@ class DueUI{
 		return $.getJSON(dueui.getSetting("duet_url") + url);
 	}
 
+	getFileList(directory, last_response) {
+		let first = -1;
+		if (last_response && last_response.next > 0) {
+			first = last_response.next;
+		}
+
+		return this.getJSON(`/rr_filelist?dir=${directory}` + (first > -1 ? `&first=${first}` : ""))
+		.then((data) => {
+			if (last_response) {
+				last_response.files.push(...data.files);
+			} else {
+				last_response = data;
+			}
+			if (data.next > 0) {
+				return this.getFileList(directory, last_response);
+			}
+			last_response.next = 0;
+			return last_response;
+		});
+	}
+
 	pollOnce(poll_level) {
 		$.getJSON(`${this.settings.duet_url}/rr_status?type=${poll_level}`).then((response) => {
 			this.current_poll_response = response;
