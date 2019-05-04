@@ -10,6 +10,7 @@ mkdir dist
 sed -r -e "s/jquery.js/dueui-vendor-bundle.js/g" -e "/bootstrap/d" \
 	-e "s/dueui.js/dueui-bundle.js/g" -e "/dueui_(panel|widget)/d" dueui.html > dist/dueui.html
 cp -a dueui_config_default.json dist/
+sed -i -r -e "s/DUEUI_VERSION/$version/g" dist/dueui.html
 gzip dist/*.html
 
 mkdir dist/js

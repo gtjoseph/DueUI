@@ -245,6 +245,10 @@ class DueuiElement {
 				continue;
 			}
 			let a2 = $.extend(true, {}, a);
+			if (a2.message) {
+				a2.message = DueUI.evalValue(a2.message, this.val());
+				dueui.logMessage("I", a2.message);
+			}
 			switch(a.type) {
 			case "gcode":
 				a2.gcode = DueUI.evalValue(a2.gcode, this.val());
@@ -336,9 +340,6 @@ class DueuiElement {
 					}
 				}
 				$.getJSON(uri).then((response) => {
-					if (a2.message) {
-						dueui.logMessage("I", a2.message);
-					}
 				}).fail((xhr, reason, error) => {
 					dueui.logMessage("E", reason);
 				});
@@ -346,11 +347,7 @@ class DueuiElement {
 			case "http":
 				var m = a2.message;
 				$.getJSON(encodeURI(a2.uri)).then((response) => {
-					if (a2.message) {
-						dueui.logMessage("I", a2.message);
-					} else {
-						dueui.logMessage("I", response);
-					}
+					dueui.logMessage("I", response);
 				}).fail((xhr, reason, error) => {
 					dueui.logMessage("E", reason);
 				});
@@ -660,6 +657,7 @@ class DueUI{
 		let tempgc = gc || { no_echo: true, gcode: ""};
 		$.get(uri, (response) => {
 			response = response.trim();
+			console.log(response);
 			let d = new Date();
 			let r = response.trim();
 			if (r.length) {
@@ -701,9 +699,6 @@ class DueUI{
 		if (this.settings.dueui_settings_dont_send_gcode == 1) {
 			this.logMessage("D", `GCode: ${gc.gcode}`);
 			return;
-		}
-		if (gc.message) {
-			this.logMessage("I", gc.message);
 		}
 		$.getJSON(uri).then((response) => {
 			console.log(uri, response);
@@ -766,8 +761,7 @@ class DueUI{
 			console.log(config_data);
 			this.populate(config_data);
 			this.schedulePoll();
-			this.sendGcode("M115");
-			this.getGcodeReply({ no_echo: true, gcode: "M115"});
+			this.logMessage("I", `DueUI Version ${dueui_version}`);
 		}).fail((data, reason, xhr) => {
 			if (reason === "parsererror") {
 				try {

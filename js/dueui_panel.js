@@ -171,20 +171,17 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 		
 		this.element_configs = [
 			{
-				"id": "dueui_settings_warning",
+				"id": "dueui_version_label",
 				"type": "label",
-				"style": {"width": "98%"},
-//				"position": {"my": "left top", "at": "left+10 top+10", "of": "#dueui_settings"},
-				"value": `<b>Don't forget to click the Save button below to save the new values!
-				You should also refresh the browser.
-						</b>`
+				"style": {"position": "fixed"},
+				"value": `DueUI Version ${dueui_version}`
 			},
 			{
 				"id": "duet_url",
 				"type": "input",
 				"label": "URL of the Duet that will be controlled:",
 				"style": {"width": "50ch"},
-				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_warning"},
+				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_version_label"},
 				"input": {
 					"id": `${this.id}_url_input`,
 					"classes": "dueui-settings-field",
@@ -317,6 +314,13 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"style": {"height": "3.5em", "width": "20ch"},
 				"value": "<a href='dueui_config_default.json'>Download Default<br>Config File</a>",
 				"position": {"my": "left center", "at": "right+25 center", "of": "#dueui_settings_refresh"}
+			},
+			{
+				"id": "dueui_settings_warning",
+				"type": "label",
+				"style": {"width": "98%"},
+				"position": {"my": "left top", "at": "left bottom+10", "of": "#dueui_settings_submit"},
+				"value": "<b>Don't forget to click the Save and Refresh buttons to save the new values!</b>"
 			},
 			
 			{
