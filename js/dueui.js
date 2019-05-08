@@ -78,7 +78,8 @@ class DueuiElement {
 		if (this.attr) {
 			this.jq.attr(this.attr);
 		}
-		this.addClasses(this.classes);
+
+		this.updateClass(this.classes);
 		
 		if (parent && parent.hasClass("dueui-panel-tab")) {
 			this.style = $.extend(true, {"position": "absolute"}, this.style);
@@ -105,11 +106,38 @@ class DueuiElement {
 		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
 		t.addClass(Array.isArray(classes) ? classes.join(" ") : classes);
 	}
+	addClass(classes) {
+		this.addClasses(classes);
+	}
 
 	removeClasses(classes) {
 		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
 		t.removeClass(Array.isArray(classes) ? classes.join(" ") : classes);
 	}
+	removeClass(classes) {
+		this.removeClasses(classes);
+	}
+
+	static updateClasses(obj, classes) {
+		let t = (obj instanceof jQuery) ? obj : (obj.css_object ? obj.css_object : obj.jq);
+		let class_array = Array.isArray(classes) ? classes : classes.split(' ');
+		for (let c of class_array) {
+			if (c[0] === '+' || c[0] === '-') {
+				if (c[0] === '-') {
+					t.removeClass(c.slice(1));
+				} else {
+					t.addClass(c.slice(1));
+				}
+			} else {
+				t.addClass(c);
+			}
+		}
+	}
+
+	updateClass(classes) {
+		DueuiElement.updateClasses(this, classes);
+	}
+
 	applyState() {
 		if (!this.state) {
 			return;
