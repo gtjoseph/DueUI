@@ -131,22 +131,21 @@ class DueuiButtonWidget extends DueuiWidget {
 		if (config.actions && config.actions_type === "choose") {
 			super("div", $.extend(true,
 			{
-				"classes": "dropdown",
 				"initial_value": "",
 				"value": "",
 				"style": {
 					"pointer-events": config.read_only ? "none" : null
 				}
-			}, config, {"style": {}, "classes": ""}), parent);
+			}, config, {"style": {}, "classes": "btn-group dropright"}), parent);
 
 			this.jq_btn_id = `${this.id}_btn`;
 			this.jq_btn = $(
-			`<button id='$[this.jq_btn_id}' class="btn dropdown-toggle" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">${this.value}</button>`);
+			`<button id='${this.jq_btn_id}' class="btn dropdown-toggle" data-toggle="dropdown" href="#" aria-haspopup="true" aria-expanded="false">${this.value}</button>`);
 			this.css_object = this.jq_btn;
 			this.value_function = "html";
 			this.value_object = this.jq_btn;
 			this.jq.append(this.jq_btn);
-			this.jq_btn.addClass(config.classes || "");
+			DueuiElement.updateClasses(this.jq_btn, config.classes || "");
 			this.jq_btn.css(config.style || {});
 			this.jq_drop = $(`<div class="dropdown-menu" aria-labelledby='${this.jq_btn_id}'/>`);
 			this.jq.append(this.jq_drop);
@@ -159,15 +158,17 @@ class DueuiButtonWidget extends DueuiWidget {
 				});
 			}
 		} else {
+			let classes = "btn " + (config.state_classes ? "" : " btn-primary ") + (config.classes || "");
+			delete config.classes;
+
 			super("button", $.extend(true,
 			{
-				"classes": "btn" + (config.state_classes ? "" : " btn-primary"),
 				"initial_value": "",
 				"value": "",
 				"style": {
 					"pointer-events": config.read_only ? "none" : null
 				}
-			}, config), parent);
+			}, config, { "classes": classes}), parent);
 			this.value_function = "html";
 			this.value_object = this.jq;
 
@@ -225,13 +226,14 @@ DueuiElement.addElementType('label', DueuiLabelWidget);
 
 class DueuiInputFieldWidget extends DueuiWidget {
 	constructor(config, parent) {
+		let classes = "form-control form-control-sm " + (config.classes || "");
+		delete config.classes;
 		super("input", $.extend(true, {
-			"classes": "form-control form-control-sm",
 			"style": Object.assign({"height": "2.5em"}, config.style),
 			"attr": {
 				"type": config.field_type
 			}
-		}, config), parent);
+		}, config, {"classes": classes}), parent);
 		this.value_function = "val";
 		this.value_object = this.jq;
 
@@ -351,11 +353,12 @@ DueuiElement.addElementType('input', DueuiInputWidget);
 
 class DueuiSelectWidget extends DueuiWidget {
 	constructor(config, parent) {
+		let classes = "form-control form-control-sm " + (config.classes || "");
+		delete config.classes;
 		super("select", $.extend(true,
 		{
-			"classes": "form-control form-control-sm",
 			"options": []
-		}, config), parent);
+		}, config, {"classes": classes}), parent);
 		
 		this.value_function = "val";
 		this.value_object = this.jq;
@@ -378,13 +381,14 @@ DueuiElement.addElementType('select', DueuiSelectWidget);
 
 class DueuiTextAreaWidget extends DueuiWidget {
 	constructor(config, parent) {
+		let classes = "form-control form-control-sm " + (config.classes || "");
+		delete config.classes;
 		super("textarea", $.extend(true, {
-			"classes": "form-control form-control-sm",
 			"new_entries_at_top": false,
 			"attr": {
 				"readonly": config.read_only
 			}
-		}, config), parent);
+		}, config, {"classes": classes}), parent);
 		this.value_function = "val";
 		this.value_object = this.jq;
 		if (this.wrap) {
@@ -487,6 +491,131 @@ class DueuiGridWidget extends DueuiPanel {
 }
 DueuiElement.addElementType('grid', DueuiGridWidget);
 
+class DueuiFileListWidget extends DueuiPanel {
+	constructor(config, parent){
+		let classes = "list-group " + (config.classes || "");
+		delete config.classes;
+		super($.extend(true,
+		{
+			"skip_population": true,
+			"directory": "/gcodes",
+			"action_type": "print",
+			"rows": 999,
+			"refresh_event": "refresh_list",
+			"print_event": "print_selected",
+			"clear_event": "clear_selected",
+			"element_defaults": {
+				"classes": "btn btn-primary",
+				"selected_classes": "btn-success",
+				"unselected_classes": "btn-primary"
+			},
+			"print_button": {
+				"selected_label": "Print ${value}?",
+				"unselected_label": "Select file to print",
+				"selected_classes": "btn-warning",
+				"unselected_classes": "disabled"
+			}
+		}, config, {"classes": classes, "element_defaults": config.button_defaults}), parent);
+
+		this.refresh();
+
+		if (this.refresh_event) {
+			this.jq.on(this.refresh_event, (ea, data, event) => {
+				this.refresh();
+			});
+		}
+		if (this.print_event && this.print_button.id) {
+			this.jq.on(this.print_event, (ea, data, event) => {
+				let pbjq = $(`#${this.print_button.id} > button`);
+				let selected_file = pbjq.attr("selected_file");
+				if (!selected_file || selected_file.length == 0) {
+					dueui.logMessage("E", "No file selected for printing");
+					return;
+				}
+				dueui.printFile(`${this.directory}/${selected_file}`);
+				pbjq.removeAttr("selected_file");
+				pbjq.addClass(this.print_button.unselected_classes);
+				pbjq.removeClass(this.print_button.selected_classes);
+				pbjq.html("Select file to print");
+			});
+		}
+		if (this.clear_event && this.print_button.id) {
+			this.jq.on(this.clear_event, (ea, data, event) => {
+				let pbjq = $(`#${this.print_button.id} > button`);
+				pbjq.removeAttr("selected_file");
+				pbjq.addClass(this.print_button.unselected_classes);
+				pbjq.removeClass(this.print_button.selected_classes);
+				pbjq.html("Select file to print");
+			});
+		}
+	}
+	refresh() {
+		this.jq.empty();
+		this.element_configs = [];
+		this.jq.append("<span>Loading...</span>");
+		dueui.getFileList(this.directory).then((data) => {
+			let pbjq;
+			if (this.print_button && this.print_button.id) {
+				pbjq = $(`#${this.print_button.id} > button`);
+				pbjq.addClass(this.print_button.unselected_classes);
+			}
+
+			for (let fe of data.files) {
+				if (fe.type === "f") {
+					let b = {
+						"type": "button",
+						"enabled": true,
+						"value": this.formatName(fe.name),
+						"label": this.formatName(fe.name),
+						"file": fe.name,
+						"classes": "-btn -btn-primary list-group-item list-group-item-action",
+						"actions": []
+					};
+					if (this.tap_action !== "select") {
+						if (this.confirm_message) {
+							b.actions_type = "choose";
+							b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`,
+								"label": DueUI.evalValue(this.confirm_message, b.value)});
+						} else {
+							b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`});
+						}
+					} else if (pbjq) {
+						b.onsubmit = (event) => {
+							pbjq.html(DueUI.evalValue(this.print_button.selected_label, fe.name));
+							pbjq.attr("selected_file", fe.name);
+							pbjq.removeClass(this.print_button.unselected_classes);
+							pbjq.addClass(this.print_button.selected_classes);
+						};
+					}
+					this.element_configs.push(b);
+				}
+			}
+			if (this.sort_autofill &&
+				(this.sort_autofill === "label" || this.sort_autofill === "file")) {
+				this.element_configs.sort((a, b) => {
+					return a[this.sort_autofill].localeCompare(b[this.sort_autofill]);
+				});
+			}
+			this.jq.empty();
+			super.populate();
+		});
+	}
+	formatName(macro){
+		name = (typeof macro === 'number' ? this.macros[macro] : macro);
+		if (this.strip_directory) {
+			name = name.replace(/.+[/]([^/]+)$/, "$1");
+		}
+		if (this.strip_prefix) {
+			name = name.replace(/^[0-9]+_/, "");
+		}
+		if (this.strip_suffix) {
+			name = name.replace(/[.][^.]+$/, "");
+		}
+		return name;
+	}
+}
+DueuiElement.addElementType('file_list', DueuiFileListWidget);
+
 class DueuiFileGridWidget extends DueuiGridWidget {
 	constructor(config, parent){
 		super($.extend(true,
@@ -502,7 +631,7 @@ class DueuiFileGridWidget extends DueuiGridWidget {
 		}, config, {"element_defaults": config.button_defaults}), parent);
 
 		this.refresh();
-		
+
 		if (this.refresh_event) {
 			this.jq.on(this.refresh_event, (ea, data, event) => {
 				this.refresh();
@@ -564,7 +693,7 @@ class DueuiMacroGridWidget extends DueuiFileGridWidget {
 		super($.extend(true,
 		{
 			"directory": "/macros",
-			"action_type": "macro"
+			"action_type": "macro",
 		}, config, {"element_defaults": config.button_defaults}), parent);
 	}
 }
@@ -966,8 +1095,10 @@ DueuiElement.addElementType('slider', DueuiSliderWidget);
 
 class DueuiProgressWidget extends DueuiWidget {
 	constructor(config, parent) {
+		let classes = "progress " + (config.classes || "");
+		delete config.classes;
 		super("div", $.extend( true, {
-		}, config, {"classes": "progress"}),parent);
+		}, config, {"classes": classes}),parent);
 		
 		this.jq.append(`<div class="progress-bar" role="progressbar"></div>`);
 		this.jq_pb = $(`#${this.id} .progress-bar`);

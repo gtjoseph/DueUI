@@ -1127,15 +1127,6 @@ DueUIConfig({
 				"type": "tab_panel",
 				"enabled": true,
 				"menubar_label": "Files",
-				"style": {
-					/*
-					 * We're using flex again because we want the file list
-					 * to take all remaining space in the panel after the
-					 * refresh button.
-					 */
-					"display": "flex",
-					"flex-direction": "column"
-				},
 				"element_configs": [
 					{
 						"id": "files_refresh",
@@ -1162,14 +1153,62 @@ DueUIConfig({
 						]
 					},
 					{
+						"id": "clear_files_print",
+						"type": "button",
+						"value": "Clear selection",
+						"style": {
+							"width": "20ch",
+							"height": "2.5em"
+						},
+						"classes": "btn-primary",
+						"position": {
+							"my": "left top",
+							"at": "right+20 top",
+							"of": "#files_refresh"
+						},
+						/*
+						 * When you click this button, it sends the "clear_selected"
+						 * event to the file list.
+						 */
+						"actions": [
+							{"type": "event", "event": "clear_selected", "target": "#panel_files"}
+						]
+					},
+					{
+						"id": "files_print",
+						"type": "button",
+						"value": "Print Selected File",
+						"style": {
+							"height": "2.5em"
+						},
+						"classes": "btn-primary",
+						"position": {
+							"my": "left top",
+							"at": "right+20 top",
+							"of": "#clear_files_print"
+						},
+						/*
+						 * When you click this button, it sends the "print_selected"
+						 * event to the file list.  If the actions_type is "choose",
+						 * a dropdown with the "label" will appear which you must
+						 * click to confirm.  Otherwise, the file is immediately printed. 
+						 */
+						"actions_type": "choose",
+						"actions": [
+							{"type": "event", "event": "print_selected", "target": "#panel_files",
+								"label": "Tap to confirm"
+							}
+						]
+					},
+					{
 						/*
 						 * The only difference between a file_grid and
 						 * a macro_grid is the command sent to the Duet.
 						 * To run a macro, it's M98 and to print a file
-						 * it's M23 followed by M24.  
+						 * it's M23 followed by M24.
 						 */
 						"id": "panel_files",
-						"type": "file_grid",
+						"type": "file_list",
 						"enabled": true,
 						"position": {
 							"my": "left top",
@@ -1178,37 +1217,57 @@ DueUIConfig({
 						},
 						"button_defaults": {
 							"style": {
-								"width": "64ch",
 								"height": "3em",
-								"text-align": "left"
-							}
+							},
+							"selected_classes": "btn-success",
+							"unselected_classes": "btn-primary"
 						},
-						"cols": 1,
 						"style": {
 							"position": "relative",
-							"overflow-x": "none",
-							"overflow-y": "scroll",
+							"overflow": "scroll",
 							/*
 							 * We need to use some magic here to get
 							 * the grid sized correctly and to scroll
 							 * correctly.  There's probably a better way
 							 * to do this but sometimes I like brute force.
-							 * 
+							 *
 							 * We're going to use the CSS "calc" function
-							 * to set the dimensions.  Feel free to play with
-							 * this and let me know what you find.
+							 * to set the dimensions.  2.5em is the height
+							 * of the refresh, clear and print buttons at the
+							 * top of the panel.
 							 */
-							"width": "calc(100% - 2ch)",
-							"height": "calc(100% - 2.5em)"
+							"max-height": "calc(100% - 2.5em)"
 						},
 						"direction": "column",
 						"directory": "/gcodes",
 						/*
-						 * Accidentally starting a print is probably not
-						 * a good thing so when you click on a file a confirmation
-						 * popup will appear. 
+						 * tap_action can be "select" or "print".  If "select",
+						 * you're going to need to create a print button to
+						 * actually trigger the print.  If "print" then the file
+						 * will be printed immediately unless you have a confirm
+						 * message defined below in which case you'll get a popup
+						 * to confirm. 
 						 */
-						"confirm_message": "Print this file?",
+						"tap_action": "select",
+						"print_button": {
+							/* This is the id of the print button defined above */
+							"id": "files_print",
+							/* Label when a file is selected */
+							"selected_label": "Print ${value}?",
+							/* Label when no file is selected */
+							"unselected_label": "Select file to print",
+							/* Class when a file is selected */
+							"selected_classes": "btn-warning",
+							/* Class when no file is selected */
+							"unselected_classes": "disabled"
+						},
+						/*
+						 * Accidentally starting a print is probably not a good
+						 * thing so if you're not using a print button, setting
+						 * a confirmation message will cause a confirmation
+						 * popup to appear appear before printing.
+						 */
+						"confirm_message": "Print ${value}?",
 						"autofill_files": true,
 						"sort_autofill": "file",
 						"strip_directory": true,

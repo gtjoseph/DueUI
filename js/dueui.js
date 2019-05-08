@@ -292,7 +292,7 @@ class DueuiElement {
 				}
 				break;
 			case "print":
-				dueui.sendGcode({"gcode": `M23 ${a2.file} ; M24`, "get_reply": true});
+				dueui.printFile(a2.file);
 				break;
 			case "setting": {
 				if (run_on_startup) {
@@ -706,7 +706,6 @@ class DueUI{
 		let tempgc = gc || { no_echo: true, gcode: ""};
 		$.get(uri, (response) => {
 			response = response.trim();
-			console.log(response);
 			let d = new Date();
 			let r = response.trim();
 			if (r.length) {
@@ -757,6 +756,10 @@ class DueUI{
 		}).fail((xhr, reason, error) => {
 			console.log({xhr, reason, error})
 		});
+	}
+
+	printFile(file) {
+		this.sendGcode({"gcode": `M23"${file}" ; M24`, "get_reply": true});
 	}
 
 	addGcodeReplyListener(callback) {

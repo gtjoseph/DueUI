@@ -310,7 +310,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_download_default",
 				"type": "button",
-				"classes": "btn btn-secondary-sm",
+				"classes": "-btn-primary btn-secondary-sm",
 				"style": {"height": "3.5em", "width": "20ch"},
 				"value": "<a href='dueui_config_default.json'>Download Default<br>Config File</a>",
 				"position": {"my": "left center", "at": "right+25 center", "of": "#dueui_settings_refresh"}
