@@ -206,9 +206,7 @@ DueuiElement.addElementType('button', DueuiButtonWidget);
 
 class DueuiLabelWidget extends DueuiWidget {
 	constructor(config, parent) {
-		super("div", $.extend(true, {
-			"classes": ""
-		}, config), parent);
+		super("div", config, parent);
 
 		var value = this.value;
 		if (value.indexOf("${") >= 0) {
@@ -300,7 +298,6 @@ class DueuiInputWidget extends DueuiWidget {
 	constructor(config, parent){
 		super("div", $.extend(true, 
 			{
-				"classes": "dueui-widget-input",
 				"style": {
 					"display": "flex",
 					"flex-direction": "column",
@@ -470,7 +467,6 @@ class DueuiGridWidget extends DueuiPanel {
 	constructor(config, parent){
 		super($.extend(true,
 			{
-				"classes": "dueui-widget-grid",
 				"style": {
 					"display": "grid",
 					"border": "0px",
@@ -703,7 +699,6 @@ class DueuiHeaterWidget extends DueuiPanel {
 	constructor(config, parent){
 		super($.extend(true,
 			{
-				"classes": "dueui-widget-heater",
 				"style": {
 					"width": "100px",
 					"display": "flex",
@@ -844,7 +839,6 @@ class DueuiHeaterLabelsWidget extends DueuiPanel {
 	constructor(config, parent){
 		super($.extend(true,
 			{
-				"classes": "dueui-widget-heater",
 				"style": {
 					"border": "0px",
 					"display": "flex",
@@ -877,7 +871,6 @@ class DueuiCheckboxWidget extends DueuiButtonWidget {
 	constructor(config, parent){
 		super($.extend(true,
 		{
-			"classes": "dueui-widget-checkbox",
 			"onsubmit": function() {
 				this.val(!this.current_state);
 			}
@@ -908,7 +901,6 @@ class DueuiPositionWidget extends DueuiPanel {
 	constructor(config, parent){
 		super($.extend(true,
 		{
-			"classes": "dueui-widget-position",
 			"skip_population": true,
 			"style": {
 				"display": "flex",
@@ -947,7 +939,6 @@ class DueuiJogWidget extends DueuiPanel {
 	constructor(config, parent){
 		super($.extend(true,
 		{
-			"classes": "dueui-widget-jog",
 			"skip_population": true,
 			"initial_scale": 0,
 			"style": {"border": "0px", "display": "flex", "flex-direction": config.direction ? config.direction : "row"},
@@ -1411,6 +1402,3 @@ High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} M
 	
 }
 DueuiElement.addElementType('heightmap', DueuiHeightmapWidget);
-
-
-

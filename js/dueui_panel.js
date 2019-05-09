@@ -65,8 +65,7 @@ DueuiElement.addElementType("tab_panel", DueuiTabPanel);
 
 class DueuiTabbedPanel extends DueuiPanel {
 	constructor(config, parent) {
-		super($.extend(true, {}, config, 
-			{"classes": "dueui-tabbed-container " + (config.classes || "")}), parent);
+		super(config, parent);
 	}
 	populate() {
 		if (this.header_panel) {
@@ -80,7 +79,6 @@ class DueuiTabbedPanel extends DueuiPanel {
 		
 		this.panel_area_widget = new DueuiPanel({
 			"id": "dueui_panel_area",
-			"classes": "dueui-panel-area",
 			"style": {
 				"border": "1px", "border-color": "black", "height": "calc(100% - 6em)"
 			},
