@@ -55,6 +55,7 @@ class DueuiWidget extends DueuiElement {
 			this.addClasses(`status-poll-listener-${this.status_level || 1}`);
 			
 			this.jq.on("duet_poll_response", (event, status) => {
+				this.current_status = status;
 				if (this.value.indexOf("${") >= 0) {
 					var val = DueUI.evalStatus(status, this.value, this);
 					this.val(val);
@@ -744,7 +745,15 @@ class DueuiHeaterWidget extends DueuiPanel {
 					{"type": "gcode", "label": "On", "gcode":
 						(this.state_commands && this.state_commands.on)
 						? this.state_commands.on
-						: `M308 P${this.heater_index} T2`, "get_reply": true}
+						: `M308 P${this.heater_index} T2`, "get_reply": true},
+					{"type": "gcode", "label": "Reset Fault", "gcode":
+						(this.state_commands && this.state_commands.reset)
+						? this.state_commands.reset
+						: `M562 P${this.heater_index}`, "get_reply": true},
+					{"type": "gcode", "label": "Tune to Active Temp", "gcode":
+						(this.state_commands && this.state_commands.tune)
+						? this.state_commands.tune
+						: `M303 H${this.heater_index} P1 S\${status.temps.active[${this.heater_index}]}`, "get_reply": true},
 				]
 			};
 

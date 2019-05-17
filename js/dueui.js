@@ -279,7 +279,7 @@ class DueuiElement {
 			}
 			switch(a.type) {
 			case "gcode":
-				a2.gcode = DueUI.evalValue(a2.gcode, this.val());
+				a2.gcode = DueUI.evalValueStatus(a2.gcode, this.val(), this.current_status);
 				dueui.sendGcode(a2);
 				break;
 			case "macro":
@@ -416,6 +416,16 @@ class DueUI{
 	}
 
 	static evalValue(str, value) {
+		if (str.indexOf("${") >= 0) {
+			if (!str.startsWith("`")) {
+				str = "`" + str + "`";
+			}
+			return eval(str);
+		}
+		return str;
+	}
+
+	static evalValueStatus(str, value, status) {
 		if (str.indexOf("${") >= 0) {
 			if (!str.startsWith("`")) {
 				str = "`" + str + "`";

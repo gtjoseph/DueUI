@@ -460,9 +460,16 @@ DueUIConfig({
 						 * the M308 GCode command which is yet to be released.  
 						 */
 						"state_commands": {
-        					"off": "M140 P0 S-273.15 R-273.15",
-        					"standby": "M144 P0 S0",
-					        "on": "M144 P0 S1"
+        					"off": {"type": "gcode", "label": "Off",
+        						"gcode": "M140 P0 S-273.15 R-273.15"},
+        					"standby": {"type": "gcode", "label": "Standby",
+        						"gcode": "M144 P0 S0"},
+					        "on": {"type": "gcode", "label": "On",
+					        	"gcode": "M144 P0 S1"},
+							"reset": {"type": "gcode", "label": "Reset Fault",
+								"gcode": "M562 P0"},
+							"tune": {"type": "gcode", "label": "Tune to Active Temp",
+								"gcode": "M303 H0 P1 S${status.temps.bed.active}"},
 						},
 						/*
 						 * Commands to change the set points.
@@ -556,9 +563,16 @@ DueUIConfig({
 						 * the state of the heater.
 						 */
 						"state_commands": {
-        					"off": "G10 P0 S-273.15 R-273.15",
-        					"standby": "T-1",
-					        "on": "T0"
+        					"off": {"type": "gcode", "label": "Off",
+								"gcode": "G10 P0 S-273.15 R-273.15"},
+        					"standby": {"type": "gcode", "label": "Standby",
+								"gcode": "T-1"},
+					        "on": {"type": "gcode", "label": "On",
+								"gcode": "T0"},
+							"reset": {"type": "gcode", "label": "Reset Fault",
+								"gcode": "M562 P1"},
+							"tune": {"type": "gcode", "label": "Tune to Active Temp",
+								"gcode": "M303 H1 P1 S${status.temps.temps.tools.active[0]}"},
 						},
 						/*
 						 * Commands to change the set points.  Again, these
