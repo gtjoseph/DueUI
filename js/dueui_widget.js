@@ -450,7 +450,7 @@ class DueuiStatusWidget extends DueuiButtonWidget {
 
 		this.jq.addClass(`connection-listener`);
 		this.jq.on("duet_connection_change", (event, status) =>	 {
-			this.update(response.status);
+			this.update(status.status);
 		});
 	}
 	update(status) {

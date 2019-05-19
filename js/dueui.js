@@ -513,9 +513,10 @@ class DueUI{
 		this.sequence = -1;
 		this.current_poll_response = {};
 		this.duet_connect_retries = {
-				"number": 3,
-				"interval": 2000
+				"number": 10,
+				"interval": 5000
 		};
+		this.poll_in_flight = false;
 
 		this.config_file_preference = [
 			this.settings.dueui_config_url,
@@ -602,7 +603,16 @@ class DueUI{
 	}
 
 	pollOnce(poll_level) {
-		$.getJSON(`${this.settings.duet_url}/rr_status?type=${poll_level}`).then((response) => {
+		if (this.poll_in_flight) {
+			return;
+		}
+		this.poll_in_flight = true;
+		$.ajax(
+			{
+				url: `${this.settings.duet_url}/rr_status?type=${poll_level}`,
+				timeout: 1000,
+				dataType: "json",
+			}).then((response) => {
 			this.current_poll_response = response;
 			if (this.settings.duet_debug_polling_enabled == 1) {
 				console.log({"poll_level": poll_level, "response": response});
@@ -618,8 +628,12 @@ class DueUI{
 			if (response.seq > this.sequence) {
 				this.getGcodeReply();
 			}
+			this.poll_in_flight = false;
 		}).fail((xhr, reason, error) => {
 			this.logMessage("W", `Poll type ${poll_level} failed`);
+			this.disconnect();
+			this.connect();
+			this.poll_in_flight = false;
 		});
 	}
 
@@ -631,7 +645,7 @@ class DueUI{
 		);
 
 		setInterval(() => {
-			if (!this.connected || this.settings.duet_polling_enabled != 1) {
+			if (!this.connected || !this.configured || this.settings.duet_polling_enabled != 1) {
 				return;
 			}
 
@@ -662,37 +676,50 @@ class DueUI{
 		}
 		var _this = this;
 		delete this.reconnect_timer;
-		$.getJSON(`${this.settings.duet_url}/rr_connect?password=${ encodeURI(this.settings.duet_password) }`)
+		$(".connection-listener").trigger("duet_connection_change", { "status": "connecting" });
+		$.ajax({
+			dataType: "json",
+			url: `${this.settings.duet_url}/rr_connect?password=${ encodeURI(this.settings.duet_password) }`,
+			timeout: 1000
+		})
 		.then((response, status, xhr) => {
 			console.log({ response, status, xhr} );
 			if (response.err == 1) {
 				this.connected = false;
-				$(".connection-listener").trigger("duet_connection_status", { "status": "failed", "reason": "bad_password" });
+				$(".connection-listener").trigger("duet_connection_change", { "status": "failed", "reason": "bad_password" });
+				this.logMessage("E", "Connection failed: Bad Password");
 				return;
 			}
 			if (response.err == 2) {
 				this.connected = false;
-				$(".connection-listener").trigger("duet_connection_status", { "status": "failed", "reason": "busy" });
+				$(".connection-listener").trigger("duet_connection_change", { "status": "failed", "reason": "busy" });
+				this.logMessage("E", "Connection failed: No more HTTP connections available");
 				return;
 			}
 			this.connected = true;
+			if (this.connect_retry > 0) {
+				$(".connection-listener").trigger("duet_connection_change", { "status": "reconnected", "response": response });
+				this.logMessage("I", "Reconnected");
+			} else {
+				$(".connection-listener").trigger("duet_connection_change", { "status": "connected", "response": response });
+				this.logMessage("I", "Connected");
+			}
 			this.connect_retry = 0;
-			$(".connection-listener").trigger("duet_connection_status", { "status": "connected", "response": response });
 		}).fail((xhr, reason, error) => {
 			console.log({xhr, reason, error});
 			console.log(xhr.getAllResponseHeaders());
 			this.connected = false;
-			if (this.connect_retry < this.duet_connect_retries.number) {
+			if (this.connect_retry <= this.duet_connect_retries.number) {
 				this.connect_retry++;
+				this.logMessage("W", `Connection attempt ${this.connect_retry} of ${this.duet_connect_retries.number} failed`);
+				$(".connection-listener").trigger("duet_connection_change", { "status": "retrying", "retry": this.connect_retry });
 				this.reconnect_timer = setTimeout(() => {
-					this.logMessage("W", `Attempting reconnection ${this.connect_retry} of ${this.duet_connect_retries.number}`);
+					this.logMessage("W", `Attempting reconnection ${this.connect_retry + 1} of ${this.duet_connect_retries.number}`);
 					this.connect();
 				}, this.duet_connect_retries.interval);
-				$(".connection-listener").trigger("duet_connection_status", { "status": "retrying", "retry": this.connect_retry });
-				this.logMessage("W", `Connection attempt ${this.connect_retry} of ${this.duet_connect_retries.number} failed`);
 			} else {
 				alert("There was an error attempting to connect to "+this.settings.duet_url+"\nPlease see the javascript console for more information.");
-				$(".connection-listener").trigger("duet_connection_status", { "status": "failed", "reason": reason });
+				$(".connection-listener").trigger("duet_connection_change", { "status": "failed", "reason": reason });
 				this.logMessage("E", `Final connection attempt failed.  Refresh to restart.`);
 			}
 		});
@@ -705,9 +732,11 @@ class DueUI{
 			delete this.reconnect_timer;
 		}
 		this.connected = false;
-		$(".connection-listener").trigger("duet_connection_status", {"status": "disconnected"});
-		$.getJSON(`${this.settings.duet_url}/rr_disconnect`).then((response) => {
-			console.log(response);
+		$(".connection-listener").trigger("duet_connection_change", {"status": "disconnected"});
+		this.logMessage("E", `Connection failed.  Disconnected.`);
+		$.ajax({
+			url: `${this.settings.duet_url}/rr_disconnect`,
+			timeout: 1000
 		});
 	}
 
@@ -816,7 +845,7 @@ class DueUI{
 			dataType: "jsonp",
 			jsonp: "callback",
 			jsonpCallback: "DueUIConfig"
-		}).done((config_data) => {
+		}).then((config_data) => {
 			this.logMessage("I", `Retrieved config from ${config}`);
 			this.active_config_url = config;
 			this.configured = true;
@@ -824,6 +853,12 @@ class DueUI{
 			this.populate(config_data);
 			this.schedulePoll();
 			this.logMessage("I", `DueUI Version ${dueui_version}`);
+			this.getJSON("/rr_config").then((response) => {
+				dueui.logMessage("I", response.firmwareElectronics);
+				dueui.logMessage("I", response.firmwareName + ": " + response.firmwareVersion);
+			}).fail((xhr, reason, error) => {
+				dueui.logMessage("E", reason || error || "");
+			});
 		}).fail((data, reason, xhr) => {
 			if (reason === "parsererror") {
 				try {
@@ -842,9 +877,9 @@ class DueUI{
 					see a dummy file name and the line in the config
 					file that caused the error.
 					`.trim());
-					this.showStartupSettings();
-					return;
 				}
+				alert(`Unable to parse config file '${config}': ${reason}`);
+				return;
 			}
 			
 			if (xhr === "Not Found" && configs.length > 1) {
@@ -865,11 +900,17 @@ class DueUI{
 		this.id = "dueui";
 		this.jq = $("#dueui");
 		$("body").addClass(`connection-listener ui ui-widget-content bg-light`);
-		$("body").on("duet_connection_status", (event, response) => {
+		$("body").on("duet_connection_change", (event, response) => {
+			if (response.status === "reconnected") {
+				location.reload(true);
+				return;
+			}
 			this.removeStartupSettings();
 			if (response.status === "connected") {
-				let configs = this.config_file_preference.slice(0);
-				this.getConfig(configs);
+				setTimeout(() => {
+					let configs = this.config_file_preference.slice(0);
+					this.getConfig(configs);
+				}, 1000);
 			}
 		});
 
