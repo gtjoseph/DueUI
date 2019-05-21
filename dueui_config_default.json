@@ -1978,7 +1978,15 @@ DueUIConfig({
 						 * The widget will also automatically refresh when a message
 						 * is received indicating that a mesh probe completed successfully.
 						 */
-						"refresh_event": "heightmap_refresh"
+						"refresh_event": "heightmap_refresh",
+						/*
+						 * The default scale for the map is automatically calculated
+						 * based on the actual minimum and maximum probe readings
+						 * but you can force a fixed scale by specifying the following
+						 * parameters.
+						 */
+						"scale_min": -0.250,
+						"scale_max": 0.250
 					},
 					{
 						"id": "heightmap_buttons2",

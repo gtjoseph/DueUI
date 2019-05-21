@@ -13,7 +13,7 @@ class DueuiWidget extends DueuiElement {
 				style_keys = Object.keys(style_keys);
 				this.default_tolerance_style = this.jq.css(style_keys);
 			}
-			
+
 			if (this.tolerances[0].classes) {
 				this.merged_tolerance_classes = [];
 				for (let t of this.tolerances) {
@@ -24,15 +24,15 @@ class DueuiWidget extends DueuiElement {
 						}
 					}
 				}
-			}			
-			
+			}
+
 			if (!this.onstatus) {
 				this.onstatus = (status) => {
 					this.processTolerance(status);
 				};
 			}
 		}
-		
+
 		if (this.state) {
 			this.state.last = -2;
 			this.state.current = -1;
@@ -46,14 +46,14 @@ class DueuiWidget extends DueuiElement {
 					}
 				}
 			}
-		} 
-		
-		if (this.status_level 
+		}
+
+		if (this.status_level
 				&& ((this.value && typeof(this.value) === 'string' && this.value.indexOf("${") >= 0)
 				|| (this.state && this.state.field) || this.onstatus)) {
-			
+
 			this.addClasses(`status-poll-listener-${this.status_level || 1}`);
-			
+
 			this.jq.on("duet_poll_response", (event, status) => {
 				this.current_status = status;
 				if (this.value.indexOf("${") >= 0) {
@@ -78,9 +78,9 @@ class DueuiWidget extends DueuiElement {
 		if (this.merged_tolerance_classes) {
 			this.removeClasses(this.merged_tolerance_classes);
 		}
-		
+
 	}
-	
+
 	processTolerance(status, val) {
 		if (typeof(val) === 'undefined') {
 			var val = (typeof(this.tolerance_value) === 'undefined' ? this.val() : this.tolerance_value);
@@ -106,7 +106,7 @@ class DueuiWidget extends DueuiElement {
 			ix++;
 		}
 	}
-	
+
 	val(val, skipcheck) {
 		var value_object = this.value_object || this.jq;
 		if (typeof(val) === 'undefined') {
@@ -217,7 +217,7 @@ class DueuiLabelWidget extends DueuiWidget {
 		this.last_state = "";
 		this.jq.html(this.value);
 		this.value_function = "html";
-		this.value_object = this.jq; 
+		this.value_object = this.jq;
 		this.val(value);
 	}
 }
@@ -297,7 +297,7 @@ DueuiElement.addElementType('input_field', DueuiInputFieldWidget);
 
 class DueuiInputWidget extends DueuiWidget {
 	constructor(config, parent){
-		super("div", $.extend(true, 
+		super("div", $.extend(true,
 			{
 				"style": {
 					"display": "flex",
@@ -324,7 +324,7 @@ class DueuiInputWidget extends DueuiWidget {
 			"vertical-align": "middle",
 			"flex-direction": "row"
 		});
-		
+
 		this.input_widget = new DueuiInputFieldWidget($.extend(true, {
 			"id": `${this.id}_input`,
 			"field_type": "text",
@@ -344,7 +344,7 @@ class DueuiInputWidget extends DueuiWidget {
 			this.input_widget.jq.width(this.jq.width() - this.button_widget.jq.outerWidth())
 		}
 		this.jq.append(this.jqib);
-		
+
 	}
 }
 DueuiElement.addElementType('input', DueuiInputWidget);
@@ -357,7 +357,7 @@ class DueuiSelectWidget extends DueuiWidget {
 		{
 			"options": []
 		}, config, {"classes": classes}), parent);
-		
+
 		this.value_function = "val";
 		this.value_object = this.jq;
 		for (let option of this.options) {
@@ -770,13 +770,13 @@ class DueuiHeaterWidget extends DueuiPanel {
 					let current_temp = this.val();
 
 					if (0 < state && state < 3) {
-						let active_temp = (config.active_temp_field 
+						let active_temp = (config.active_temp_field
 								? DueUI.evalStatus(status, config.active_temp_field, this)
 								: status.temps.active[config.heater_index]);
-						let standby_temp = (config.standby_temp_field 
+						let standby_temp = (config.standby_temp_field
 								? DueUI.evalStatus(status, config.standby_temp_field, this)
 								: status.temps.standby[config.heater_index]);
-						
+
 						let set_temp = state == 1 ? standby_temp : active_temp;
 						let diff = Math.abs(set_temp - current_temp);
 						this.processTolerance(status, diff);
@@ -808,7 +808,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 					]
 				}
 			};
-			
+
 			let standby_input = {
 				"type": "input",
 				"input": {
@@ -831,7 +831,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 					]
 				}
 			};
-			
+
 		this.element_configs = [
 			state_button,
 			temp_button,
@@ -883,7 +883,7 @@ class DueuiCheckboxWidget extends DueuiButtonWidget {
 			"onsubmit": function() {
 				this.val(!this.current_state);
 			}
-				
+
 		}, config), parent);
 	}
 	val(val) {
@@ -1083,7 +1083,7 @@ class DueuiSliderWidget extends DueuiWidget {
 		this.jq.on("duet_poll_response", (event, status) => {
 			var val = DueUI.evalStatus(status, this.value, this);
 			this.val(val);
-		});		
+		});
 		this.obsubmit = (event) => {
 			console.log(event);
 		};
@@ -1099,7 +1099,7 @@ class DueuiProgressWidget extends DueuiWidget {
 		delete config.classes;
 		super("div", $.extend( true, {
 		}, config, {"classes": classes}),parent);
-		
+
 		this.jq.append(`<div class="progress-bar" role="progressbar"></div>`);
 		this.jq_pb = $(`#${this.id} .progress-bar`);
 		if (config.classes) {
@@ -1113,7 +1113,7 @@ class DueuiProgressWidget extends DueuiWidget {
 		if (this.initial_value) {
 			this.jq_pb.width( this.jq.width() * (this.initial_value / 100.0))
 		}
-		
+
 		this.value_function = (val) => {
 			if (typeof(val) === 'undefined') {
 				return this.jq_pb.attr("aria-valuenow");
@@ -1138,15 +1138,15 @@ class DueuiHeightmapWidget extends DueuiWidget {
 				"font-size": "10px"
 			}
 		}, config, {"classes": ""}),parent);
-		
+
 		this.refresh();
-		
+
 		if (this.refresh_event) {
 			this.jq.on(this.refresh_event, (ea, data, event) => {
 				this.refresh();
 			});
 		}
-		
+
 		this.jq.addClass("gcode-reply-listener");
 		this.jq.on("gcode_reply", (event, reply) => {
 			if (reply.response.indexOf("Height map saved to file") >= 0) {
@@ -1164,8 +1164,8 @@ class DueuiHeightmapWidget extends DueuiWidget {
 				</tr>
 				<tr><td id="${this.id}_stats" style='padding-left: 0ch; height: 4em; vertical-align: bottom;'/></tr>
 				`.trim());
-		
-		this.jq_map = $(`#${this.id}_map`); 
+
+		this.jq_map = $(`#${this.id}_map`);
 		this.jq_legend = $(`#${this.id}_legend`);
 		let last_slash = dueui.active_config_url.lastIndexOf('/');
 		if (last_slash < 0) {
@@ -1173,22 +1173,22 @@ class DueuiHeightmapWidget extends DueuiWidget {
 			return;
 		}
 		let base_url = dueui.active_config_url.substring(0, last_slash);
-		this.config_url = base_url + '/heightmap.csv';  
+		this.config_url = base_url + '/heightmap.csv';
 		$.ajax({
 			url: this.config_url,
 			cache: false,
 			timeout: 2000,
 		}).then( (rows) => {
 			rows = rows.split('\n');
-			this.local_hm(rows);	
+			this.local_hm(rows);
 		});
 	}
-	
+
 	generateColorGradient(len){
 		let colors = { "high": [], "low": []};
 		let break_point = Math.floor(len / 2);
 		let inc = Math.floor(256 / (len / 2));
-			
+
 		for (let i = 0; i < len; i++) {
 			let ch = [];
 			let cl = [];
@@ -1214,7 +1214,7 @@ class DueuiHeightmapWidget extends DueuiWidget {
 	local_hm(rows) {
 
 		let precision = 8;
-		
+
 		let colors = this.generateColorGradient(precision);
 
 		let control = rows[2].split(',');
@@ -1230,25 +1230,25 @@ class DueuiHeightmapWidget extends DueuiWidget {
 		let zMin = 0;
 		let zMax = 0;
 		let int_rows = [];
-		
+
 		let points = 0;
 		let mean_all = 0;
 		let rms_all = 0;
 		let std_dev_all = 0;
 		let z_all = [];
-		
+
 		let points_high = 0;
 		let mean_high = 0
 		let rms_high = 0;
 		let std_dev_high = 0;
 		let z_high = [];
-		
+
 		let points_low = 0;
 		let mean_low = 0
 		let rms_low = 0;
 		let std_dev_low = 0;
 		let z_low = [];
-		
+
 		for(let i=0; i < yPoints; i++)
 		{
 			let dr = rows[3 + i].split(',');
@@ -1281,46 +1281,54 @@ class DueuiHeightmapWidget extends DueuiWidget {
 			}
 			int_rows.push(dr);
 		}
-		
+
+		if (this.scale_min) {
+	        zMin = this.scale_min * 1000.0;
+		}
+
+		if (this.scale_max) {
+	        zMax = this.scale_max * 1000.0;
+		}
+
 		mean_all /= points;
 		rms_all = Math.sqrt(rms_all / points);
 		std_dev_all = z_all.reduce((acc, cv) => {
 			return acc + ((cv - mean_high) * (cv - mean_all));
 		});
-		std_dev_all = Math.sqrt(std_dev_all / points);  
-		
+		std_dev_all = Math.sqrt(std_dev_all / points);
+
 		mean_high /= points_high;
 		rms_high = Math.sqrt(rms_high / points_high);
 		std_dev_high = z_high.reduce((acc, cv) => {
 			return acc + ((cv - mean_high) * (cv - mean_high));
 		});
-		std_dev_high = Math.sqrt(std_dev_high / points_high);  
+		std_dev_high = Math.sqrt(std_dev_high / points_high);
 
 		mean_low /= -points_low;
 		rms_low = Math.sqrt(rms_low / points_low);
 		std_dev_low = z_high.reduce((acc, cv) => {
 			return acc + ((cv - mean_low) * (cv - mean_low));
 		});
-		std_dev_low = Math.sqrt(std_dev_low / points_low);  
+		std_dev_low = Math.sqrt(std_dev_low / points_low);
 
 		let jq_tb = $('<tbody/>');
-		
+
 		for(let y = yPoints-1; y >= 0; y--) {
 			let jq_row = $("<tr/>");
 			let r = int_rows[y];
 			let y_scale = (y % 2) == 0 ? ((y * ySpacing) + yMin).toFixed(0) : "";
 			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${y_scale}</td>`);
-			
+
 			for (let x = 0; x < xPoints; x++) {
 				let z = r[x];
 				let fgcolor = "#000000";
 				let bgcolor = "#e0e0e0";
 				let v = '&nbsp;';
-				
+
 				if (isNaN(z)) {
 					bgcolor = "#e0e0e0";
 				} else if (z < 0) {
-					let cix = Math.abs( Math.floor((z / (zMin - 1)) * (precision) ));
+					let cix = Math.abs( Math.floor((Math.max(z, zMin) / (zMin - 1)) * (precision) ));
 					bgcolor = colors.low[ cix ];
 					fgcolor = bgcolor;
 					v = this.low_point_char;
@@ -1332,8 +1340,8 @@ class DueuiHeightmapWidget extends DueuiWidget {
 					fgcolor = "#000000";
 					v = this.zero_point_char;
 				} else {
-					let cix = Math.abs( Math.floor((z / (zMax + 1)) * (precision) ));
-					bgcolor = colors.high[ cix ];				
+					let cix = Math.abs( Math.floor((Math.min(z, zMax) / (zMax + 1)) * (precision) ));
+					bgcolor = colors.high[ cix ];
 					fgcolor = bgcolor;
 					v = this.high_point_char;
 					if (z >= zMax) {
@@ -1352,21 +1360,21 @@ class DueuiHeightmapWidget extends DueuiWidget {
 		jq_row.append('<td/>');
 		for (let x = 0; x < xPoints; x++) {
 			let v = ((xSpacing * x) + xMin).toFixed(0);
-			jq_row.append(`<td><div style='width: 1ch; font-family: monospace; transform: rotate(90deg); transform-style: preserve-3d;'>${(x % 2 == 0) ? v : ""}</div></td>`);		
+			jq_row.append(`<td><div style='width: 1ch; font-family: monospace; transform: rotate(90deg); transform-style: preserve-3d;'>${(x % 2 == 0) ? v : ""}</div></td>`);
 		}
 		jq_tb.append(jq_row);
 
 		$(`#${this.id}_map`).append(jq_tb);
 		this.jq_map.find("td").tooltip();
-		
+
 		$(`#${this.id}_stats`).append(`
 <span style='font-family: monospace;'>
 &nbsp;All Points: ${points.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_all.toFixed(3)} RMS: ${rms_all.toFixed(3)} STDDEV: ${std_dev_all.toFixed(3)}<br>
 High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_high.toFixed(3)} RMS: ${rms_high.toFixed(3)} STDDEV: ${std_dev_high.toFixed(3)}<br>
 &nbsp;Low Points: ${points_low.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_low.toFixed(3)} RMS: ${rms_low.toFixed(3)} STDDEV: ${std_dev_low.toFixed(3)}</span>
 		`.trim());
-		
-		
+
+
 		let inc = Math.ceil(zMax / precision);
 		for (let i = precision - 1; i > 0; i--) {
 			let vm = i * inc;
@@ -1385,9 +1393,9 @@ High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} M
 			jq_row.append(`<td style='width: 2ch; padding: 2px; color: #ffffff; background: ${c}'>${q}</td>`);
 			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${Math.min((zMax / 1000), (vm / 1000)).toFixed(3)}</td>`);
 		}
-		
+
 		this.jq_legend.append(`<tr><td style='background: #00ff00;'>&nbsp;${this.zero_point_char}&nbsp;</td><td style='text-align: right; font-family: monospace;'>&nbsp;0.000</td></tr>`);
-		
+
 		inc = Math.floor(zMin / precision);
 		for (let i = 1; i < precision; i++) {
 			let vm = i * inc;
@@ -1406,8 +1414,8 @@ High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} M
 			jq_row.append(`<td style='width: 2ch; padding: 2px; color: #ffffff; background: ${c}'>${q}</td>`);
 			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${Math.max((zMin / 1000), (vm / 1000)).toFixed(3)}</td>`);
 		}
-		
+
 	}
-	
+
 }
 DueuiElement.addElementType('heightmap', DueuiHeightmapWidget);
