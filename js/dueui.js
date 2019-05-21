@@ -8,7 +8,7 @@ jQuery.fn.extend({
 		let n = pos.match(/(left|center|right)(([+-])(\d+))?\s+(top|center|bottom)(([+-])(\d+))?/i);
 		let width = this.outerWidth();
 		let height = this.outerHeight();
-		
+
 		let left = 0;
 		switch(n[1]) {
 		case "left":
@@ -23,7 +23,7 @@ jQuery.fn.extend({
 		if (n[2]) {
 			left += parseFloat(n[2]);
 		}
-		
+
 		let top = 0;
 		switch(n[5]) {
 		case "top":
@@ -38,7 +38,7 @@ jQuery.fn.extend({
 		if (n[6]) {
 			top += parseFloat(n[6]);
 		}
-		
+
 		return {"left": left, "top": top};
 	},
 	dueuiPosition: function dueuiPosition(pos) {
@@ -46,7 +46,7 @@ jQuery.fn.extend({
 		let of_offset = $(pos.of).calcOffset(pos.at);
 		let of_pos = $(pos.of).offset();
 		let dest = {"left": of_pos.left + of_offset.left, "top": of_pos.top + of_offset.top};
-		
+
 		this.offset({"left": (dest.left - my_offset.left), "top": (dest.top - my_offset.top)});
 	}
 });
@@ -70,7 +70,7 @@ class DueuiElement {
 			"element_defaults": {},
 			"elements": []
 		}, config);
-		
+
 		this.jq = $(`<${html_element_type}/>`);
 		if (this.id) {
 			this.jq.attr("id", this.id);
@@ -80,7 +80,7 @@ class DueuiElement {
 		}
 
 		this.updateClass(this.classes);
-		
+
 		if (parent && parent.hasClass("dueui-panel-tab")) {
 			this.style = $.extend(true, {"position": "absolute"}, this.style);
 		}
@@ -96,7 +96,7 @@ class DueuiElement {
 		this.parent = parent;
 		this.jq.data(this);
 	}
-	
+
 	hasClass(classname) {
 		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
 		return t.hasClass(classname);
@@ -145,7 +145,7 @@ class DueuiElement {
 		if (this.state.current === this.state.last) {
 			return;
 		}
-		
+
 		if (this.state.styles && this.state.styles[this.state.current]) {
 			this.css($.extend(true, {}, this.style, this.state.styles[this.state.current]));
 		}
@@ -158,7 +158,7 @@ class DueuiElement {
 		}
 		this.state.last = this.state.current;
 	}
-	
+
 	clearState() {
 		this.removeClasses(this.state.merged_classes || []);
 		this.state.last = -2;
@@ -169,7 +169,7 @@ class DueuiElement {
 		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
 		return t.css(style);
 	}
-	
+
 	updateId(new_id) {
 		this.id = new_id;
 		if (this.jq) {
@@ -182,14 +182,14 @@ class DueuiElement {
 			this.jq.append(e);
 			return;
 		}
-		
+
 		e.parent_element = this;
 		this.jq.append(e.jq);
 		if (e.position) {
 			e.jq.dueuiPosition(e.position);
 		}
 	}
-	
+
 	appendTo(dest) {
 		dest.append(this);
 	}
@@ -407,9 +407,9 @@ class DueUI{
 	}
 
 	static rgb2hex(c) {
-		return `rgb(${c[0]},${c[1]},${c[2]})`; 
+		return `rgb(${c[0]},${c[1]},${c[2]})`;
 	}
-	
+
 	static pointInCircle(x, y, cx, cy, radius) {
 		let dsq = (x - cx) * (x - cx) + (y - cy) * (y - cy);
 		return dsq < (radius * radius);
@@ -456,7 +456,7 @@ class DueUI{
 		if (s < 10) s = "0" + s;
 		return `${d.getHours()}:${m}:${s}`;
 	}
-	
+
 	static formatElapsed(seconds) {
 		let h = Math.floor(seconds / 3600);
 		seconds -= (h * 3600);
@@ -483,6 +483,7 @@ class DueUI{
 			this.settings.dueui_settings_dont_send_gcode = 0;
 			this.settings.duet_polling_enabled = 0;
 			this.settings.show_tooltips = 1;
+			this.settings.duet_update_time = 0;
 		}
 		this.settings.theme = this.settings.theme || "bootstrap";
 		this.settings.duet_url = this.settings.duet_url || document.location.host;
@@ -503,9 +504,12 @@ class DueUI{
 		if (typeof(this.settings.show_tooltips) === 'undefined') {
 			this.settings.show_tooltips = 1;
 		}
+		if (typeof(this.settings.duet_update_time) === 'undefined') {
+			this.settings.duet_update_time = 0;
+		}
 
 		this.setSettings(this.settings);
-		
+
 		this.current_status = "";
 		this.last_poll = [0, 0, 0, 0];
 		this.connected = false;
@@ -677,9 +681,20 @@ class DueUI{
 		var _this = this;
 		delete this.reconnect_timer;
 		$(".connection-listener").trigger("duet_connection_change", { "status": "connecting" });
+		let url = `${this.settings.duet_url}/rr_connect?password=${ encodeURI(this.settings.duet_password) }`;
+		if (this.settings.duet_update_time) {
+			let d = new Date();
+			let m = d.getMonth() + 1;
+			let da = d.getDate();
+			url += ("&time=" +
+				d.getFullYear() + "-" +
+				(m < 10 ? "0" : "") + m + "-" +
+				(da < 10 ? "0" : "") + da + "T" +
+				d.toLocaleTimeString("default", {hour12: false}));
+		}
 		$.ajax({
 			dataType: "json",
-			url: `${this.settings.duet_url}/rr_connect?password=${ encodeURI(this.settings.duet_password) }`,
+			url: url,
 			timeout: 1000
 		})
 		.then((response, status, xhr) => {
@@ -881,7 +896,7 @@ class DueUI{
 				alert(`Unable to parse config file '${config}': ${reason}`);
 				return;
 			}
-			
+
 			if (xhr === "Not Found" && configs.length > 1) {
 				setTimeout(() => {
 					this.getConfig(configs.slice(1));

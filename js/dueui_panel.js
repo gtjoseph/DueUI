@@ -8,7 +8,7 @@ class DueuiPanel extends DueuiElement {
 			"classes": "bg-light "
 				+ (config.classes || "")
 			}), parent);
-		
+
 		if (!this.skip_population) {
 			this.populate();
 		}
@@ -76,7 +76,7 @@ class DueuiTabbedPanel extends DueuiPanel {
 				}
 			}, this.header_panel, {"classes": "dueui-header " + (this.header_panel.classes || "")}), this);
 		}
-		
+
 		this.panel_area_widget = new DueuiPanel({
 			"id": "dueui_panel_area",
 			"style": {
@@ -85,7 +85,7 @@ class DueuiTabbedPanel extends DueuiPanel {
 			"element_configs": this.element_configs,
 			"skip_population": true
 		}, this);
-			
+
 		this.menubar_widget = new DueuiPanel($.extend(true, {
 			"id": `${this.id}_menubar`,
 			"style": {
@@ -93,9 +93,9 @@ class DueuiTabbedPanel extends DueuiPanel {
 			}
 		}, this.menubar || {}, {"classes": "nav "
 			+ (this.menubar ? (this.menubar.classes || "") : "")}), this);
-		
+
 		this.panel_area_widget.populate();
-		
+
 		this.menubar_widget.append($(`<span class='ml-auto'></span>`));
 
 		this.refresh_button = new DueuiButtonWidget(
@@ -156,7 +156,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			console.log(err);
 		});
 	}
-	
+
 	constructor(config, parent){
 		super(Object.assign(config,
 			{
@@ -166,7 +166,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					"icon": "settings",
 				}
 			}), parent);
-		
+
 		this.element_configs = [
 			{
 				"id": "dueui_version_label",
@@ -282,7 +282,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					]
 				}
 			},
-			
+
 			{
 				"id": "dueui_settings_submit",
 				"type": "button",
@@ -304,7 +304,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					{"type": "ui", "action": "refresh"}
 				]
 			},
-			
+
 			{
 				"id": "dueui_settings_download_default",
 				"type": "button",
@@ -320,7 +320,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"position": {"my": "left top", "at": "left bottom+10", "of": "#dueui_settings_submit"},
 				"value": "<b>Don't forget to click the Save and Refresh buttons to save the new values!</b>"
 			},
-			
+
 			{
 				"id": "dueui_theme_label",
 				"type": "label",
@@ -409,7 +409,26 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					{"type": "setting", "setting": "duet_polling_enabled", "value": 1, "fire_on_startup": true},
 					{"type": "setting", "setting": "duet_polling_enabled", "value": 0,}
 				]
+			},
+			{
+				"id": "dueui_settings_update_time",
+				"type": "button",
+				"style": {"height": "2.5em", "width": "25ch"},
+				"state": {
+					"classes": [
+						"btn-danger",
+						"btn-success"
+					],
+				},
+				"value": "Update Duet Time",
+				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_polling"},
+				"actions_type": "state",
+				"actions": [
+					{"type": "setting", "setting": "duet_update_time", "value": 1, "fire_on_startup": true},
+					{"type": "setting", "setting": "duet_update_time", "value": 0,}
+				]
 			}
+
 		];
 
 		this.populate();
