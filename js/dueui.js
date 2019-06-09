@@ -568,7 +568,6 @@ class DueUI{
 	setSetting(setting, value) {
 		this.settings[setting] = value;
 		localStorage.setItem(setting, value);
-		console.log(`Saving setting: ${setting} : ${value}`);
 		if (setting === "theme") {
 			DueUI.setCurrentTheme(value);
 		}
@@ -628,6 +627,9 @@ class DueUI{
 			$(`.status-poll-listener-${poll_level}`).trigger("duet_poll_response", response);
 			if (this.sequence < 0) {
 				this.sequence = response.seq;
+			}
+			if (response.output && response.output.message) {
+				this.logMessage("I", response.output.message);
 			}
 			if (response.seq > this.sequence) {
 				this.getGcodeReply();
