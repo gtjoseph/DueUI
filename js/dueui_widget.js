@@ -966,27 +966,37 @@ class DueuiJogWidget extends DueuiPanel {
 
 		for (let ix = 0; ix < this.value_count; ix++) {
 			let val = this.values[this.current_scale][ix];
-			this.element_configs.push({
-				"value": `${val}`,
-				"type": "button",
-				"is_value": true,
-				"style": {"position": "relative"},
-				"read_only": ((typeof(val) === 'string') || (typeof(val) === 'number' && val === 0)),
-				"val": function(val) {
-					if (typeof(val) === 'undefined') {
-						let position = _this.values[_this.current_scale][ix];
-						let speed = _this.current_speed;
-						let axis = _this.axis;
-						let sense = _this.current_sense;
-						let gc = eval("`" + _this.jog_command + "`");
-						console.log(gc);
-						return gc;
-					} else {
-						this.value_object[this.value_function](val);
-					}
-				},
-				"actions": [{"type": "gcode", "gcode": "${value}", "get_reply": true, "no_echo": true}]
-			});
+			let bc;
+
+			if (typeof(val) === 'object' && typeof(val.type) === 'string') {
+				bc = $.extend(true, {
+					"style": {"position": "relative"},
+				}, val);
+			} else {
+				bc = {
+					"value": `${val}`,
+					"type": "button",
+					"is_value": true,
+					"style": {"position": "relative"},
+					"read_only": (typeof(val) === 'string'),
+					"val": function(val) {
+						if (typeof(val) === 'undefined') {
+							let position = _this.values[_this.current_scale][ix];
+							let speed = _this.current_speed;
+							let axis = _this.axis;
+							let sense = _this.current_sense;
+							let gc = eval("`" + _this.jog_command + "`");
+							console.log(gc);
+							return gc;
+						} else {
+							this.value_object[this.value_function](val);
+						}
+					},
+					"actions": [{"type": "gcode", "gcode": "${value}", "get_reply": true, "no_echo": true}]
+				};
+			}
+
+			this.element_configs.push(bc);
 		}
 		this.populate();
 

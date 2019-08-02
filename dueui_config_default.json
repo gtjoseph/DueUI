@@ -1637,6 +1637,43 @@ DueUIConfig({
 						}
 					},
 					{
+						/*
+						 * The Z axis Babystep jog widget
+						 */
+						"id": "babystep_z",
+						"type": "jog",
+						"enabled": true,
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#jog_z"
+						},
+						"button_defaults": {
+							"style": {
+								"width": "5ch",
+								"height": "2em",
+								"padding": "5px",
+								"margin": "5px"
+							}
+						},
+						"axis": "Z",
+						"values": [
+							[-1.0,-0.5,-0.2,-0.1,-0.05,{
+								"type": "button",
+								"id": "babystep_reset",
+								"enabled": true,
+								"value": "Clr",
+								"label": "Clr",
+								"actions": [
+									{"type": "gcode", "gcode": "M290 R0 S0;M290", "get_reply": true}
+								]
+
+							},0.05,0.1,0.2,0.5,1]
+						],
+						"jog_command": "M290 ${axis}${position} R1;M290",
+						"direction": "column"
+					},
+					{
 						"id": "jog_z_speed_label",
 						"type": "label",
 						"enabled": true,
@@ -1782,7 +1819,7 @@ DueUIConfig({
 						"position": {
 							"my": "left top",
 							"at": "right+10 top",
-							"of": "#jog_z"
+							"of": "#babystep_z"
 						},
 						"button_defaults": {
 							"style": {
