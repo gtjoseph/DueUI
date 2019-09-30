@@ -1258,6 +1258,8 @@ class DueuiHeightmapWidget extends DueuiWidget {
 		let rms_low = 0;
 		let std_dev_low = 0;
 		let z_low = [];
+		let zLow = 0;
+		let zHigh = 0;
 
 		for(let i=0; i < yPoints; i++)
 		{
@@ -1291,6 +1293,9 @@ class DueuiHeightmapWidget extends DueuiWidget {
 			}
 			int_rows.push(dr);
 		}
+
+		zLow = zMin;
+		zHigh = zMax;
 
 		if (this.scale_min) {
 	        zMin = this.scale_min * 1000.0;
@@ -1342,7 +1347,7 @@ class DueuiHeightmapWidget extends DueuiWidget {
 					bgcolor = colors.low[ cix ];
 					fgcolor = bgcolor;
 					v = this.low_point_char;
-					if (z <= zMin) {
+					if (z <= zLow) {
 						fgcolor = "#ffffff";
 					}
 				} else if (z == 0) {
@@ -1354,7 +1359,7 @@ class DueuiHeightmapWidget extends DueuiWidget {
 					bgcolor = colors.high[ cix ];
 					fgcolor = bgcolor;
 					v = this.high_point_char;
-					if (z >= zMax) {
+					if (z >= zHigh) {
 						fgcolor = "#ffffff";
 					}
 				}
