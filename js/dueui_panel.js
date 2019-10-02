@@ -135,26 +135,21 @@ DueuiElement.addElementType("tabbed_panel", DueuiTabbedPanel);
 
 class DueuiSettingsPanel extends DueuiTabPanel {
 
-	getThemes(custom) {
-		let t = this.element_configs.find(element => element.id === 'dueui_theme');
-		$.ajax({
-			url: custom ? "css/dueui-themes_custom.css" : "css/dueui-themes.css",
-			dataType: "jsonp",
-			jsonp: "callback",
-			jsonpCallback: custom ? "DueUICustomThemes" : "DueUIThemes"
-		}).done((data) => {
-			let t = $("#dueui_theme");
-			for (let theme of data.themes) {
-				t.append(`<option value="${theme.value}">${theme.label}</option>`);
-			}
-			if (!custom) {
-				this.getThemes(true);
-			} else {
-				t.val(dueui.getSetting("theme"));
-			}
-		}).catch((err) => {
-			console.log(err);
-		});
+	async getThemes(custom) {
+		let resp = await dueui.getJSON(custom ? "/dueui/css/dueui-themes_custom.css" : "/dueui/css/dueui-themes.css",
+				custom ? "DueUICustomThemes" : "DueUIThemes");
+		if (!resp.ok) {
+			return;
+		}
+		let t = $("#dueui_theme");
+		for (let theme of resp.data.themes) {
+			t.append(`<option value="${theme.value}">${theme.label}</option>`);
+		}
+		if (!custom) {
+			await this.getThemes(true);
+		} else {
+			t.val(dueui.getSetting("theme"));
+		}
 	}
 
 	constructor(config, parent){
@@ -433,7 +428,6 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 
 		this.populate();
 		this.getThemes(false);
-
 	}
 }
 DueuiElement.addElementType("settings_panel", DueuiSettingsPanel);

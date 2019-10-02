@@ -52,7 +52,7 @@ class DueuiWidget extends DueuiElement {
 				&& ((this.value && typeof(this.value) === 'string' && this.value.indexOf("${") >= 0)
 				|| (this.state && this.state.field) || this.onstatus)) {
 
-			this.addClasses(`status-poll-listener-${this.status_level || 1}`);
+			this.addClasses(`status-poll-listener-${this.status_level || 9}`);
 
 			this.jq.on("duet_poll_response", (event, status) => {
 				this.current_status = status;
@@ -546,56 +546,59 @@ class DueuiFileListWidget extends DueuiPanel {
 			});
 		}
 	}
-	refresh() {
+	async refresh() {
 		this.jq.empty();
 		this.element_configs = [];
 		this.jq.append("<span>Loading...</span>");
-		dueui.getFileList(this.directory).then((data) => {
-			let pbjq;
-			if (this.print_button && this.print_button.id) {
-				pbjq = $(`#${this.print_button.id} > button`);
-				pbjq.addClass(this.print_button.unselected_classes);
-			}
+		let resp = await dueui.getFileList(this.directory);
+		if (!resp.ok) {
+			return;
+		}
 
-			for (let fe of data.files) {
-				if (fe.type === "f") {
-					let b = {
-						"type": "button",
-						"enabled": true,
-						"value": this.formatName(fe.name),
-						"label": this.formatName(fe.name),
-						"file": fe.name,
-						"classes": "-btn -btn-primary list-group-item list-group-item-action",
-						"actions": []
-					};
-					if (this.tap_action !== "select") {
-						if (this.confirm_message) {
-							b.actions_type = "choose";
-							b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`,
-								"label": DueUI.evalValue(this.confirm_message, b.value)});
-						} else {
-							b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`});
-						}
-					} else if (pbjq) {
-						b.onsubmit = (event) => {
-							pbjq.html(DueUI.evalValue(this.print_button.selected_label, fe.name));
-							pbjq.attr("selected_file", fe.name);
-							pbjq.removeClass(this.print_button.unselected_classes);
-							pbjq.addClass(this.print_button.selected_classes);
-						};
+		let pbjq;
+		if (this.print_button && this.print_button.id) {
+			pbjq = $(`#${this.print_button.id} > button`);
+			pbjq.addClass(this.print_button.unselected_classes);
+		}
+
+		for (let fe of resp.data) {
+			if (fe.type === "f") {
+				let b = {
+					"type": "button",
+					"enabled": true,
+					"value": this.formatName(fe.name),
+					"label": this.formatName(fe.name),
+					"file": fe.name,
+					"classes": "-btn -btn-primary list-group-item list-group-item-action",
+					"actions": []
+				};
+				if (this.tap_action !== "select") {
+					if (this.confirm_message) {
+						b.actions_type = "choose";
+						b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`,
+							"label": DueUI.evalValue(this.confirm_message, b.value)});
+					} else {
+						b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`});
 					}
-					this.element_configs.push(b);
+				} else if (pbjq) {
+					b.onsubmit = (event) => {
+						pbjq.html(DueUI.evalValue(this.print_button.selected_label, fe.name));
+						pbjq.attr("selected_file", fe.name);
+						pbjq.removeClass(this.print_button.unselected_classes);
+						pbjq.addClass(this.print_button.selected_classes);
+					};
 				}
+				this.element_configs.push(b);
 			}
-			if (this.sort_autofill &&
-				(this.sort_autofill === "label" || this.sort_autofill === "file")) {
-				this.element_configs.sort((a, b) => {
-					return a[this.sort_autofill].localeCompare(b[this.sort_autofill]);
-				});
-			}
-			this.jq.empty();
-			super.populate();
-		});
+		}
+		if (this.sort_autofill &&
+			(this.sort_autofill === "label" || this.sort_autofill === "file")) {
+			this.element_configs.sort((a, b) => {
+				return a[this.sort_autofill].localeCompare(b[this.sort_autofill]);
+			});
+		}
+		this.jq.empty();
+		super.populate();
 	}
 	formatName(macro){
 		name = (typeof macro === 'number' ? this.macros[macro] : macro);
@@ -635,39 +638,42 @@ class DueuiFileGridWidget extends DueuiGridWidget {
 			});
 		}
 	}
-	refresh() {
+	async refresh() {
 		this.jq.empty();
 		this.element_configs = [];
 		this.jq.append("<span>Loading...</span>");
-		dueui.getFileList(this.directory).then((data) => {
-			for (let fe of data.files) {
-				if (fe.type === "f") {
-					let b = {
-						"type": "button",
-						"enabled": true,
-						"value": this.formatName(fe.name),
-						"label": this.formatName(fe.name),
-						"file": fe.name,
-						"actions": []
-					};
-					if (this.confirm_message) {
-						b.actions_type = "choose";
-						b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`, "label": this.confirm_message});
-					} else {
-						b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`});
-					}
-					this.element_configs.push(b);
+		let resp = await dueui.getFileList(this.directory);
+		if (!resp.ok) {
+			return;
+		}
+
+		for (let fe of resp.data) {
+			if (fe.type === "f") {
+				let b = {
+					"type": "button",
+					"enabled": true,
+					"value": this.formatName(fe.name),
+					"label": this.formatName(fe.name),
+					"file": fe.name,
+					"actions": []
+				};
+				if (this.confirm_message) {
+					b.actions_type = "choose";
+					b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`, "label": this.confirm_message});
+				} else {
+					b.actions.push({"type": this.action_type, "file": `${this.directory}/${fe.name}`});
 				}
+				this.element_configs.push(b);
 			}
-			if (this.sort_autofill &&
-				(this.sort_autofill === "label" || this.sort_autofill === "file")) {
-				this.element_configs.sort((a, b) => {
-					return a[this.sort_autofill].localeCompare(b[this.sort_autofill]);
-				});
-			}
-			this.jq.empty();
-			super.populate();
-		});
+		}
+		if (this.sort_autofill &&
+			(this.sort_autofill === "label" || this.sort_autofill === "file")) {
+			this.element_configs.sort((a, b) => {
+				return a[this.sort_autofill].localeCompare(b[this.sort_autofill]);
+			});
+		}
+		this.jq.empty();
+		super.populate();
 	}
 	formatName(macro){
 		name = (typeof macro === 'number' ? this.macros[macro] : macro);
@@ -721,7 +727,7 @@ class DueuiHeaterWidget extends DueuiPanel {
 				"icon": this.icon,
 				"icon_position": this.icon_position,
 				"type": "button",
-				"status_level": this.status_level || 1,
+				"status_level": this.status_level || 9,
 				"state": {
 					"classes": (this.state && this.state.classes) ? this.state.classes : [
 		            	"btn-secondary",
@@ -730,53 +736,48 @@ class DueuiHeaterWidget extends DueuiPanel {
 		            	"btn-danger",
 		            	"btn-info"
 		            ],
-					"field": "${status.temps.state["+this.heater_index+"]}"
+					"field": "${status.heat.heaters["+this.heater_index+"].state}"
 				},
 				"actions_type": "choose",
 				"actions": [
 					{"type": "gcode", "label": "Off", "gcode":
 						(this.state_commands && this.state_commands.off)
 						? this.state_commands.off
-						: `M308 P${this.heater_index} T0`, "get_reply": true},
+						: `M117 "'state_commands.off' is not defined for heater ${this.heater_index}"`, "get_reply": true},
 					{"type": "gcode", "label": "Standby", "gcode":
 						(this.state_commands && this.state_commands.standby)
 						? this.state_commands.standby
-						: `M308 P${this.heater_index} T1`, "get_reply": true},
+						: `M117 "'state_commands.standby' is not defined for heater ${this.heater_index}"`, "get_reply": true},
 					{"type": "gcode", "label": "On", "gcode":
 						(this.state_commands && this.state_commands.on)
 						? this.state_commands.on
-						: `M308 P${this.heater_index} T2`, "get_reply": true},
+						: `M117 "'state_commands.on' is not defined for heater ${this.heater_index}"`, "get_reply": true},
 					{"type": "gcode", "label": "Reset Fault", "gcode":
 						(this.state_commands && this.state_commands.reset)
 						? this.state_commands.reset
-						: `M562 P${this.heater_index}`, "get_reply": true},
+						: `M117 "'state_commands.reset' is not defined for heater ${this.heater_index}"`, "get_reply": true},
 					{"type": "gcode", "label": "Tune to Active Temp", "gcode":
 						(this.state_commands && this.state_commands.tune)
 						? this.state_commands.tune
-						: `M303 H${this.heater_index} P1 S\${status.temps.active[${this.heater_index}]}`, "get_reply": true},
+						: `M117 "'state_commands.tune' is not defined for heater ${this.heater_index}"`, "get_reply": true},
 				]
 			};
 
 			let temp_button = {
 				"type": "button",
-				"value": this.current_temp_field || "${status.temps.current["+this.heater_index+"].toFixed(1)}",
+				"value": this.current_temp_field || "${status.heat.heaters["+this.heater_index+"].current.toFixed(1)}",
 				"initial_value": 0,
-				"status_level": this.status_level || 1,
+				"status_level": this.status_level || 9,
 				"read_only": true,
 				"classes": "btn",
 				"tolerances": this.tolerances,
 				"onstatus": this.tolerances ? function(status) {
-					var state = status.temps.state[config.heater_index];
+					var state = status.heat.heaters[config.heater_index].state;
 					let current_temp = this.val();
 
 					if (0 < state && state < 3) {
-						let active_temp = (config.active_temp_field
-								? DueUI.evalStatus(status, config.active_temp_field, this)
-								: status.temps.active[config.heater_index]);
-						let standby_temp = (config.standby_temp_field
-								? DueUI.evalStatus(status, config.standby_temp_field, this)
-								: status.temps.standby[config.heater_index]);
-
+						let active_temp = DueUI.evalStatus(status, config.active_temp_field, this);
+						let standby_temp = DueUI.evalStatus(status, config.standby_temp_field, this);
 						let set_temp = state == 1 ? standby_temp : active_temp;
 						let diff = Math.abs(set_temp - current_temp);
 						this.processTolerance(status, diff);
@@ -791,13 +792,13 @@ class DueuiHeaterWidget extends DueuiPanel {
 				"input": {
 					"id": `${this.id}_input_active`,
 					"field_type": "number",
-					"value": config.active_temp_field || "${status.temps.active["+config.heater_index+"]}",
+					"value": config.active_temp_field,
 					"style": {"text-align": "right"},
-					"status_level": config.status_level || 1,
+					"status_level": config.status_level || 9,
 					"actions": [
 						{"type": "gcode", "gcode": (config.set_temp_commands && config.set_temp_commands.active)
 						? config.set_temp_commands.active
-						: "M308 P" + config.heater_index + " S${value}", "get_reply": true}
+						: `M117 "'set_temp_commands.active' is not set for heater ${config.heater_index}"`, "get_reply": true}
 					]
 				},
 				"button": {
@@ -814,13 +815,13 @@ class DueuiHeaterWidget extends DueuiPanel {
 				"input": {
 					"id": `${this.id}_input_standby`,
 					"field_type": "number",
-					"value": config.standby_temp_field || "${status.temps.standby["+config.heater_index+"]}",
+					"value": config.standby_temp_field,
 					"style": {"text-align": "right"},
-					"status_level": config.status_level || 1,
+					"status_level": config.status_level || 9,
 					"actions": [
 						{"type": "gcode", "gcode": (config.set_temp_commands && config.set_temp_commands.standby)
 						? config.set_temp_commands.standby
-						: "M308 P" + config.heater_index + " R${value}", "get_reply": true}
+						: `M117 "'set_temp_commands.standby' is not set for heater ${config.heater_index}"`, "get_reply": true}
 					]
 				},
 				"button": {
@@ -917,7 +918,7 @@ class DueuiPositionWidget extends DueuiPanel {
 			},
             "element_defaults": {
                 "style": {"width": "100%", "font-size": "100%", "margin": "0px", "padding": "0px"},
-				"status_level": 1,
+				"status_level": 9,
 				"state": {
 					"classes": [
 	    				"btn-warning",
@@ -929,12 +930,12 @@ class DueuiPositionWidget extends DueuiPanel {
 		this.axes = this.axes || [];
 		for (var ix = 0; ix < this.axes.length; ix++) {
 			this.element_configs.push({
-				"value": this.axes[ix].label + " ${status.coords.xyz["+ this.axes[ix].index+"].toFixed(3).padStart(7)}",
+				"value": this.axes[ix].label + " ${status.move.axes["+ this.axes[ix].index + "].machinePosition.toFixed(3).padStart(7)}",
 				"initial_value": `${this.axes[ix].label} 0.000`,
 				"type": "button",
 				"title": this.axes[ix].title || "Home " + this.axes[ix].gcode_axis,
 				"state": {
-					"field": "${status.coords.axesHomed["+this.axes[ix].index+"]}",
+					"field": "${status.move.axes["+this.axes[ix].index+"].homed}",
 				},
 				"actions": [ {"type": "gcode", "gcode": "G28 " + this.axes[ix].gcode_axis, "get_reply": true } ]
 			});
@@ -986,7 +987,6 @@ class DueuiJogWidget extends DueuiPanel {
 							let axis = _this.axis;
 							let sense = _this.current_sense;
 							let gc = eval("`" + _this.jog_command + "`");
-							console.log(gc);
 							return gc;
 						} else {
 							this.value_object[this.value_function](val);
@@ -1008,20 +1008,17 @@ class DueuiJogWidget extends DueuiPanel {
 
 		if (this.speed_change_event) {
 			this.jq.on(this.speed_change_event, (ea, data, event) => {
-				console.log(`${this.axis} speed ${data}`);
 				this.current_speed = data;
 			});
 		}
 
 		if (this.sense_change_event) {
 			this.jq.on(this.sense_change_event, (ea, data, event) => {
-				console.log(`${this.axis} sense${data}`);
 				this.current_sense = data;
 			});
 		}
 	}
 	toggleScale() {
-		console.log(`Toggle ${this.axis} scale`);
 		if (++this.current_scale >= this.scales) {
 			this.current_scale = 0;
 		}
@@ -1089,7 +1086,7 @@ class DueuiSliderWidget extends DueuiWidget {
 		this.last_value = "";
 		this.last_state = "";
 
-		this.jq.addClass(`status-poll-listener-${this.status_level || 1}`);
+		this.jq.addClass(`status-poll-listener-${this.status_level || 9}`);
 		this.jq.on("duet_poll_response", (event, status) => {
 			var val = DueUI.evalStatus(status, this.value, this);
 			this.val(val);

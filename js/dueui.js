@@ -3,6 +3,9 @@
  * position using the same syntax as jQuery-UI (without the overhead
  * of jQuery-UI)
  */
+
+keyExistsOn = (o, k) => k.split(".").reduce((a, c) => a.hasOwnProperty(c) ? a[c] || 1 : false, Object.assign({}, o)) === false ? false : true;
+
 jQuery.fn.extend({
 	calcOffset: function calcOffset(pos) {
 		let n = pos.match(/(left|center|right)(([+-])(\d+))?\s+(top|center|bottom)(([+-])(\d+))?/i);
@@ -145,16 +148,27 @@ class DueuiElement {
 		if (this.state.current === this.state.last) {
 			return;
 		}
-
-		if (this.state.styles && this.state.styles[this.state.current]) {
-			this.css($.extend(true, {}, this.style, this.state.styles[this.state.current]));
+		let current_state;
+		if (typeof(this.state.current) === 'string') {
+			if (this.state.current === 'true') {
+				current_state = 1;
+			} else if (this.state.current === 'false') {
+				current_state = 0;
+			} else {
+				current_state = this.state.current; 
+			}
+		} else {
+			current_state = this.state.current;
 		}
-		if (this.state.classes && this.state.classes[this.state.current]) {
+		if (this.state.styles && this.state.styles[current_state]) {
+			this.css($.extend(true, {}, this.style, this.state.styles[current_state]));
+		}
+		if (this.state.classes && this.state.classes[current_state]) {
 			this.removeClasses(this.state.merged_classes);
-			this.addClasses(this.state.classes[this.state.current]);
+			this.addClasses(this.state.classes[current_state]);
 		}
-		if (this.state.contents && this.state.contents[this.state.current]) {
-			this.val(this.state.contents[this.state.current]);
+		if (this.state.contents && this.state.contents[current_state]) {
+			this.val(this.state.contents[current_state]);
 		}
 		this.state.last = this.state.current;
 	}
@@ -195,10 +209,11 @@ class DueuiElement {
 	}
 
 	publishEvents(events, data, event) {
+		let eas;
 		if (Array.isArray(events)){
-			var eas = events;
+			eas = events;
 		} else {
-			var eas = [events];
+			eas = [events];
 		}
 		for(let ea of eas) {
 			$(`#${ea.target}`).trigger(ea.event, data, event);
@@ -284,9 +299,9 @@ class DueuiElement {
 				break;
 			case "macro":
 				if (a2.file) {
-					dueui.sendGcode({"gcode": `M98 P${a2.file}`, "get_reply": true});
+					dueui.sendGcode({"gcode": `M98 P"${a2.file}"`, "get_reply": true});
 				} else if (a2.macro) {
-					dueui.sendGcode({"gcode": `M98 P/macros/${a2.macro}`, "get_reply": true});
+					dueui.sendGcode({"gcode": `M98 P"/macros/${a2.macro}"`, "get_reply": true});
 				} else {
 					dueui.logMessage("E", "No 'file' or 'macro' parameter present");
 				}
@@ -343,10 +358,10 @@ class DueuiElement {
 				case "tab_change":
 					$(".dueui-panel-tab").hide();
 					a2.panel.show();
-					break
+					break;
 				case "refresh":
 					location.reload(true);
-					break
+					break;
 				default:
 					console.log(`Invalid UI action: ${a.action}`);
 				}
@@ -379,6 +394,7 @@ class DueuiElement {
 				}).fail((xhr, reason, error) => {
 					dueui.logMessage("E", reason);
 				});
+				break;
 			default:
 				console.log(`Invalid action: ${a.type}`);
 			}
@@ -388,6 +404,11 @@ class DueuiElement {
 DueuiElement.registry = {};
 
 class DueUI{
+
+	static delay(ms) {
+		return new Promise(resolve => setTimeout(resolve, ms));
+	}
+
 	static getCurrentTheme() {
 		return $("link[href$='.theme.css']").attr("href");
 	}
@@ -472,7 +493,7 @@ class DueUI{
 		this.settings = this.getSettings();
 		if (!this.settings) {
 			this.settings = {};
-			this.settings.theme = "base";
+			this.settings.theme = "Cerulean";
 			this.settings.duet_url = `http://${document.location.host}`;
 			this.settings.duet_password = "reprap";
 			this.settings.dueui_config_url = `${this.settings.duet_url}/rr_download?name=/sys/dueui_config.json`;
@@ -485,20 +506,23 @@ class DueUI{
 			this.settings.show_tooltips = 1;
 			this.settings.duet_update_time = 0;
 		}
-		this.settings.theme = this.settings.theme || "bootstrap";
+		this.settings.theme = this.settings.theme || "Cerulean";
 		this.settings.duet_url = this.settings.duet_url || document.location.host;
 		this.settings.duet_password = this.settings.duet_password || "reprap";
 		this.settings.dueui_config_url = this.settings.dueui_config_url || `${this.settings.duet_url}/rr_download?name=/sys/dueui_config.json`;
 		this.settings.duet_poll_interval_1 = this.settings.duet_poll_interval_1 || 1000;
 		this.settings.duet_poll_interval_2 = this.settings.duet_poll_interval_2 || 0;
 		this.settings.duet_poll_interval_3 = this.settings.duet_poll_interval_3 || 5000;
-		if (typeof(this.settings.duet_debug_polling_enabled) === 'undefined') {
+		if (typeof(this.settings.duet_debug_polling_enabled) === 'undefined' ||
+				this.settings.duet_debug_polling_enabled === "0") {
 			this.settings.duet_debug_polling_enabled = 0;
 		}
-		if (typeof(this.settings.dueui_settings_dont_send_gcode) === 'undefined') {
+		if (typeof(this.settings.dueui_settings_dont_send_gcode) === 'undefined' ||
+				this.settings.dueui_settings_dont_send_gcode === "0") {
 			this.settings.dueui_settings_dont_send_gcode = 0;
 		}
-		if (typeof(this.settings.duet_polling_enabled) === 'undefined') {
+		if (typeof(this.settings.duet_polling_enabled) === 'undefined' ||
+				this.settings.duet_polling_enabled === "0") {
 			this.settings.duet_polling_enabled = 0;
 		}
 		if (typeof(this.settings.show_tooltips) === 'undefined') {
@@ -510,6 +534,8 @@ class DueUI{
 
 		this.setSettings(this.settings);
 
+		this.dsf = false;
+		this.model = {}; 
 		this.current_status = "";
 		this.last_poll = [0, 0, 0, 0];
 		this.connected = false;
@@ -526,8 +552,10 @@ class DueUI{
 			this.settings.dueui_config_url,
 			`${this.settings.duet_url}/rr_download?name=/sys/dueui_config.json`,
 			`${this.settings.duet_url}/rr_download?name=/sys/dueui_config_default.json`,
-			"/DueUI/dueui_config.json",
-			"/DueUI/dueui_config_default.json",
+			`${this.settings.duet_url}/machine/file/sys/dueui_config.json`,
+			`${this.settings.duet_url}/machine/file/sys/dueui_config_default.json`,
+			"/dueui/dueui_config.json",
+			"/dueui/dueui_config_default.json",
 			"dueui_config.json",
 			"dueui_config_default.json"
 		];
@@ -580,238 +608,104 @@ class DueUI{
 		}
 	}
 
-	getJSON(url) {
-		return $.getJSON(dueui.getSetting("duet_url") + url);
+	async postData(path, data) {
+		let resp = {};
+		try {
+			resp.data = await $.post(`${this.settings.duet_url}${path}`, data);
+			resp.ok = true;
+		} catch (error) {
+			resp.error = error;
+			resp.ok = false;
+			console.log(error);
+		}
+		return resp;
 	}
 
-	getFileList(directory, last_response) {
-		let first = -1;
-		if (last_response && last_response.next > 0) {
-			first = last_response.next;
+	async getText(path) {
+		let resp = {};
+		try {
+			resp.data = await $.get(`${this.settings.duet_url}${path}`);
+			resp.ok = true;
+		} catch (error) {
+			resp.error = error;
+			resp.ok = false;
+			console.log(error);
 		}
+		return resp;
+	}
 
-		return this.getJSON(`/rr_filelist?dir=${directory}` + (first > -1 ? `&first=${first}` : ""))
-		.then((data) => {
-			if (last_response) {
-				last_response.files.push(...data.files);
+	async getJSON(path, jsonpCallback) {
+		let resp = {};
+		try {
+			if (typeof(jsonpCallback) === "undefined") {
+				resp.data = await $.getJSON(`${this.settings.duet_url}${path}`);
 			} else {
-				last_response = data;
+				resp.data = await $.ajax({
+					url: `${this.settings.duet_url}${path}`,
+					dataType: "jsonp",
+					jsonp: "callback",
+					jsonpCallback: jsonpCallback});
 			}
-			if (data.next > 0) {
-				return this.getFileList(directory, last_response);
-			}
-			last_response.next = 0;
-			return last_response;
-		});
-	}
-
-	pollOnce(poll_level) {
-		if (this.poll_in_flight) {
-			return;
+			resp.ok = true;
+		} catch (error) {
+			resp.error = error;
+			resp.ok = false;
+			console.log(error);
 		}
-		this.poll_in_flight = true;
-		$.ajax(
-			{
-				url: `${this.settings.duet_url}/rr_status?type=${poll_level}`,
-				timeout: 1000,
-				dataType: "json",
-			}).then((response) => {
-			this.current_poll_response = response;
-			if (this.settings.duet_debug_polling_enabled == 1) {
-				console.log({"poll_level": poll_level, "response": response});
-			}
-			if (response.status !== this.current_status) {
-				$(`.status-change-listener`).trigger("duet_status_change", response.status);
-				this.current_status = response.status;
-			}
-			$(`.status-poll-listener-${poll_level}`).trigger("duet_poll_response", response);
-			if (this.sequence < 0) {
-				this.sequence = response.seq;
-			}
-			if (response.output && response.output.message) {
-				this.logMessage("I", response.output.message);
-			}
-			if (response.seq > this.sequence) {
-				this.getGcodeReply();
-			}
-			this.poll_in_flight = false;
-		}).fail((xhr, reason, error) => {
-			this.logMessage("W", `Poll type ${poll_level} failed`);
-			this.disconnect();
-			this.connect();
-			this.poll_in_flight = false;
-		});
+		return resp;
 	}
 
-	schedulePoll() {
-		let interval = Math.min(
-			this.settings.duet_poll_interval_1,
-			this.settings.duet_poll_interval_2,
-			this.settings.duet_poll_interval_3
-		);
-
-		setInterval(() => {
-			if (!this.connected || !this.configured || this.settings.duet_polling_enabled != 1) {
-				return;
-			}
-
-			let now = Date.now();
-			let poll_level = -1;
-			if (this.settings.duet_poll_interval_3 > 250
-					&& now - this.last_poll[3] >= this.settings.duet_poll_interval_3) {
-				poll_level = 3;
-				this.last_poll[3] = now;
-			} else if (this.settings.duet_poll_interval_2 > 250
-					&& now - this.last_poll[2] >= this.settings.duet_poll_interval_2) {
-				poll_level = 2;
-				this.last_poll[2] = now;
-			} else if (this.settings.duet_poll_interval_1 > 250
-					&& now - this.last_poll[1] >= this.settings.duet_poll_interval_1) {
-				poll_level = 1;
-				this.last_poll[1] = now;
-			}
-			if (this.connected && poll_level > 0 && this.settings.duet_polling_enabled == 1) {
-				this.pollOnce(poll_level);
-			}
-		}, interval);
+	async getFileList_dsf(directory) {
+		let resp = await this.getJSON(`/machine/directory${directory}`);
+		return resp;
 	}
 
-	connect() {
-		if (this.connected) {
-			return;
-		}
+	async getFileList(directory) {
+		return this.getFileList_dsf(directory);
+	}
+
+	async sendGcode(gcodes) {
 		var _this = this;
-		delete this.reconnect_timer;
-		$(".connection-listener").trigger("duet_connection_change", { "status": "connecting" });
-		let url = `${this.settings.duet_url}/rr_connect?password=${ encodeURI(this.settings.duet_password) }`;
-		if (this.settings.duet_update_time) {
-			let d = new Date();
-			let m = d.getMonth() + 1;
-			let da = d.getDate();
-			url += ("&time=" +
-				d.getFullYear() + "-" +
-				(m < 10 ? "0" : "") + m + "-" +
-				(da < 10 ? "0" : "") + da + "T" +
-				d.toLocaleTimeString("default", {hour12: false}));
-		}
-		$.ajax({
-			dataType: "json",
-			url: url,
-			timeout: 1000
-		})
-		.then((response, status, xhr) => {
-			console.log({ response, status, xhr} );
-			if (response.err == 1) {
-				this.connected = false;
-				$(".connection-listener").trigger("duet_connection_change", { "status": "failed", "reason": "bad_password" });
-				this.logMessage("E", "Connection failed: Bad Password");
-				return;
-			}
-			if (response.err == 2) {
-				this.connected = false;
-				$(".connection-listener").trigger("duet_connection_change", { "status": "failed", "reason": "busy" });
-				this.logMessage("E", "Connection failed: No more HTTP connections available");
-				return;
-			}
-			this.connected = true;
-			if (this.connect_retry > 0) {
-				$(".connection-listener").trigger("duet_connection_change", { "status": "reconnected", "response": response });
-				this.logMessage("I", "Reconnected");
-			} else {
-				$(".connection-listener").trigger("duet_connection_change", { "status": "connected", "response": response });
-				this.logMessage("I", "Connected");
-			}
-			this.connect_retry = 0;
-		}).fail((xhr, reason, error) => {
-			console.log({xhr, reason, error});
-			console.log(xhr.getAllResponseHeaders());
-			this.connected = false;
-			if (this.connect_retry <= this.duet_connect_retries.number) {
-				this.connect_retry++;
-				this.logMessage("W", `Connection attempt ${this.connect_retry} of ${this.duet_connect_retries.number} failed`);
-				$(".connection-listener").trigger("duet_connection_change", { "status": "retrying", "retry": this.connect_retry });
-				this.reconnect_timer = setTimeout(() => {
-					this.logMessage("W", `Attempting reconnection ${this.connect_retry + 1} of ${this.duet_connect_retries.number}`);
-					this.connect();
-				}, this.duet_connect_retries.interval);
-			} else {
-				alert("There was an error attempting to connect to "+this.settings.duet_url+"\nPlease see the javascript console for more information.");
-				$(".connection-listener").trigger("duet_connection_change", { "status": "failed", "reason": reason });
-				this.logMessage("E", `Final connection attempt failed.  Refresh to restart.`);
-			}
-		});
-	}
 
-	disconnect() {
-		this.connect_retry = 0;
-		if (this.reconnect_timer) {
-			cancelTimeout(this.reconnect_timer);
-			delete this.reconnect_timer;
-		}
-		this.connected = false;
-		$(".connection-listener").trigger("duet_connection_change", {"status": "disconnected"});
-		this.logMessage("E", `Connection failed.  Disconnected.`);
-		$.ajax({
-			url: `${this.settings.duet_url}/rr_disconnect`,
-			timeout: 1000
-		});
-	}
-
-	getGcodeReply(gc) {
-		var uri = `${this.settings.duet_url}/rr_reply`;
-		let tempgc = gc || { no_echo: true, gcode: ""};
-		$.get(uri, (response) => {
-			response = response.trim();
-			let d = new Date();
-			let r = response.trim();
-			if (r.length) {
-				$(".gcode-reply-listener").trigger("gcode_reply", {
-					"timestamp": d,
-					"gcode": (tempgc.no_echo ? "" : tempgc.gcode),
-					"response": response
-				});
-			}
-			this.sequence++;
-			if (this.sequence < this.current_poll_response.seq) {
-				setTimeout(() => {
-					this.getGcodeReply();
-				}, 0);
-			}
-		}).fail((xhr, reason, error) => {
-			this.logMessage("E", reason);
-			console.log({xhr, reason, error})
-		});
-	}
-
-	sendGcode(gcode) {
-		var _this = this;
-		var gc = gcode;
-		var more = false;
-		if (gcode instanceof Array) {
-			gc = gcode[0];
-			if (gcode.length > 1) {
-				more = true;
-			}
+		if (!Array.isArray(gcodes)) {
+			gcodes = [ gcodes ];
 		}
 
-		if (typeof(gc) === 'string') {
-			gc = {"gcode": gc, "get_reply": false};
-		}
-
-		var g = encodeURI(gc.gcode.replace(/;/g,"\n"));
-		var uri = `${this.settings.duet_url}/rr_gcode?gcode=${g.replace(/[+]/, "%2B")}`;
-		if (this.settings.dueui_settings_dont_send_gcode == 1) {
-			this.logMessage("D", `GCode: ${gc.gcode}`);
-			return;
-		}
-		$.getJSON(uri).then((response) => {
-			console.log(uri, response);
-			if (more) {
-				this.sendGcode(gcode.slice(1));
+		for (let ge of gcodes) {
+			if (typeof(ge) === 'string') {
+				ge = {"gcode": ge, "get_reply": false};
 			}
-		}).fail((xhr, reason, error) => {
-			console.log({xhr, reason, error})
-		});
+			let gee = ge.gcode.split(";");
+			for (let gc of gee) {
+				gc = gc.trim();
+				if (this.settings.dueui_settings_dont_send_gcode == 1) {
+					this.logMessage("D", `GCode: ${gc}`);
+					continue;
+				}
+				let resp;
+				if (this.dsf) {
+					resp = await this.postData("/machine/code", gc);
+					if (!resp.ok) {
+						this.logMessage("E", `GCode: ${gc}  Error: ${resp.error.responseText}`);
+					} else {
+						if (ge.get_reply && resp.data && resp.data.length > 0) {
+							let d = new Date();
+							$(".gcode-reply-listener").trigger("gcode_reply", {
+								"timestamp": d,
+								"gcode": (ge.no_echo ? "" : gc),
+								"response": resp.ok ? resp.data : resp.error.responseText
+							});
+						}
+					}
+				} else {
+					let uri = `/rr_gcode?gcode=${g.replace(/[+]/, "%2B")}`;
+					resp = await this.getJSON(uri);
+					if (!resp.ok) {
+						this.logMessage("D", `GCode: ${gc}  Error: ${resp.error.responseText}`);
+					}
+				}
+			}
+		}
 	}
 
 	printFile(file) {
@@ -850,92 +744,242 @@ class DueUI{
 		var p = new (DueuiElement.getElementClass(this.dueui_content.type))(ec, $("body"));
 	}
 
-	getConfig(configs) {
-		if (configs.length == 0) {
-			return;
-		}
-		let config = configs[0];
-		$.ajax({
-			url: config,
-			cache: false,
-			timeout: 2000,
-			dataType: "jsonp",
-			jsonp: "callback",
-			jsonpCallback: "DueUIConfig"
-		}).then((config_data) => {
-			this.logMessage("I", `Retrieved config from ${config}`);
-			this.active_config_url = config;
-			this.configured = true;
-			console.log(config_data);
-			this.populate(config_data);
-			this.schedulePoll();
-			this.logMessage("I", `DueUI Version ${dueui_version}`);
-			this.getJSON("/rr_config").then((response) => {
-				dueui.logMessage("I", response.firmwareElectronics);
-				dueui.logMessage("I", response.firmwareName + ": " + response.firmwareVersion);
-			}).fail((xhr, reason, error) => {
-				dueui.logMessage("E", reason || error || "");
-			});
-		}).fail((data, reason, xhr) => {
-			if (reason === "parsererror") {
-				try {
-					/*
-					var s = document.createElement("script");
-					s.text = data.responseText;
-					document.head.appendChild(s).parentNode.removeChild(s);
-					*/
-					eval(data.responseText);
-				} catch(error) {
-					alert(`${error.message}
-					There was an error parsing config file
-					${config}.
-					Use the browser's Javascript console and look for
-					"Uncaught SyntaxError".  To the far right you'll
-					see a dummy file name and the line in the config
-					file that caused the error.
-					`.trim());
-				}
-				alert(`Unable to parse config file '${config}': ${reason}`);
-				return;
+	async openWebsocket() {
+		let _this = this;
+		let resp = {};
+		let ws_url = this.settings.duet_url.replace("http", "ws") + "/machine";
+		let socket = new WebSocket(ws_url);
+		let model = await new Promise(function(resolve, reject) {
+			/* These are temp callbacks just for the initial connection */
+			socket.onmessage = function(e) {
+				const model = JSON.parse(e.data);
+				resp.ok = true;
+				resp.data = model;
+				resp.socket = socket;
+				resolve(model);
 			}
-
-			if (xhr === "Not Found" && configs.length > 1) {
-				setTimeout(() => {
-					this.getConfig(configs.slice(1));
-				});
-			} else {
-				alert(`Unable to retrieve config file '${config}': ${reason}`);
-				this.showStartupSettings();
-				this.logMessage("E", `Final configuration attempt failed.  Refresh to restart.`);
+			socket.onclose = function(e) {
+				resp.ok = false;
+				resp.error = e;
+				resp.code = e.code;
+				console.log(e);
+				_this.logMessage("E", `Websocket ${e.currentTarget.url} closed.  Code: ${e.code}`);
+				reject(resp);
+			}
+			socket.onerror = function(e) {
+				resp.ok = false;
+				resp.error = e;
+				resp.code = e.code;
+				console.log(e);
+				_this.logMessage("E", `Failed to connect websocket: ${e.currentTarget.url}`);
+				reject(resp);
 			}
 		});
+		
+		return resp;
+	}
+	
+	async startPolling() {
+		let _this = this;
+		let resp = await this.openWebsocket();
+		if (!resp.ok) {
+			console.log(resp);
+			return resp;
+		}
+		var counter = 0;
+		this.model = resp.data;
+		this.current_status = this.model.state.status;
+		$(`.status-change-listener`).trigger("duet_status_change", this.current_status);
+		
+		console.log(this.model);
+		this.websocket = resp.socket;
+		this.websocket.onmessage = async (e) => {
+			let data = JSON.parse(e.data);
+			if (this.settings.duet_debug_polling_enabled) {
+				console.log(data);
+			}
+			$.extend(true, this.model, data);
+			if (this.settings.duet_debug_polling_enabled) {
+				console.log(this.model);
+			}
+			
+			if (this.model.state.status !== this.current_status) {
+				this.current_status = this.model.state.status;
+				$(`.status-change-listener`).trigger("duet_status_change", this.model.state.status);
+			}
+			if (keyExistsOn(data, "state.displayMessage") && data.state.displayMessage.length > 0) {
+				this.logMessage("I", data.state.displayMessage);
+			}
+			$(`.status-poll-listener-9`).trigger("duet_poll_response", this.model);
+			
+			this.websocket.send("OK\n");
+		}
+		this.websocket.onclose = (e) => {
+			console.log(e);
+			this.logMessage("E", `Websocket ${e.currentTarget.url} closed.  Code: ${e.code}`);
+		}
+		this.websocket.onerror = (e) => {
+			console.log(e);
+			this.logMessage("E", `Failed to connect websocket: ${e.currentTarget.url}`);
+		}
+		this.websocket.send("OK\n");
+		
+		return resp;
+	}
+	
+	async getConfig(config) {
+		let resp = {};
+		try {
+			resp.data = await $.ajax({
+				url: config,
+				cache: false,
+				timeout: 2000,
+				dataType: "jsonp",
+				jsonp: "callback",
+				jsonpCallback: "DueUIConfig"
+			});
+			resp.ok = true;
+		} catch (error) {
+			console.log(error);
+			resp.ok = false;
+			resp.error = error;
+		}
+		return resp;
 	}
 
-	startup() {
+	async loadConfig(configs) {
+		for (let config of configs) {
+			let resp = await this.getConfig(config);
+			if (!resp.ok) {
+				if (resp.error.status == 404) {
+					continue;
+				}
+				return resp;
+			}
+			this.logMessage("I", `Retrieved config from ${config}`);
+			resp.config_url = config;
+			return resp;
+		}
+	}
+
+	async connect_once(url) {
+		let resp = {};
+		if (this.connected) {
+			resp.ok = true;
+			return resp;
+		}
+		try {
+			resp.data = await $.ajax({
+				dataType: "json",
+				url: `${url}/machine/status`,
+				timeout: 1000
+			});
+			resp.ok = true;
+			this.dsf = true;
+		} catch(error) {
+			console.log(error);
+			resp.error = error;
+			resp.ok = false;
+		}
+		return resp;
+	}
+
+	async connect(url) {
+		let resp = {};
+		this.connect_retry = 0;
+		$(".connection-listener").trigger("duet_connection_change", { "status": "connecting" });
+
+		while (this.connect_retry <= this.duet_connect_retries.number) {
+			resp = await this.connect_once(url);
+			if (resp.ok) {
+				this.connected = true;
+				if (this.connect_retry > 0) {
+					$(".connection-listener").trigger("duet_connection_change", { "status": "reconnected", "response": "OK" });
+					this.logMessage("I", "Reconnected");
+				} else {
+					$(".connection-listener").trigger("duet_connection_change", { "status": "connected", "response": "OK" });
+					this.logMessage("I", "Connected");
+				}
+				this.connect_retry = 0;
+				
+				resp = await this.loadConfig(this.config_file_preference);
+				if (!resp.ok) {
+					alert(`Could not retrieve any config`);
+					return resp;
+				}
+				
+				this.active_config_url = resp.config_url;
+				this.configured = true;
+				this.populate(resp.data);
+				this.logMessage("I", `DueUI Version ${dueui_version}`);
+				if (this.dsf) {
+					resp = await this.postData("/machine/code", "M115");
+					if (resp.ok) {
+						dueui.logMessage("I", resp.data);
+					} else {
+						dueui.logMessage("E", resp.error);
+					}
+				} else {
+					resp = await this.getJSON("/rr_config");
+					if (resp.ok) {
+						dueui.logMessage("I", response.firmwareElectronics);
+						dueui.logMessage("I", response.firmwareName + ": " + response.firmwareVersion);
+					} else {
+						dueui.logMessage("E", resp.error);
+					}
+				}
+				
+				resp = await this.startPolling();
+				if (!resp.ok) {
+					dueui.logMessage("E", resp.error);
+				}
+				
+				return resp;
+			}
+			this.connect_retry++;
+			this.logMessage("W", `Connection attempt ${this.connect_retry} of ${this.duet_connect_retries.number} failed`);
+			$(".connection-listener").trigger("duet_connection_change", { "status": "retrying", "retry": this.connect_retry });
+			await DueUI.delay(this.duet_connect_retries.interval);
+		}
+		alert("There was an error attempting to connect to "+this.settings.duet_url+"\nPlease see the javascript console for more information.");
+		$(".connection-listener").trigger("duet_connection_change", { "status": "failed", "reason": "unknown" });
+		this.logMessage("E", `Final connection attempt failed.  Refresh to restart.`);
+
+		return resp;
+	}
+
+	disconnect() {
+		this.connect_retry = 0;
+		this.connected = false;
+		$(".connection-listener").trigger("duet_connection_change", {"status": "disconnected"});
+	}
+
+	async startup() {
 		$("#dueui_startup").remove();
 		DueUI.setCurrentTheme(this.settings.theme);
 		this.id = "dueui";
 		this.jq = $("#dueui");
 		$("body").addClass(`connection-listener ui ui-widget-content bg-light`);
+
+		if (this.settings.duet_polling_enabled != 1) {
+			this.showStartupSettings();
+			return;
+		}
+
+		let resp = await this.connect(this.settings.duet_url);
+		if (!resp.ok) {
+			alert(`Could not connect to ${this.settings.duet_url} or retrieve any config files`);
+			this.showStartupSettings();
+			return;
+		}
+
 		$("body").on("duet_connection_change", (event, response) => {
 			if (response.status === "reconnected") {
 				location.reload(true);
 				return;
 			}
 			this.removeStartupSettings();
-			if (response.status === "connected") {
-				setTimeout(() => {
-					let configs = this.config_file_preference.slice(0);
-					this.getConfig(configs);
-				}, 1000);
-			}
 		});
-
-		if (this.settings.duet_polling_enabled == 1) {
-			this.connect();
-		} else {
-			this.showStartupSettings();
-		}
 	}
 }
 var dueui = new DueUI();
