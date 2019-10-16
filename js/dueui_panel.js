@@ -103,9 +103,7 @@ class DueuiTabbedPanel extends DueuiPanel {
 		{
 			"id": `${this.id}_refresh_button`,
 			"icon": "aspect_ratio",
-			"actions": [
-				{"type": "ui", "action": "fullscreen_toggle"}
-			]
+			"actions": {"type": "ui", "action": "fullscreen_toggle"}
 		}, this.menubar_widget.button_defaults), this.menubar_widget);
 
 		this.fullscreen_button = new DueuiButtonWidget(
@@ -113,9 +111,7 @@ class DueuiTabbedPanel extends DueuiPanel {
 		{
 			"id": `${this.id}_fullscreen_button`,
 			"icon": "autorenew",
-			"actions": [
-				{"type": "ui", "action": "refresh"}
-			]
+			"actions": {"type": "ui", "action": "refresh"}
 		}, this.menubar_widget.button_defaults), this.menubar_widget);
 
 		this.settings_panel = new DueuiSettingsPanel(
@@ -136,20 +132,16 @@ DueuiElement.addElementType("tabbed_panel", DueuiTabbedPanel);
 class DueuiSettingsPanel extends DueuiTabPanel {
 
 	async getThemes(custom) {
-		let resp = await dueui.getJSON(custom ? "/dueui/css/dueui-themes_custom.css" : "/dueui/css/dueui-themes.css",
-				custom ? "DueUICustomThemes" : "DueUIThemes");
-		if (!resp.ok) {
-			return;
-		}
 		let t = $("#dueui_theme");
-		for (let theme of resp.data.themes) {
+		let themes = await dueui.getThemeList(false);
+		for (let theme of themes) {
 			t.append(`<option value="${theme.value}">${theme.label}</option>`);
 		}
-		if (!custom) {
-			await this.getThemes(true);
-		} else {
-			t.val(dueui.getSetting("theme"));
+		themes = await dueui.getThemeList(true);
+		for (let theme of themes) {
+			t.append(`<option value="${theme.value}">${theme.label}</option>`);
 		}
+		t.val(dueui.getSetting("theme"));
 	}
 
 	constructor(config, parent){
@@ -164,26 +156,17 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 
 		this.element_configs = [
 			{
-				"id": "dueui_version_label",
-				"type": "label",
-				"style": {"position": "fixed"},
-				"value": `DueUI Version ${dueui_version}`
-			},
-			{
 				"id": "duet_url",
 				"type": "input",
-				"label": "URL of the Duet that will be controlled:",
+				"label": "Duet hostname or IP address:",
 				"style": {"width": "50ch"},
-				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_version_label"},
 				"input": {
 					"id": `${this.id}_url_input`,
 					"classes": "dueui-settings-field",
 					"field_type": "url",
-					"placeholder": "http://myduet",
+					"placeholder": "myduet",
 					"style": {"height": "2.5em", "width": "100%", "text-align": "left"},
-					"actions": [
-						{"type": "setting", "setting": "duet_url", "fire_on_startup": true}
-					]
+					"actions": {"type": "setting", "setting": "duet_host", "fire_on_startup": true}
 				}
 			},
 			{
@@ -198,33 +181,28 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					"field_type": "text",
 					"placeholder": "reprap",
 					"style": {"height": "2.5em", "width": "100%", "text-align": "left"},
-					"actions": [
-						{"type": "setting", "setting": "duet_password", "fire_on_startup": true}
-					]
+					"actions": {"type": "setting", "setting": "duet_password", "fire_on_startup": true}
 				}
 			},
 			{
 				"id": "dueui_config_url",
 				"type": "input",
-				"label": "URL of the DueUI JSON config file:",
+				"label": "DueUI config file URL:",
 				"style": {"width": "50ch"},
 				"position": {"my": "left top", "at": "left bottom+5", "of": "#duet_password"},
 				"input": {
 					"id": `${this.id}_config_url_input`,
 					"classes": "dueui-settings-field",
 					"field_type": "url",
-					"placeholder": "http://myduet/rr_download?name=/sys/dueui_config.json",
 					"style": {"height": "2.5em", "width": "100%", "text-align": "left"},
-					"actions": [
-						{"type": "setting", "setting": "dueui_config_url", "fire_on_startup": true}
-					]
+					"actions": {"type": "setting", "setting": "dueui_config_url", "fire_on_startup": true}
 				}
 			},
 			{
 				"id": "dueui_settings_poll_intervals",
 				"type": "label",
-				"position": {"my": "left top", "at": "left bottom+5", "of": "#dueui_config_url"},
-				"value": "Status poll intervals (ms):  (minimum 250ms, 0=disabled)"
+				"position": {"my": "left top", "at": "left+150 bottom+5", "of": "#dueui_config_url"},
+				"value": "Status poll intervals (ms): (NON-DSF only)"
 			},
 			{
 				"id": "dueui_poll_interval_1",
@@ -238,9 +216,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					"field_type": "number",
 					"placeholder": "1000",
 					"style": {"height": "2.5em", "width": "100%", "text-align": "left"},
-					"actions": [
-						{"type": "setting", "setting": "duet_poll_interval_1", "fire_on_startup": true}
-					]
+					"actions": {"type": "setting", "setting": "duet_poll_interval_1", "fire_on_startup": true}
 				}
 			},
 			{
@@ -255,9 +231,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					"field_type": "number",
 					"placeholder": "1000",
 					"style": {"height": "2.5em", "width": "100%", "text-align": "left"},
-					"actions": [
-						{"type": "setting", "setting": "duet_poll_interval_2", "fire_on_startup": true}
-					]
+					"actions": {"type": "setting", "setting": "duet_poll_interval_2", "fire_on_startup": true}
 				}
 			},
 			{
@@ -272,10 +246,27 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					"field_type": "number",
 					"placeholder": "1000",
 					"style": {"height": "2.5em", "width": "100%", "text-align": "left"},
-					"actions": [
-						{"type": "setting", "setting": "duet_poll_interval_3", "fire_on_startup": true}
-					]
+					"actions": {"type": "setting", "setting": "duet_poll_interval_3", "fire_on_startup": true}
 				}
+			},
+			{
+				"id": "dueui_settings_backend_type_label",
+				"type": "label",
+				"position": {"my": "right top", "at": "left-150 top", "of": "#dueui_poll_interval_1"},
+				"value": "Backend Type"
+			},
+			{
+				"id": "dueui_settings_backend_type",
+				"type": "select",
+				"enabled": true,
+				"position": {"my": "left top", "at": "left bottom+5", "of": "#dueui_settings_backend_type_label"},
+				"style": {"width": "15ch", "height": "2.5em"},
+				"options": [
+					{"label": "Non DSF", "value": DUEUI_BACKEND_NONDSF},
+					{"label": "DSF", "value": DUEUI_BACKEND_DSF}
+				],
+				"submit_on_change": true,
+				"actions": {"type": "setting", "setting": "backend_type", "fire_on_startup": true},
 			},
 
 			{
@@ -283,10 +274,8 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"type": "button",
 				"style": {"height": "2.5em", "width": "15ch"},
 				"value": "Save",
-				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_poll_interval_1"},
-				"actions": [
-					{"type": "event", "event": "dueui-submit", "target": ".dueui-settings-field"}
-				]
+				"position": {"my": "left top", "at": "left bottom+10", "of": "#dueui_settings_backend_type"},
+				"actions": {"type": "event", "event": "dueui-submit", "target": ".dueui-settings-field"}
 			},
 
 			{
@@ -295,18 +284,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"style": {"height": "2.5em", "width": "15ch"},
 				"value": "Refresh",
 				"position": {"my": "left top", "at": "right+25 top", "of": "#dueui_settings_submit"},
-				"actions": [
-					{"type": "ui", "action": "refresh"}
-				]
-			},
-
-			{
-				"id": "dueui_settings_download_default",
-				"type": "button",
-				"classes": "-btn-primary btn-secondary-sm",
-				"style": {"height": "3.5em", "width": "20ch"},
-				"value": "<a href='dueui_config_default.json'>Download Default<br>Config File</a>",
-				"position": {"my": "left center", "at": "right+25 center", "of": "#dueui_settings_refresh"}
+				"actions": {"type": "ui", "action": "refresh"}
 			},
 			{
 				"id": "dueui_settings_warning",
@@ -315,7 +293,6 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"position": {"my": "left top", "at": "left bottom+10", "of": "#dueui_settings_submit"},
 				"value": "<b>Don't forget to click the Save and Refresh buttons to save the new values!</b>"
 			},
-
 			{
 				"id": "dueui_theme_label",
 				"type": "label",
@@ -335,99 +312,63 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"style": {"width": "25ch", "height": "2.5em"},
 				"options": [],
 				"submit_on_change": true,
-				"actions": [
-					{"type": "setting", "setting": "theme", "fire_on_startup": true},
-				]
+				"actions": {"type": "setting", "setting": "theme", "fire_on_startup": true},
 			},
 			{
 				"id": "dueui_settings_debug_polling",
 				"type": "button",
 				"style": {"height": "2.5em", "width": "25ch"},
 				"state": {
-					"classes": [
-						"btn-danger",
-						"btn-success"
-					],
-					"contents": [
-						"Turn Debug Polling On",
-						"Turn Debug Polling Off"
-					],
+					"states": [
+						{ "state": 0, "classes": "btn-danger", "value": "Turn Debug Polling On",
+							"actions": {"type": "setting", "setting": "duet_debug_polling_enabled", "value": 1, "fire_on_startup": true}
+						},
+						{ "state": 1, "classes": "btn-success", "value": "Turn Debug Polling Off",
+							"actions": {"type": "setting", "setting": "duet_debug_polling_enabled", "value": 0}
+						}
+					]
 				},
 				"value": "Debug Polling",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_theme"},
-				"actions_type": "state",
-				"actions": [
-					{"type": "setting", "setting": "duet_debug_polling_enabled", "value": 1, "fire_on_startup": true},
-					{"type": "setting", "setting": "duet_debug_polling_enabled", "value": 0,}
-				]
 			},
 			{
 				"id": "dueui_settings_dont_send_gcode",
 				"type": "button",
 				"style": {"height": "2.5em", "width": "25ch"},
 				"state": {
-					"classes": [
-						"btn-danger",
-						"btn-success"
-					],
-					"contents": [
-						"Turn Simulate GCode On",
-						"Turn Simulate GCode Off"
-					],
+					"states": [
+						{ "state": 0, "classes": "btn-danger", "value": "Turn Simulate GCode On",
+							"actions": {"type": "setting", "setting": "dueui_settings_dont_send_gcode", "value": 1, "fire_on_startup": true}
+						},
+						{ "state": 1, "classes": "btn-success", "value": "Turn Simulate GCode Off",
+							"actions": {"type": "setting", "setting": "dueui_settings_dont_send_gcode", "value": 0}
+						}
+					]
 				},
 				"value": "Send GCode",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_debug_polling"},
-				"actions_type": "state",
-				"actions": [
-					{"type": "setting", "setting": "dueui_settings_dont_send_gcode", "value": 1, "fire_on_startup": true},
-					{"type": "setting", "setting": "dueui_settings_dont_send_gcode", "value": 0,}
-				]
 			},
 			{
 				"id": "dueui_settings_polling",
 				"type": "button",
 				"style": {"height": "2.5em", "width": "25ch"},
 				"state": {
-					"classes": [
-						"btn-danger",
-						"btn-success"
-					],
-					"contents": [
-						"Turn Polling On",
-						"Turn Polling Off"
-					],
+					"states": [
+						{ "state": 0, "classes": "btn-danger", "value": "Turn Polling On",
+							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 1, "fire_on_startup": true}
+						},
+						{ "state": 1, "classes": "btn-success", "value": "Turn Polling Off",
+							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 0}
+						}
+					]
 				},
 				"value": "Polling",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_dont_send_gcode"},
-				"actions_type": "state",
-				"actions": [
-					{"type": "setting", "setting": "duet_polling_enabled", "value": 1, "fire_on_startup": true},
-					{"type": "setting", "setting": "duet_polling_enabled", "value": 0,}
-				]
 			},
-			{
-				"id": "dueui_settings_update_time",
-				"type": "button",
-				"style": {"height": "2.5em", "width": "25ch"},
-				"state": {
-					"classes": [
-						"btn-danger",
-						"btn-success"
-					],
-				},
-				"value": "Update Duet Time",
-				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_polling"},
-				"actions_type": "state",
-				"actions": [
-					{"type": "setting", "setting": "duet_update_time", "value": 1, "fire_on_startup": true},
-					{"type": "setting", "setting": "duet_update_time", "value": 0,}
-				]
-			}
-
 		];
 
 		this.populate();
-		this.getThemes(false);
+		this.getThemes();
 	}
 }
 DueuiElement.addElementType("settings_panel", DueuiSettingsPanel);
