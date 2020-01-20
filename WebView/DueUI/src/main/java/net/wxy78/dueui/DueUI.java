@@ -34,7 +34,7 @@ public class DueUI extends AppCompatActivity implements View.OnClickListener {
 		super.onCreate(savedInstanceState);
 
 		sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-		String url = sharedPref.getString("preference_url", "http://dueui.org/");
+		String url = sharedPref.getString("preference_url", "http://dueui.org/v3/");
 		Boolean show_at_startup = sharedPref.getBoolean("preference_show_at_startup", true);
 		Boolean already_run = sharedPref.getBoolean("preference_already_run", false);
 

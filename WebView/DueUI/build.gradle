@@ -1,20 +1,35 @@
 apply plugin: 'com.android.application'
 
 android {
+    signingConfigs {
+        release {
+            storeFile file('/home/gtjoseph/.android/keystore')
+            storePassword 'dead1cat'
+            keyAlias = 'wxy78.net'
+            keyPassword 'dead1cat'
+        }
+    }
     compileSdkVersion 28
     defaultConfig {
         applicationId "net.wxy78.dueui"
         minSdkVersion 22
         targetSdkVersion 27
-        versionName '1.1.0'
+        versionName 'v3.0.0-beta1'
         versionNameSuffix ''
-        versionCode 4
+        versionCode 5
+        signingConfig signingConfigs.release
     }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             versionNameSuffix ''
+            signingConfig signingConfigs.release
+            android.applicationVariants.all { variant ->
+                variant.outputs.all {
+                    outputFileName = "DueUI-${versionName}.apk"
+                }
+            }
         }
         debug {
             versionNameSuffix ''

@@ -7,16 +7,14 @@ version=$(git describe)
 rm -rf dist DueUI-DSF-${version}.zip DueUI-Standalone-${version}.zip || :
 mkdir -p dist/dueui
 cp dueui_config_default.json dist/dueui/
-cp dueui.html dist/dueui/index.html
+sed -r -e "s/DUEUI_VERSION/$version/g" dueui.html > dist/dueui/index.html
 cp -a css js fonts dist/dueui/
-
 cd dist
 zip -r ../DueUI-DSF-${version}.zip dueui
 
 cd dueui
 sed -r -e "s/jquery.js/dueui-vendor-bundle.js/g" -e "/bootstrap/d" \
 	-e "s/dueui.js/dueui-bundle.js/g" -e "/dueui_(panel|widget)/d" index.html > dueui.html
-sed -i -r -e "s/DUEUI_VERSION/$version/g" dueui.html
 gzip *.html
 
 cd js
