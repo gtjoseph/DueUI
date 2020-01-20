@@ -1,0 +1,1800 @@
+class DueUIConfig {
+
+	calculateLayers(state) {
+		let rtn = "";
+		if (state.state.status == 'idle' || state.job.file.height == 0) {
+			rtn += "0/";
+		} else {
+			rtn += ((state.move.axes[2].machinePosition / state.job.file.height) * state.job.file.numLayers).toFixed(0) + "/";
+		}
+
+		if (state.job.file.numLayers != null) {
+			rtn += state.job.file.numLayers;
+		} else {
+			rtn += "0";
+		}
+		return rtn;
+	}
+
+	heater_states = [
+		{"state": 0, "classes": "btn-secondary"},
+		{"state": 1, "classes": "btn-warning"},
+		{"state": 2, "classes": "btn-success"},
+		{"state": 3, "classes": "btn-danger"},
+		{"state": 4, "classes": "btn-info"}
+	];
+
+	axes_position = {
+		"type": "position",
+		"style": {
+			"width": "15ch",
+			"margin": "5px",
+		},
+		"button_defaults": {
+			"style": {
+				"height": "2.5em",
+				"margin": "5px"
+			},
+			"state": {
+				"states": [
+					{"state": 0, "classes": "btn-warning"},
+					{"state": 1, "classes": "btn-success"}
+				]
+			}
+		},
+		"direction": "column",
+		"axes": [
+			{"label": "X:  ", "gcode_axis": "X",
+				"position_field": "${state.coords.machine[0].toFixed(3).padStart(7)}",
+				"state_field": "${state.coords.axesHomed[0]}"
+			},
+			{"label": "Y:  ", "gcode_axis": "Y",
+				"position_field": "${state.coords.machine[1].toFixed(3).padStart(7)}",
+				"state_field": "${state.coords.axesHomed[1]}"
+			},
+			{"label": "Z:  ", "gcode_axis": "Z",
+				"position_field": "${state.coords.machine[2].toFixed(3).padStart(7)}",
+				"state_field": "${state.coords.axesHomed[2]}"
+			},
+		]
+	};
+
+	dueui_content = {
+		"id": "dueui",
+		"type": "tabbed_panel",
+		"header_panel": {
+			"id": "dueui_header_main",
+			"type": "panel",
+			"style": {
+				"width": "100%",
+				"height": "4em",
+				"display": "flex",
+				"background": "black",
+				"flex-direction": "row-reverse"
+			},
+			"element_defaults": {
+				"style": {
+					"margin-right": "5px"
+				}
+			},
+			"element_configs": [
+				{
+					"id": "stop",
+					"type": "button",
+					"classes": "btn-danger",
+					"icon": "report",
+					"value": "STOP",
+					"actions": {"type": "gcode", "gcode": "M112"}
+				},
+				{
+					"id": "restart",
+					"type": "button",
+					"classes": "btn-warning",
+					"icon": "replay",
+					"value": "Restart",
+					"actions": {"type": "gcode", "gcode": "M999"}
+				},
+				{
+					"id": "status",
+					"type": "status",
+					"style": {
+						"width": "15ch"
+					}
+				},
+				{
+					"id": "atx_power",
+					"type": "button",
+					"style": {
+						"width": "15ch",
+					},
+					"state": {
+						"states": [
+							{ "state": 0, "classes": "btn-danger", "value": "ATX is<br>Off",
+								"actions": {"type": "gcode", "gcode": "M80", "message": "Power ON"}
+							},
+							{ "state": 1, "classes": "btn-success", "value": "ATX is<br>On",
+								"actions": {"type": "gcode", "gcode": "M81", "message": "Power OFF"}
+							}
+						],
+						"field": "${state.params.atxPower}"
+					},
+					"value": 'ATX Pwr',
+				},
+				{
+					"id": "log",
+					"type": "textarea",
+					"style": {
+						"height": "100%", "width": "100%",
+						"box-sizing": "border-box",
+						"margin": "0px",
+						"padding": "0px"
+					},
+					"wrap": "off",
+					"read_only": true,
+					"show_gcode_replies": true,
+					"show_gcode_sent": false,
+					"show_gcode_in_replies": false,
+					"show_log_messages": true,
+				}
+
+			]
+		},
+		"menubar": {
+			"id": "dueui_menubar",
+			"type": "panel",
+			"button_defaults": {
+				"style": {
+					"margin-right": "5px"
+				}
+			}
+		},
+		"element_configs": [
+			{
+				"id": "dueui_panel_print",
+				"type": "tab_panel",
+				"menubar_label": "Print",
+				"element_configs": [
+					{
+						"id": "files_panel",
+						"type": "panel",
+						"style": {
+							"width": "640px",
+							"height": "580px",
+							"max-height": "calc(100% - 2.5em)",
+							"border": "2px solid red"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left+5 top+25",
+							"of": "#dueui_panel_print"
+						},
+						"element_configs": [
+							{
+								"id": "selectafile",
+								"type": "file_select",
+								"directory": "/gcodes/",
+								"action_type": "print",
+								"strip_prefix": true,
+								"strip_suffix": true,
+								"show_refresh_button": true,
+								"show_action_button": true,
+								"sort": "label",
+								"style": {
+									"width": "620px",
+									"height": "3em",
+									"font-size": "18px"
+								},
+								"position": {
+									"my": "left top",
+									"at": "left+10 top+10",
+									"of": "#files_panel"
+								},
+							},
+							{
+								"id": "bed_label",
+								"type": "label",
+								"value": "Bed: ",
+								"style": {
+									"width": "5ch",
+									"height": "2em",
+									"vertical-align": "middle",
+									"text-align": "right",
+								},
+								"position": {
+									"my": "left top",
+									"at": "left bottom+10",
+									"of": "#selectafile"
+								},
+							},							
+							{
+								"id": "bed_button",
+								"type": "button",
+								"value": "${state.temps.bed.current.toFixed(1)}",
+								"style": {
+									"width": "10ch",
+									"height": "2em"
+								},
+								"position": {
+									"my": "left center",
+									"at": "right+10 center",
+									"of": "#bed_label"
+								},
+								"tolerance": {
+									"tolerances": [
+										{"limit": 2, "classes": "btn-success"},
+										{"limit": 5, "classes": "btn-warning"},
+										{"limit": 999, "classes": "btn-danger"}
+									]
+								},
+								"actions_chooser": [
+									{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Off"},
+									{"type": "gcode", "gcode": "M144 P0 S0", "label": "Standby"},
+									{"type": "gcode", "gcode": "M144 P0 S1", "label": "On"},
+									{"type": "gcode", "gcode": "M562 P0", "label": "Reset"},
+									{"type": "gcode", "gcode": "M303 H0 S${state.temps.beds.active}", "label": "Tune"},
+								],
+							},
+							{
+								"id": "extr1_label",
+								"type": "label",
+								"value": "Extruder: ",
+								"style": {
+									"width": "10ch",
+									"height": "2em",
+									"vertical-align": "middle",
+									"text-align": "right",
+								},
+								"position": {
+									"my": "left center",
+									"at": "right+20 center",
+									"of": "#bed_button"
+								},
+							},							
+							{
+								"id": "extr1_button",
+								"type": "button",
+								"value": "${state.temps.current[1].toFixed(1)}",
+								"style": {
+									"width": "10ch",
+									"height": "2em"
+								},
+								"position": {
+									"my": "left center",
+									"at": "right+10 center",
+									"of": "#extr1_label"
+								},
+								"tolerance": {
+									"tolerances": [
+										{"limit": 2, "classes": "btn-success"},
+										{"limit": 5, "classes": "btn-warning"},
+										{"limit": 999, "classes": "btn-danger"}
+									]
+								},
+								"actions_chooser": [
+									{"type": "gcode", "gcode": "T-1", "label": "Off"},
+									{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Standby"},
+									{"type": "gcode", "gcode": "T0", "label": "On"},
+									{"type": "gcode", "gcode": "M562 P1", "label": "Reset"},
+									{"type": "gcode", "gcode": "M303 H1 S${state.temps.tools.active[0]}", "label": "Tune"},
+								],
+							},
+							{
+								"id": "video_html",
+								"type": "image",
+								"src": "http://duet3j:8080/stream",
+								"style": {
+									"width": "600px",
+									"height": "450px",
+									"border": "2px solid red",
+								},
+								"position": {
+									"my": "left top",
+									"at": "left bottom+10",
+									"of": "#bed_label"
+								},
+							},
+							
+						]
+					},
+					{
+						"id": "print_current_position_panel",
+						"type": "panel",
+						"style": {
+							"border": "3px solid red",
+							"width": "450px",
+							"height": "60px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "right+25 top",
+							"of": "#files_panel"
+						},
+						"element_configs": [
+							extendObject(true, {}, this.axes_position, {
+								"id": "position_print",
+								"style": {
+									"width": "425px",
+								},
+								"button_defaults": {
+									"read_only": true,
+									"width": "15em"
+								},									
+								"direction": "row",
+							})
+						]
+					},
+					{
+						"id": "print_status_panel",
+						"type": "panel",
+						"style": {
+							"border": "3px solid red",
+							"width": "450px",
+							"height": "250px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+15",
+							"of": "#print_current_position_panel"
+						},
+						"element_defaults": {
+							"style": {
+								"position": "absolute"
+							}
+						},
+						"element_configs": [
+							{
+								"id": "print_current_file",
+								"type": "label",
+								"style": {
+									"height": "3ch",
+								},
+								"value": "Current/Last File:  ${state.status == 'P' ? 'unknown' : 'Not printing'}",
+								"position": {
+									"my": "left top",
+									"at": "left+10 top+10",
+									"of": "#print_status_panel"
+								}
+							},
+							{
+								"id": "print_progress_label",
+								"type": "label",
+								"value": "Print Progress (by filament):",
+								"position": {
+									"my": "left top",
+									"at": "left bottom+10",
+									"of": "#print_current_file"
+								}
+							},
+							{
+								"id": "print_progress",
+								"type": "progress",
+//								"value": "${((state.job.file.printTime / ((state.job.timesLeft.filament + state.job.file.printTime) || 1)) * 100)}",
+								"value": 0,
+								"max": 100,
+								"classes": "bg-success",
+								"style": {
+									"width": "74ch",
+									"height": "3ch",
+								},
+								"position": {
+									"my": "left top",
+									"at": "left bottom+10",
+									"of": "#print_progress_label"
+								},
+							},
+							{
+								"id": "elapsed_label",
+								"type": "label",
+								"value": "Time:",
+								"position": {
+									"my": "left top",
+									"at": "left bottom+20",
+									"of": "#print_progress"
+								}
+							},
+							{
+								"id": "elapsed",
+								"type": "button",
+								"read_only": true,
+								"classes": "btn-primary",
+								"style": {
+									"padding": "0px",
+									"width": "17ch"
+								},
+//								"value": "${DueUI.formatElapsed(state.job.duration)} / ${DueUI.formatElapsed(state.job.file.printTime)}",
+								"value": "0:00:00",
+								"initial_value": "0:00:00",
+								"position": {
+									"my": "left top",
+									"at": "right+10 top-5",
+									"of": "#elapsed_label"
+								}
+							},
+							{
+								"id": "times_label",
+								"type": "label",
+								"value": "Time Left By File:<br><br>By Filament:<br><br>Layers:",
+								"style": {
+									"text-align": "right"
+								},
+								"position": {
+									"my": "left top",
+									"at": "right+30 top",
+									"of": "#elapsed"
+								}
+							},
+							{
+								"id": "byfile",
+								"type": "button",
+								"classes": "btn-primary",
+								"style": {
+									"text-align": "right",
+									"width": "10ch"
+								},
+								"read_only": true,
+//								"value": "${(state.job.duration != null && state.job.file.printTime > 0) ? DueUI.formatElapsed(state.job.file.printTime - ((state.job.duration / state.job.file.printTime) * state.job.file.printTime)) : \"0:00:00\"}",
+								"value": "0:00:00",
+								"initial_value": "0:00:00",
+								"position": {
+									"my": "left top",
+									"at": "right+10 top-5",
+									"of": "#times_label"
+								}
+							},
+							{
+								"id": "byfilament",
+								"type": "button",
+								"classes": "btn-primary",
+								"style": {
+									"text-align": "right",
+									"width": "10ch"
+								},
+								"read_only": true,
+//								"value": "${DueUI.formatElapsed(state.job.timesLeft.filament)}",
+								"value": "0:00:00",
+								"initial_value": "0:00:00",
+								"position": {
+									"my": "left top",
+									"at": "left bottom+8",
+									"of": "#byfile"
+								}
+							},
+							{
+								"id": "bylayer",
+								"type": "button",
+								"classes": "btn-primary",
+								"style": {
+									"text-align": "right",
+									"width": "10ch"
+								},
+								"read_only": true,
+//								"value": "${DueUIConfig.calculateLayers(state)}",
+								"value": "0:00:00",
+								"position": {
+									"my": "left top",
+									"at": "left bottom+8",
+									"of": "#byfilament"
+								}
+							},
+							{
+								"id": "pause",
+								"type": "button",
+								"value": "Pause",
+								"classes": "btn btn-warning",
+								"style": {
+									"width": "10ch"
+								},
+								"position": {
+									"my": "left top",
+									"at": "left bottom+15",
+									"of": "#elapsed_label"
+								},
+								"actions": {"type": "gcode", "gcode": "M25"}
+							},
+							{
+								"id": "resume",
+								"type": "button",
+								"value": "Resume",
+								"classes": "btn btn-success",
+								"style": {
+									"width": "10ch"
+								},
+								"position": {
+									"my": "left top",
+									"at": "left bottom+15",
+									"of": "#pause"
+								},
+								"actions": {"type": "gcode", "gcode": "M24"}
+							},
+							{
+								"id": "cancel",
+								"type": "button",
+								"value": "Cancel",
+								"classes": "btn btn-danger",
+								"style": {
+									"width": "10ch"
+								},
+								"position": {
+									"my": "left top",
+									"at": "right+20 bottom-5",
+									"of": "#pause"
+								},
+								"actions": {"type": "gcode", "gcode": "M0 H1"}
+							}
+						]
+					},
+					{
+						"id": "print_adjust_panel",
+						"type": "panel",
+						"style": {
+							"border": "3px solid red",
+							"width": "450px",
+							"height": "225px",
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+15",
+							"of": "#print_status_panel"
+						},
+						"element_defaults": {
+							"style": {
+								"position": "absolute",
+							}
+						},
+						"element_configs": [
+							{
+								"id": "requested_speed_label",
+								"type": "label",
+								"value": "Requested Speed: ",
+								"style": {
+									"width": "14ch",
+									"height": "1em",
+									"text-align": "right"
+								},
+								"position": {
+									"my": "left top",
+									"at": "left+10 top+20",
+									"of": "#print_adjust_panel"
+								},
+							},
+							{
+								"id": "requested_speed",
+								"type": "button",
+								"read_only": true,
+								"value": "${state.speeds.requested.toFixed(2)}",
+								"style": {
+									"height": "2.5em",
+									"width": "10ch",
+									"text-align": "right"
+								},
+								"position": {
+									"my": "left center",
+									"at": "right+10 center",
+									"of": "#requested_speed_label"
+								},
+							},
+							{
+								"id": "top_speed_label",
+								"type": "label",
+								"value": "Top Speed: ",
+								"style": {
+									"width": "10ch",
+									"height": "1em",
+									"text-align": "right"
+								},
+								"position": {
+									"my": "left center",
+									"at": "right+25 center",
+									"of": "#requested_speed"
+								},
+							},
+							{
+								"id": "top_speed",
+								"type": "button",
+								"value": "${state.speeds.top.toFixed(2)}",
+								"read_only": true,
+								"style": {
+									"height": "2.5em",
+									"width": "10ch",
+									"text-align": "right"
+								},
+								"position": {
+									"my": "left center",
+									"at": "right+10 center",
+									"of": "#top_speed_label"
+								},
+							},
+							{
+								"id": "speed_adjust_label",
+								"type": "label",
+								"style": {
+									"height": "1.5em",
+									"margin": "0px",
+									"padding": "0px"
+								},
+								"value": "Speed Adjust (click center button to reset to 100%)",
+								"position": {
+									"my": "left top",
+									"at": "left bottom+30",
+									"of": "#requested_speed_label"
+								},
+							},
+							{
+								"id": "speed_adjust",
+								"type": "jog",
+								"style": {
+									"width": "435px"
+								},
+								"position": {
+									"my": "left top",
+									"at": "left bottom",
+									"of": "#speed_adjust_label"
+								},
+								"button_defaults": {
+									"style": {
+										"width": "6ch",
+										"height": "2.5em",
+										"padding": "5px",
+										"margin-right": "10px"
+									}
+								},
+								"axis": "XYZ",
+								"values": [
+									[-10, -5, -1,{
+										"type": "button",
+										"id": "speed_current",
+										"value": "${state.params.speedFactor.toFixed(0)}%",
+										"actions": {"type": "gcode", "gcode": "M220 S100"}
+									},"+1", "+5", "+10"]
+								],
+								"jog_command": "M220 S${Math.min(parseInt($('#speed_current').html()) + position)}",
+								"direction": "row"
+							},
+							{
+								"id": "extrusion_adjust_label",
+								"type": "label",
+								"style": {
+									"height": "1.5em",
+									"margin": "0px",
+									"padding": "0px"
+								},
+								"value": "Extrusion Adjust (click center button to reset to 100%)",
+								"position": {
+									"my": "left top",
+									"at": "left bottom+30",
+									"of": "#speed_adjust"
+								},
+							},
+							{
+								"id": "extrusion_adjust",
+								"type": "jog",
+								"style": {
+									"width": "435px"
+								},
+								"position": {
+									"my": "left top",
+									"at": "left bottom",
+									"of": "#extrusion_adjust_label"
+								},
+								"button_defaults": {
+									"style": {
+										"width": "6ch",
+										"height": "2.5em",
+										"padding": "5px",
+										"margin-right": "10px"
+									}
+								},
+								"axis": "E",
+								"values": [
+									[-10, -5, -1,{
+										"type": "button",
+										"id": "extrusion_current",
+										"value": "${state.params.extrFactors[0].toFixed(0)}%",
+										"actions": {"type": "gcode", "gcode": "M221 S100 D0"}
+									},"+1", "+5", "+10"]
+								],
+								"jog_command": "M221 S${Math.min(parseInt($('#extrusion_current').html()) + position)} D0",
+								"direction": "row"
+							},
+						]
+					},
+					{
+						"id": "baby_steps_panel",
+						"type": "panel",
+						"style": {
+							"border": "3px solid red",
+							"width": "13ch",
+							"height": "565px",
+						},
+						"position": {
+							"my": "left top",
+							"at": "right+25 top",
+							"of": "#print_current_position_panel"
+						},
+						"element_defaults": {
+							"style": {
+								"position": "absolute",
+							}
+						},
+						"element_configs": [
+							{
+								"id": "babystep_z_p_button",
+								"type": "button",
+								"value": "Baby<br>Z: ${state.params.babystep.toFixed(2)}",
+								"tolerance": {
+									"tolerances": [
+										{ "limit": 0.000, "classes": "btn-success"},
+										{ "limit": 0.100, "classes": "btn-warning"},
+										{ "limit": 999.0, "classes": "btn-danger"}
+									],
+									"field": "${state.params.babystep}"
+								},
+								"initial_value": "Baby<br>Z:",
+								"style": {"width": "9ch", "height": "4em"},
+								"position": {
+									"my": "center top",
+									"at": "center top+25",
+									"of": "#baby_steps_panel"
+								},
+								"actions": {"type": "gcode", "gcode": "M290 R0 S0;M290", "get_reply": true}
+							},
+							{
+								"id": "babystep_z_p",
+								"type": "jog",
+								"position": {
+									"my": "left top",
+									"at": "left bottom+10",
+									"of": "#babystep_z_p_button"
+								},
+								"button_defaults": {
+									"style": {
+										"width": "9ch",
+										"height": "2.5em",
+										"padding": "5px",
+										"margin-top": "12px"
+									}
+								},
+								"axis": "Z",
+								"values": [
+									[-0.5,-0.2,-0.1,-0.05,{
+										"type": "button",
+										"id": "babystep_reset",
+										"value": "Clr",
+										"label": "Clr",
+										"actions": {"type": "gcode", "gcode": "M290 R0 S0;M290", "get_reply": true}
+									},0.05,0.1,0.2,0.5]
+								],
+								"jog_command": "M290 ${axis}${position} R1;M290",
+								"direction": "column"
+							},
+						]
+					}
+				]
+			},
+			{
+				"id": "dueui_panel_movement",
+				"type": "tab_panel",
+				"menubar_label": "Movement",
+				"element_configs": [
+					extendObject(true, {}, this.axes_position, {
+						"id": "movement_position",
+						"position": {
+							"my": "left top",
+							"at": "left top+10",
+							"of": "#dueui_panel_movement"
+						}
+					}),
+					{
+						"id": "babystep_button",
+						"type": "button",
+						"value": "Z baby: ${state.params.babystep.toFixed(2)}",
+						"style": {
+							"width": "15ch",
+							"height": "2.5em",
+						},
+						"tolerance": {
+							"tolerances": [
+								{ "limit": 0.000, "classes": "btn-success"},
+								{ "limit": 0.100, "classes": "btn-warning"},
+								{ "limit": 999.0, "classes": "btn-danger"}
+							],
+							"field": "${state.params.babystep}"
+						},
+						"initial_value": "ZBS:",
+						"position": {
+							"my": "left top",
+							"at": "left+5 bottom+5",
+							"of": "#movement_position"
+						},
+						"actions": {"type": "gcode", "gcode": "M290 R0 S0;M290", "get_reply": true}
+					},
+					{
+						"id": "jog_x",
+						"type": "jog",
+						"position": {
+							"my": "left top",
+							"at": "left+20 top+275",
+							"of": "#dueui_panel_movement"
+						},
+						"style": {
+							"height": "65px",
+							"width": "800px",
+							"border": "2px solid red",
+						},
+						"button_defaults": {
+							"style": {
+								"width": "75px",
+								"height": "50px",
+								"padding": "5px",
+								"margin": "5px",
+								"font-size": "20px"
+							}
+						},
+						"axis": "X",
+						"jog_command": "M120;G91;G1 ${axis}${position} F${speed} ${sense};M121",
+						"values": [
+							[-50,-25,-10,-5,-1,"&nbsp","+1","+5","+10","+25","+50"],
+							[-100,-50,-25,-10,-1,"&nbsp","+1","+10","+25","+50","+100"],
+							[-400,-300,-200,-100,-50,"&nbsp","+50","+100","+200","+300","+400+"],
+							[-1.0,-0.5,-0.2,-0.1,-0.05,"&nbsp","+0.05","+0.1","+0.2","+0.5","+1"]
+						],
+						"orientation": "horizontal",
+						"speed_change_event": "jog_speed",
+						"scale_change_event": "jog_scale",
+						"sense_chnage_event": "jog_sense"
+					},
+					{
+						"id": "jog_x_scale",
+						"type": "button",
+						"value": "+/-",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+5",
+							"of": "#jog_x"
+						},
+						"style": {
+							"width": "70px",
+							"height": "50px",
+							"padding": "5px",
+							"margin": "5px",
+							"font-size": "25px"
+						},
+						"actions": {"type": "event", "event": "jog_scale", "target": "#jog_x"}
+					},
+					{
+						"id": "jog_x_speed_label",
+						"type": "label",
+						"value": "X Speed",
+						"position": {
+							"my": "left bottom",
+							"at": "left top-40",
+							"of": "#jog_x"
+						}
+					},
+					{
+						"id": "jog_x_speed",
+						"type": "select",
+						"style": {
+							"width": "85px",
+							"font-size": "20px"
+						},
+						"position": {
+							"my": "left center",
+							"at": "right+10 center",
+							"of": "#jog_x_speed_label"
+						},
+						"options": [
+							{"label": "10", "value": 600},
+							{"label": "20", "value": 1200},
+							{"label": "30", "value": 1800},
+							{"label": "60", "value": 3600},
+							{"label": "90", "value": 5400},
+							{"label": "120", "value": 7200}
+						],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_x_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_x", "fire_on_startup": true}
+						]
+					},
+					{
+						"id": "jog_y",
+						"type": "jog",
+						"position": {
+							"my": "center center",
+							"at": "center center",
+							"of": "#jog_x"
+						},
+						"style": {
+							"height": "600px",
+							"width": "75px",
+							"border": "2px solid red",
+						},
+						"button_defaults": {
+							"style": {
+								"width": "60px",
+								"height": "50px",
+								"padding": "5px",
+								"margin": "5px",
+								"font-size": "20px"
+							}
+						},
+						"axis": "Y",
+						"values": [
+							[-50,-25,-10,-5,-1,"&nbsp","+1","+5","+10","+25","+50"].reverse(),
+							[-100,-50,-25,-10,-1,"&nbsp","+1","+10","+25","+50","+100"].reverse(),
+							[-400,-300,-200,-100,-50,"&nbsp","+50","+100","+200","+300","+400+"].reverse(),
+							[-1.0,-0.5,-0.2,-0.1,-0.05,"&nbsp","+0.05","+0.1","+0.2","+0.5","+1"].reverse()
+						],
+						"direction": "column"
+					},
+					{
+						"id": "jog_y_scale",
+						"type": "button",
+						"value": "+/-",
+						"position": {
+							"my": "left top",
+							"at": "right+20 top+6",
+							"of": "#jog_y"
+						},
+						"style": {
+							"width": "70px",
+							"height": "50px",
+							"padding": "5px",
+							"margin": "5px",
+							"font-size": "25px"
+						},
+						"actions": {"type": "event", "event": "jog_scale", "target": "#jog_y"}
+					},
+					{
+						"id": "jog_y_speed_label",
+						"type": "label",
+						"value": "Y Speed",
+						"position": {
+							"my": "right top",
+							"at": "left-75 top+5",
+							"of": "#jog_y"
+						}
+					},
+					{
+						"id": "jog_y_speed",
+						"type": "select",
+						"style": {
+							"width": "85px",
+							"font-size": "20px"
+						},
+						"position": {
+							"my": "right top",
+							"at": "left-20 top+30",
+							"of": "#jog_y"
+						},
+						"options": [
+							{"label": "10", "value": 600},
+							{"label": "20", "value": 1200},
+							{"label": "30", "value": 1800},
+							{"label": "60", "value": 3600},
+							{"label": "90", "value": 5400},
+							{"label": "120", "value": 7200}
+						],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_y_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_y", "fire_on_startup": true}
+						]
+					},
+					{
+						"id": "jog_z",
+						"type": "jog",
+						"position": {
+							"my": "left center",
+							"at": "right+20 center",
+							"of": "#jog_x"
+						},
+						"style": {
+							"height": "600px",
+							"width": "75px",
+							"border": "2px solid red",
+						},
+						"button_defaults": {
+							"style": {
+								"width": "60px",
+								"height": "50px",
+								"padding": "5px",
+								"margin": "5px",
+								"font-size": "20px"
+							}
+						},
+						"axis": "Z",
+						"values": [
+							[-50,-25,-10,-5,-1,"&nbsp","+1","+5","+10","+25","+50"],
+							[-100,-50,-25,-10,-1,"&nbsp","+1","+10","+25","+50","+100"],
+							[-400,-300,-200,-100,-50,"&nbsp","+50","+100","+200","+300","+400+"],
+							[-1.0,-0.5,-0.2,-0.1,-0.05,"&nbsp","+0.05","+0.1","+0.2","+0.5","+1"]
+						],
+						"direction": "column",
+					},
+					{
+						"id": "jog_z_speed_label",
+						"type": "label",
+						"value": "Z Speed",
+						"position": {
+							"my": "right top",
+							"at": "left-65 top+10",
+							"of": "#jog_z"
+						}
+					},
+					{
+						"id": "jog_z_speed",
+						"type": "select",
+						"style": {
+							"width": "85px",
+							"font-size": "20px"
+						},
+						"position": {
+							"my": "right top",
+							"at": "right bottom+5",
+							"of": "#jog_z_speed_label"
+						},
+						"options": [
+							{"label": "10", "value": 600},
+							{"label": "20", "value": 1200},
+							{"label": "30", "value": 1800},
+							{"label": "60", "value": 3600},
+							{"label": "90", "value": 5400},
+							{"label": "120", "value": 7200}
+						],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_z_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_z", "fire_on_startup": true}
+						]
+					},
+					{
+						"id": "jog_z_scale",
+						"type": "button",
+						"value": "+/-",
+						"position": {
+							"my": "right top",
+							"at": "right bottom+10",
+							"of": "#jog_z_speed"
+						},
+						"style": {
+							"width": "70px",
+							"height": "50px",
+							"padding": "5px",
+							"margin": "5px",
+							"font-size": "25px"
+						},
+						"actions": [
+							{"type": "event", "event": "jog_scale", "target": "#jog_z"}
+						]
+					},
+					{
+						"id": "babystep_z",
+						"type": "jog",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#jog_z"
+						},
+						"style": {
+							"height": "600px",
+							"width": "75px",
+							"border": "2px solid red",
+						},
+						"button_defaults": {
+							"style": {
+								"width": "60px",
+								"height": "50px",
+								"padding": "5px",
+								"margin": "5px",
+								"font-size": "20px"
+							}
+						},
+						"axis": "Z",
+						"values": [
+							[-1.0,-0.5,-0.2,-0.1,-0.05,{
+								"type": "button",
+								"id": "babystep_reset",
+								"value": "Clear<br>Baby",
+								"style": {
+									"font-size": "15px",
+									"padding": "0px"
+								},
+								"actions": {"type": "gcode", "gcode": "M290 R0 S0;M290", "get_reply": true}
+							},"+0.05","+0.1","+0.2","+0.5","+1"]
+						],
+						"jog_command": "M290 ${axis}${position} R1;M290",
+						"direction": "column"
+					},
+					{
+						"id": "jog_e",
+						"type": "jog",
+						"position": {
+							"my": "left top",
+							"at": "right+40 top",
+							"of": "#babystep_z"
+						},
+						"style": {
+							"height": "600px",
+							"width": "75px",
+							"border": "2px solid red",
+						},
+						"button_defaults": {
+							"style": {
+								"width": "60px",
+								"height": "50px",
+								"padding": "5px",
+								"margin": "5px",
+								"font-size": "20px"
+							}
+						},
+						"axis": "E",
+						"jog_command": "M120;M83;T0;G1 ${axis}${position} F${speed} ${sense};M121",
+						"values": [
+							[-50,-25,-10,-5,-1,"&nbsp","+1","+5","+10","+25","+50"],
+							[-100,-50,-25,-10,-1,"&nbsp","+1","+10","+25","+50","+100"]
+						],
+						"direction": "column",
+						"scale_button": {
+							"position": "center",
+							"style": {
+								"background": "lightgray"
+							}
+						}
+					},
+					{
+						"id": "jog_e_speed_label",
+						"type": "label",
+						"value": "E Speed",
+						"position": {
+							"my": "left top",
+							"at": "right+15 top+10",
+							"of": "#jog_e"
+						}
+					},
+					{
+						"id": "jog_e_speed",
+						"type": "select",
+						"style": {
+							"width": "85px",
+							"font-size": "20px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#jog_e_speed_label"
+						},
+						"options": [
+							{"label": "1", "value": 60},
+							{"label": "5", "value": 300},
+							{"label": "15", "value": 900},
+							{"label": "30", "value": 1800},
+							{"label": "60", "value": 3600}
+						],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_e_speed", "fire_on_startup": true},
+							{"type": "event", "event": "jog_speed", "target": "#jog_e", "fire_on_startup": true}
+						]
+					},
+					{
+						"id": "jog_e_scale",
+						"type": "button",
+						"value": "+/-",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#jog_e_speed"
+						},
+						"style": {
+							"width": "70px",
+							"height": "50px",
+							"padding": "5px",
+							"margin": "5px",
+							"font-size": "25px"
+						},
+						"actions": [
+							{"type": "event", "event": "jog_scale", "target": "#jog_e"}
+						]
+					},
+					{
+						"id": "hxy",
+						"type": "button",
+						"value": "Home XY",
+						"position": {
+							"my": "right top",
+							"at": "center-100 bottom+50",
+							"of": "#jog_x"
+						},
+						"style": {
+							"width": "175px",
+							"height": "50px",
+							"font-size": "20px",
+							"padding": "2px"
+						},
+						"actions": {"type": "macro", "file": "/sys/homexy.g"}
+					},
+					{
+						"id": "center",
+						"type": "button",
+						"value": "Center XY",
+						"style": {
+							"width": "175px",
+							"height": "50px",
+							"font-size": "20px",
+							"padding": "2px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#hxy"
+						},
+						"actions": {"type": "macro", "file": "/macros/10_Center"}
+					},
+					{
+						"id": "homeall_movement",
+						"type": "button",
+						"value": "Home All",
+						"style": {
+							"width": "175px",
+							"height": "50px",
+							"font-size": "20px",
+							"padding": "2px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#center"
+						},
+						"actions": {"type": "gcode", "gcode": "G28"}
+					},
+					{
+						"id": "bed_compensation",
+						"type": "button",
+						"value": "Level Bed",
+						"position": {
+							"my": "left top",
+							"at": "center+100 bottom+50",
+							"of": "#jog_x"
+						},
+						"style": {
+							"width": "175px",
+							"height": "50px",
+							"font-size": "20px",
+							"padding": "2px"
+						},
+						"classes": "btn btn-warning",
+						"actions": [
+							{"type": "gcode", "gcode": "G32 S3"}
+						]
+					},
+					{
+						"id": "mesh_compensation",
+						"type": "button",
+						"value": "Start Mesh Probe",
+						"classes": "btn btn-warning",
+						"position": {
+							"my": "right top",
+							"at": "right bottom+10",
+							"of": "#bed_compensation"
+						},
+						"style": {
+							"width": "175px",
+							"height": "50px",
+							"font-size": "20px",
+							"padding": "2px"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "G29 S0"}
+						]
+					},
+					{
+						"id": "probe_movement",
+						"type": "button",
+						"read_only": true,
+						"value": "Probe: ${state.sensors.probeValue}",
+						"initial_value": "Probe",
+						"tolerance": {
+							"tolerances": [
+								{"limit": 550, "classes": "btn-success"},
+								{"limit": 559, "classes": "btn-warning"},
+								{"limit": 999, "classes": "btn-danger"}
+							],
+							"field": "${state.sensors.probeValue}"
+						},
+						"style": {
+							"width": "175px",
+							"height": "50px",
+							"font-size": "20px",
+							"padding": "2px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+10",
+							"of": "#mesh_compensation"
+						}
+					},
+					{
+						"id": "endstop_sense_label",
+						"type": "label",
+						"value": "Endstop Sense",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+100",
+							"of": "#jog_y_scale"
+						},
+					},
+					{
+						"id": "jog_endstop_sense",
+						"type": "select",
+						"style": {
+							"width": "18ch",
+							"font-size": "20px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left bottom+5",
+							"of": "#endstop_sense_label"
+						},
+						"options": [
+							{ "value": "H0", "label": "Ignore Endstops"},
+							{ "value": "H1", "label": "Sense Endstops"},
+							{ "value": "H2", "label": "Ignore Endstops and Homed"},
+							{ "value": "H3", "label": "Sense Length (delta only)"},
+						],
+						"submit_on_change": true,
+						"actions": [
+							{"type": "setting", "setting": "jog_endstop_sense", "fire_on_startup": true},
+							{"type": "event", "event": "jog_sense", "target": "#jog_x,#jog_y,#jog_z,#jog_e", "fire_on_startup": true}
+						]
+					},
+				]
+			},
+			{
+				"id": "dueui_panel_heightmap",
+				"type": "tab_panel",
+				"menubar_label": "HeightMap",
+				"element_configs": [
+					extendObject(true, {}, this.axes_position, {
+						"id": "heightmap_position",
+						"position": {
+							"my": "left top",
+							"at": "left top+10",
+							"of": "#dueui_panel_heightmap"
+						},
+					}),
+					{
+						"id": "probe_heightmap",
+						"type": "button",
+						"read_only": true,
+						"value": "Probe: ${state.sensors.probeValue}",
+						"initial_value": "Probe",
+						"tolerance": {
+							"tolerances": [
+								{"limit": 550, "classes": "btn-success"},
+								{"limit": 559, "classes": "btn-warning"},
+								{"limit": 999, "classes": "btn-danger"}
+							],
+							"field": "${state.sensors.probeValue}"
+						},
+						"style": {
+							"height": "2.5em",
+							"width": "15ch",
+							"margin": "5px",
+							"padding": "2px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "left+5 bottom+5",
+							"of": "#heightmap_position"
+						}
+					},
+					{
+						"id": "heightmap_buttons1",
+						"type": "grid",
+						"position": {
+							"my": "left top",
+							"at": "left bottom+30",
+							"of": "#probe_heightmap"
+						},
+						"cols": 1,
+						"rows": 4,
+						"style": {
+						},
+						"element_defaults": {
+							"type": "button",
+							"style": {
+								"margin-top": "0px", "margin-bottom": "10px",
+								"width": "15ch",
+								"height": "2.5em"
+							}
+						},
+						"element_configs": [
+							{
+								"value": "Home All",
+								"actions": [
+									{"type": "gcode", "gcode": "G28"}
+									]
+							},
+							{
+								"value": "Home XY",
+								"actions": [
+									{"type": "macro", "file": "/sys/homexy.g"}
+								]
+							},
+							{
+								"value": "Center XY",
+								"actions": [
+									{"type": "macro", "file": "/macros/10_Center"}
+								]
+							},
+							{
+								"value": "Reload Map",
+								"actions": [
+									{"type": "event", "event": "heightmap_refresh", "target": "#heightmap"}
+								]
+							}
+						]
+					},
+					{
+						"id": "heightmap",
+						"type": "heightmap",
+						"style": {
+							"width": "600px"
+						},
+						"position": {
+							"my": "left top",
+							"at": "right+25 top",
+							"of": "#heightmap_position"
+						},
+						"point_style": {
+							"height": "1.51em", "width": "3.0ch", "font-size": "13px"
+						},
+						"refresh_event": "heightmap_refresh",
+//						"scale_min": -0.250,
+//						"scale_max": 0.250
+					},
+					{
+						"id": "heightmap_buttons",
+						"type": "grid",
+						"position": {
+							"my": "left top",
+							"at": "right+25 top",
+							"of": "#heightmap"
+						},
+						"cols": 1,
+						"rows": 7,
+						"style": {
+						},
+						"element_defaults": {
+							"style": {
+								"margin": "10px",
+								"width": "20ch",
+								"height": "3.0em"
+							}
+						},
+						"element_configs": [
+							{
+								"value": "Disable Bed Compensation",
+								"actions": [
+									{"type": "gcode", "gcode": "M561", "message": "Disabled bed compensation"}
+								]
+							},
+							{
+								"value": "Level Bed",
+								"actions": [
+									{"type": "gcode", "gcode": "G32 S3", "message": "Bed level started"}
+								]
+							},
+							{
+								"value": "Clear Mesh Compensation",
+								"actions": [
+									{"type": "gcode", "gcode": "G29 S2", "message": "Cleared mesh compensation"}
+								]
+							},
+							{
+								"value": "Delete Existing heightmap.csv",
+								"actions": [
+									{"type": "deleteFile", "file": "/sys/heightmap.csv",
+										"message": "Heightmap deleted"},
+									{"type": "event", "event": "heightmap_refresh", "target": "#heightmap"}
+								]
+							},
+							{
+								"value": "Start Mesh Probe",
+								"actions": [
+									{"type": "gcode", "gcode": "G29 S0", "message": "Mesh probe started"}
+								]
+							},
+							{
+								"value": "Load Heightmap",
+								"actions": [
+									{"type": "gcode", "gcode": "G29 S1", "message": "Heightmap loaded"}
+								]
+							},
+							{
+								"value": "Special Probe",
+								"actions": [
+									{"type": "macro", "macro": "special_probe.g", "message": "Mesh probe started"}
+								]
+							},
+						]
+					},
+				]
+			},
+			{
+				"id": "dueui_panel_control",
+				"type": "tab_panel",
+				"menubar_label": "Control",
+				"element_configs": [
+					{
+						"id": "heater_labels",
+						"type": "heater_labels",
+						"position": {
+							"my": "left top",
+							"at": "left top",
+							"of": "#dueui_panel_control"
+						},
+						"style": {
+							"width": "110px"
+						},
+						"button_defaults": {
+							"classes": "btn btn-secondary",
+							"style": {
+								"width": "100%",
+								"height": "2.5em"
+							}
+						}
+					},
+					{
+						"id": "bed_heater",
+						"type": "heater",
+						"label": "Bed",
+						"position": {
+							"my": "left top",
+							"at": "right+5 top",
+							"of": "#heater_labels"
+						},
+						"element_defaults": {
+							"style": {
+								"height": "2.5em"
+							}
+						},
+						"tolerance": {
+							"tolerances": [
+								{"limit": 2, "classes": "btn-success"},
+								{"limit": 5, "classes": "btn-warning"},
+								{"limit": 999, "classes": "btn-danger"}
+							]
+						},
+						"state": {
+							"states": this.heater_states,
+							"field": "${state.temps.state[0]}"
+						},
+						"actions_chooser": [
+							{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Off"},
+							{"type": "gcode", "gcode": "M144 P0 S0", "label": "Standby"},
+							{"type": "gcode", "gcode": "M144 P0 S1", "label": "On"},
+							{"type": "gcode", "gcode": "M562 P0", "label": "Reset"},
+							{"type": "gcode", "gcode": "M303 H0 S${state.temps.beds.active}", "label": "Tune"},
+						],
+						"temp_fields": {
+							"current": "${state.temps.bed.current.toFixed(1)}",
+							"active": "${state.temps.bed.active}",
+							"standby": "${state.temps.bed.standby}",
+						},
+						"set_temp_commands": {
+							"active": "M140 P0 S${value}",
+							"standby": "M140 P0 R${value}",
+						}
+					},
+					{
+						"id": "extr1_heater",
+						"type": "heater",
+						"label": "Extr 1",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#bed_heater"
+						},
+						"style": { "width": "110px" },
+						"button_defaults": {
+							"style": {
+								"height": "2.5em"
+							}
+						},
+						"tolerance": {
+							"tolerances": [
+								{"limit": 2, "classes": "btn-success"},
+								{"limit": 5, "classes": "btn-warning"},
+								{"limit": 999, "classes": "btn-danger"}
+							]
+						},
+						"state": {
+							"states": this.heater_states,
+							"field": "${state.temps.state[1]}"
+						},
+						"actions_chooser": [
+							{"type": "gcode", "gcode": "T-1", "label": "Off"},
+							{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Standby"},
+							{"type": "gcode", "gcode": "T0", "label": "On"},
+							{"type": "gcode", "gcode": "M562 P1", "label": "Reset"},
+							{"type": "gcode", "gcode": "M303 H1 S${state.temps.tools.active[0]}", "label": "Tune"},
+						],
+						"temp_fields": {
+							"current": "${state.temps.current[1].toFixed(1)}",
+							"active": "${state.temps.tools.active[0]}",
+							"standby": "${state.temps.tools.standby[0]}",
+						},
+						"set_temp_commands": {
+							"active": "G10 P0 S${value}",
+							"standby": "G10 P0 R${value}"
+						}
+					},
+					{
+						"id": "main_macros",
+						"type": "macro_grid",
+						"position": {
+							"my": "left top",
+							"at": "right+25 top",
+							"of": "#extr1_heater"
+						},
+						"button_defaults": {
+							"style": { "width": "12ch", "height": "2.5em", "margin": "2px" }
+						},
+						"rows": 10,
+						"cols": 3,
+						"direction": "row",
+						"autofill_macros": true,
+						"directory": "/macros",
+						"sort_autofill": "file",
+						"strip_directory": true,
+						"strip_prefix": true,
+						"strip_suffix": true
+					},
+					{
+						"id": "fan_0_label",
+						"type": "label",
+						"initial_value": "<b>Fan 0<br>---%</b>",
+						"value": "<b>Fan 0<br>${state.params.fanPercent[0]}%</b>",
+						"position": {
+							"my": "left top",
+							"at": "right+150 top+10",
+							"of": "#main_macros"
+						}
+					},
+					{
+						"id": "fan_0",
+						"type": "slider",
+						"style": {
+							"width": "3ch",
+							"height": "30ch"
+
+						},
+						"position": {
+							"my": "center top",
+							"at": "center bottom+10",
+							"of": "#fan_0_label"
+						},
+						"min": 0,
+						"max": 100,
+						"step": 5,
+						"orientation": "vertical",
+						"value": "${state.params.fanPercent[0]}",
+						"actions": {"type": "gcode", "gcode": "M106 P0 S${value / 100.0}"}
+					},
+					{
+						"id": "fan_1_label",
+						"type": "label",
+						"initial_value": "<b>Fan 1<br>---%</b>",
+						"value": "<b>Fan 1<br>${state.params.fanPercent[1]}%</b>",
+						"position": {
+							"my": "left top",
+							"at": "right+10 top",
+							"of": "#fan_0_label"
+						}
+					},
+					{
+						"id": "fan_1",
+						"type": "slider",
+						"style": {
+							"height": "30ch"
+						},
+						"position": {
+							"my": "center top",
+							"at": "center bottom+10",
+							"of": "#fan_1_label"
+						},
+						"min": 0, "max": 100, "step": 5, "orientation": "vertical",
+						"value": "${state.params.fanPercent[0]}",
+						"actions": {"type": "gcode", "gcode": "M106 P1 S${value / 100.0}"}
+					},
+				]
+			},
+			{
+				"id": "dueui_panel_console",
+				"type": "tab_panel",
+				"menubar_label": "Console",
+				"style": {
+					"display": "flex",
+					"flex-direction": "column"
+				},
+				"element_configs": [
+					{
+						"id": "console_log_label",
+						"type": "label",
+						"value": "GCode:&nbsp;",
+						"style": {
+							"vertical-align": "middle",
+							"height": "2.5em",
+							"width": "7ch"
+						}
+					},
+					{
+						"id": "console_log_input",
+						"type": "input_field",
+						"style": {
+							"height": "2.5em",
+							"width": "calc(100% - 8ch)"
+						},
+						"position": {
+							"my": "left top",
+							"at": "right top",
+							"of": "#console_log_label"
+						},
+						"field_type": "text",
+						"autocomplete_key": "console",
+						"submit_on_enter": true,
+						"actions": {"type": "gcode", "gcode": "${value}", "get_reply": true}
+					},
+					{
+						"id": "console_log",
+						"type": "textarea",
+						"position": {
+							"my": "left top",
+							"at": "left bottom",
+							"of": "#console_log_label"
+						},
+						"style": {
+							"height": "calc(100% - 10em)"
+						},
+						"read_only": true,
+						"wrap": "off",
+						"show_gcode_replies": true,
+						"show_gcode_sent": false,
+						"show_gcode_in_replies": false,
+						"show_log_messages": true,
+						"new_entries_at_top": true
+					}
+				]
+			},
+		]
+	};
+
+	status_map = {
+		"idle": {"label": "Idle", "classes": "btn-success"},
+		"C": {"label": "Starting Up", "classes": "btn-success"},
+		"I": {"label": "Idle", "classes": "btn-success"},
+		"paused": {"label": "Paused", "classes": "btn-primary"},
+		"pausing": {"label": "Pausing", "classes": "btn-success"},
+		"resuming": {"label": "Resuming", "classes": "btn-success"},
+		"busy": {"label": "Busy", "classes": "btn-success"},
+		"B": {"label": "Busy", "classes": "btn-success"},
+		"updating": {"label": "Updating", "classes": "btn-danger"},
+		"halted": {"label": "Halted", "classes": "btn-danger"},
+		"S": {"label": "Stopped", "classes": "btn-warning"},
+		"off": {"label": "Off", "classes": "btn-danger"},
+		"O": {"label": "Off", "classes": "btn-danger"},
+		"processing": {"label": "Processing", "classes": "btn-primary"},
+		"P": {"label": "Printing", "classes": "btn-success"},
+		"simulating": {"label": "Simulating", "classes": "btn-primary"},
+		"connected": {"label": "Connected", "classes": "btn-success"},
+		"connecting": {"label": "Connecting", "classes": "btn-warning"},
+		"reconnected": {"label": "Connected", "classes": "btn-success"},
+		"disconnected": {"label": "Disconnected", "classes": "btn-warning"},
+		"retrying": {"label": "Retrying", "classes": "btn-warning"},
+		"failed": {"label": "Failed", "classes": "btn-danger"},
+		"unknown": {"label": "?", "classes": "btn-secondary"},
+	};
+}

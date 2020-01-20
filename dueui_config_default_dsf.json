@@ -193,9 +193,9 @@ class DueUIConfig {
 								"show_action_button": true,
 								"sort": "label",
 								"style": {
-									"width": "30ch",
-									"height": "2em",
-									"font-size": "20px"
+									"width": "620px",
+									"height": "3em",
+									"font-size": "18px"
 								},
 								"position": {
 									"my": "left top",
@@ -225,7 +225,7 @@ class DueUIConfig {
 								"value": "${state.heat.heaters[0].current.toFixed(1)}",
 								"style": {
 									"width": "10ch",
-									"height": "2em"
+									"height": "2.5em"
 								},
 								"position": {
 									"my": "left center",
@@ -239,14 +239,10 @@ class DueUIConfig {
 										{"limit": 999, "classes": "btn-danger"}
 									]
 								},
-								/*
-								 * The M140 "Q" parameter isn't part of the official RRF yet.
-								 * Substitude the appropriate official commands.
-								 */
 								"actions_chooser": [
-									{"type": "gcode", "gcode": "M140 P0 Q0", "label": "Off"},
-									{"type": "gcode", "gcode": "M140 P0 Q1", "label": "Standby"},
-									{"type": "gcode", "gcode": "M140 P0 Q2", "label": "On"},
+									{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Off"},
+									{"type": "gcode", "gcode": "M144 P0 S0", "label": "Standby"},
+									{"type": "gcode", "gcode": "M144 P0 S1", "label": "On"},
 									{"type": "gcode", "gcode": "M562 P0", "label": "Reset"},
 									{"type": "gcode", "gcode": "M303 H0 S${state.heat.beds[0].active[0]}", "label": "Tune"},
 								],
@@ -273,7 +269,7 @@ class DueUIConfig {
 								"value": "${state.heat.heaters[1].current.toFixed(1)}",
 								"style": {
 									"width": "10ch",
-									"height": "2em"
+									"height": "2.5em"
 								},
 								"position": {
 									"my": "left center",
@@ -287,14 +283,10 @@ class DueUIConfig {
 										{"limit": 999, "classes": "btn-danger"}
 									]
 								},
-								/*
-								 * The T "H" and "Q" parameters aren't part of the official RRF yet.
-								 * Substitude the appropriate official commands.
-								 */
 								"actions_chooser": [
-									{"type": "gcode", "gcode": "T0 H0 Q0", "label": "Off"},
-									{"type": "gcode", "gcode": "T0 H0 Q1", "label": "Standby"},
-									{"type": "gcode", "gcode": "T0 H0 Q2", "label": "On"},
+									{"type": "gcode", "gcode": "T-1", "label": "Off"},
+									{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Standby"},
+									{"type": "gcode", "gcode": "T0", "label": "On"},
 									{"type": "gcode", "gcode": "M562 P1", "label": "Reset"},
 									{"type": "gcode", "gcode": "M303 H1 S${state.tools[0].active[0]}", "label": "Tune"},
 								],
@@ -1619,14 +1611,10 @@ class DueUIConfig {
 							"states": this.heater_states,
 							"field": "${state.heat.heaters[0].state}"
 						},
-						/*
-						 * The M140 "Q" parameter isn't part of the official RRF yet.
-						 * Substitude the appropriate official commands.
-						 */
 						"actions_chooser": [
-							{"type": "gcode", "gcode": "M140 P0 Q0", "label": "Off"},
-							{"type": "gcode", "gcode": "M140 P0 Q1", "label": "Standby"},
-							{"type": "gcode", "gcode": "M140 P0 Q2", "label": "On"},
+							{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Off"},
+							{"type": "gcode", "gcode": "M144 P0 S0", "label": "Standby"},
+							{"type": "gcode", "gcode": "M144 P0 S1", "label": "On"},
 							{"type": "gcode", "gcode": "M562 P0", "label": "Reset"},
 							{"type": "gcode", "gcode": "M303 H0 S${state.heat.beds[0].active[0]}", "label": "Tune"},
 						],
@@ -1666,14 +1654,10 @@ class DueUIConfig {
 							"states": this.heater_states,
 							"field": "${state.heat.heaters[1].state}"
 						},
-						/*
-						 * The T "H" and "Q" parameters aren't part of the official RRF yet.
-						 * Substitude the appropriate official commands.
-						 */
 						"actions_chooser": [
-							{"type": "gcode", "gcode": "T0 H0 Q0", "label": "Off"},
-							{"type": "gcode", "gcode": "T0 H0 Q1", "label": "Standby"},
-							{"type": "gcode", "gcode": "T0 H0 Q2", "label": "On"},
+							{"type": "gcode", "gcode": "T-1", "label": "Off"},
+							{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Standby"},
+							{"type": "gcode", "gcode": "T0", "label": "On"},
 							{"type": "gcode", "gcode": "M562 P1", "label": "Reset"},
 							{"type": "gcode", "gcode": "M303 H1 S${state.tools[0].active[0]}", "label": "Tune"},
 						],

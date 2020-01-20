@@ -127,7 +127,8 @@ class DueuiElement {
 		$.extend(true, this, {
 			"origin": "left top",
 			"classes": [],
-			"style": {},
+			"style": {
+			},
 			"element_configs": [],
 			"element_defaults": {},
 			"elements": []
@@ -611,6 +612,9 @@ class DueUI{
 	severityMap = [ "I", "W", "E" ] ;
 
 	logMessage(severity, message) {
+		if (typeof(message) === undefined || message.trim().length == 0) {
+			return;
+		}
 		var d = new Date();
 		if (typeof(severity) === 'number') {
 			severity = this.severityMap[severity];
@@ -1079,6 +1083,7 @@ class DueUI_NONDSF extends DueUI {
 		this.sequence = -1;
 		this.current_poll_response = {};
 		this.poll_in_flight = false;
+		this.pollOnce(3, false, true);
 	}
 
 	normalizePath(path) {
@@ -1130,7 +1135,7 @@ class DueUI_NONDSF extends DueUI {
 		return files;
 	}
 
-	processPollResponse() {
+	async processPollResponse() {
 		if (this.model.status !== this.current_status) {
 			$(`.status-change-listener`).trigger("duet_status_change", this.model.status);
 			this.current_status = this.model.status;
@@ -1138,19 +1143,32 @@ class DueUI_NONDSF extends DueUI {
 		$(`.state-poll-listener`).trigger("duet_poll_response", this.model);
 
 		if (this.model.seq > this.sequence) {
-			this.getGcodeReply();
+			let resp = await this.getGcodeReply();
+			if (resp.replies.length > 0) {
+				for (let r in resp.replies) {
+					this.logMessage("I", resp.replies[r]);
+				}
+			}
 		}
 	}
 
-	async pollOnce(poll_level, notify) {
-		if (this.poll_in_flight) {
-			return;
+	async pollOnce(poll_level, notify, lock) {
+		if (lock) {
+			if (this.poll_in_flight) {
+				return;
+			}
+			this.poll_in_flight = true;
 		}
-		this.poll_in_flight = true;
 		let resp = await super.getJSON(`/rr_status?type=${poll_level}`);
+
+//		let resp = await this.sendGcode('M409 F"v"')
+//		let resp0 = await super.getJSON("/rr_gcode?gcode=M409%20F%22v%22");
+//		let resp = await super.getJSON("/rr_reply");
 		if (resp.ok) {
+//			resp.data.result.state.status = resp.data.result.state.status.toLowerCase();
 			$.extend(true, this.model, resp.data);
-			console.log(JSON.stringify(this.model));
+//			$.extend(true, this.model, resp.data.result);
+//			console.log(JSON.stringify(this.model));
 			if (this.sequence < 0) {
 				this.sequence = this.model.seq;
 			}
@@ -1158,12 +1176,14 @@ class DueUI_NONDSF extends DueUI {
 				console.log({"poll_level": poll_level, "response": this.model});
 			}
 			if (notify) {
-				this.processPollResponse();
+				await this.processPollResponse();
 			}
 		} else {
 			this.logMessage("W", `Poll type ${poll_level} failed`);
 		}
-		this.poll_in_flight = false;
+		if (lock) {
+			this.poll_in_flight = false;
+		}
 		return resp;
 	}
 
@@ -1174,15 +1194,15 @@ class DueUI_NONDSF extends DueUI {
 			this.settings.duet_poll_interval_3
 		);
 
-		let resp = await this.pollOnce(1, false);
+		let resp = await this.pollOnce(1, false, true);
 		if (!resp.ok) {
 			return resp;
 		}
-		resp = await this.pollOnce(2, false);
+		resp = await this.pollOnce(2, false, true);
 		if (!resp.ok) {
 			return resp;
 		}
-		resp = await this.pollOnce(3, true);
+		resp = await this.pollOnce(3, true, true);
 		if (!resp.ok) {
 			return resp;
 		}
@@ -1209,7 +1229,7 @@ class DueUI_NONDSF extends DueUI {
 			}
 
 			if (this.connected && poll_level > 0 && this.settings.duet_polling_enabled == 1) {
-				this.pollOnce(poll_level, true);
+				this.pollOnce(poll_level, true, true);
 			}
 		}, interval);
 		return resp;
@@ -1234,14 +1254,18 @@ class DueUI_NONDSF extends DueUI {
 
 	async getGcodeReply(gc) {
 		let tempgc = gc || { no_echo: true, gcode: ""};
-		let resp = {};
+		let resp = {
+			ok: true,
+			replies: []
+		};
 
 		while (this.sequence < this.model.seq) {
-			resp = await super.getText("/rr_reply");
-			if (!resp.ok) {
-				this.logMessage("E", resp.error);
-				return resp;
+			let tempresp = await super.getText("/rr_reply");
+			if (!tempresp.ok) {
+				this.logMessage("E", tempresp.error);
+				return tempresp;
 			}
+			resp.replies.push(tempresp.data);
 			this.sequence++;
 		}
 
@@ -1249,6 +1273,8 @@ class DueUI_NONDSF extends DueUI {
 	}
 
 	async sendGcode(gcodes) {
+		this.poll_in_flight = true;
+
 		let resp = {
 			ok: true,
 			replies: []
@@ -1274,19 +1300,26 @@ class DueUI_NONDSF extends DueUI {
 				this.logMessage("E", `GCode: ${gc}  Error: ${single_resp.error.responseText}`);
 				return single_resp;
 			} else {
+				let pollresp = await this.pollOnce(1, false, false);
 				let reply = await this.getGcodeReply(ge);
-				resp.replies.push(reply.data);
-				if (!ge.no_event && ge.get_reply && reply.data && reply.data.length > 0) {
-					let d = new Date();
-					$(".gcode-reply-listener").trigger("gcode_reply", {
-						"timestamp": d,
-						"gcode": (ge.no_echo ? "" : gc),
-						"response": reply.trim()
-					});
+				resp.replies = reply.replies;
+
+				if (!ge.no_event && reply.replies.length > 0) {
+					for (let r in reply.replies) {
+						if (reply.replies[r].trim().length == 0) {
+							continue;
+						}
+						let d = new Date();
+						$(".gcode-reply-listener").trigger("gcode_reply", {
+							"timestamp": d,
+							"gcode": (ge.no_echo ? "" : gc),
+							"response": reply.replies[r].trim()
+						});
+					}
 				}
 			}
 		}
-
+		this.poll_in_flight = false;
 		return resp;
 	}
 }

@@ -492,13 +492,26 @@ class DueuiFileSelectWidget extends DueuiPanel {
 			"show_action_button": true,
 			"sort": "label",
 			"submit_on_change": false,
+			"style": {
+				"position": "absolute"
+			}
 		}, config), parent);
 
 		this.element_configs = [];
 
 		let dropdown = $.extend(true, config, {
 			"id": config.id + "_select",
-			"type": "file_dropdown"
+			"type": "file_dropdown",
+			"style": {
+				"position": "absolute",
+				"height": "2.5em",
+				"width": "35ch",
+			},
+			"position": {
+				"my": "left center",
+				"at": "left+5 center",
+				"of": "#" + this.id
+			}
 		});
 		this.element_configs.push(dropdown);
 
@@ -509,13 +522,14 @@ class DueuiFileSelectWidget extends DueuiPanel {
 				"type": "button",
 				"icon": "replay",
 				"style": {
+					"position": "absolute",
 					"height": "2.5em",
 					"width": "5ch",
 				},
 				"classes": "btn-success",
 				"position": {
-					"my": "left top",
-					"at": "right top",
+					"my": "left center",
+					"at": "right+20 center",
 					"of": "#" + dropdown.id,
 				},
 				"actions":
@@ -547,13 +561,15 @@ class DueuiFileSelectWidget extends DueuiPanel {
 				"id": config.id + "_action",
 				"type": "button",
 				"style": {
+					"position": "absolute",
 					"height": "2.5em",
 					"width": "10ch",
 				},
 				"classes": "btn-success",
 				"position": {
-					"my": "left top",
-					"at": "right+5 top",
+					"my": "left center",
+					"at": "right+20 center",
+					"of": "#" + refresh.id
 				},
 				"actions":
 					{"type": "event", "event": DUEUI.EVENTS.RUN, "target": "#" + dropdown.id}
