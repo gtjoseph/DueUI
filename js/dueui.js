@@ -39,7 +39,7 @@ function extendObject(current, extra) {
 
 const DUEUI = {
 	BACKENDS: {
-		NODSF: 0,
+		STANDALONE: 0,
 		DSF: 1
 	},
 	ACTIONS: {
@@ -51,6 +51,10 @@ const DUEUI = {
 		SETTING: "setting",
 	},
 	EVENTS: {
+		UPDATE_VALUE: "update_value",
+		UPDATE_LABEL: "update_label",
+		DISABLE: "disable",
+		ENABLE: "enable",
 		REFRESH: "refresh",
 		PRINT: "print",
 		RUN: "run",
@@ -61,9 +65,6 @@ const DUEUI = {
 		SUBMIT: "dueui-submit"
 	},
 }
-const DUEUI_BACKEND_NONDSF = 0;
-const DUEUI_BACKEND_DSF = 1;
-const DUEUI_EVENT_REFRESH = "refresh";
 
 jQuery.fn.extend({
 	calcOffset: function calcOffset(pos) {
@@ -158,6 +159,50 @@ class DueuiElement {
 		}
 		this.parent = parent;
 		this.jq.data(this);
+
+		if (!this.on || !this.on[DUEUI.EVENTS.UPDATE_VALUE]) {
+			this.jq.on(DUEUI.EVENTS.UPDATE_VALUE, (event, value) => {
+				if (this.val) {
+					let v = DueUI.evalValue(value, this.val());
+					this.val(v);
+				}
+				event.stopPropagation();
+			});
+		}
+
+		if (!this.on || !this.on[DUEUI.EVENTS.UPDATE_LABEL]) {
+			this.jq.on(DUEUI.EVENTS.UPDATE_LABEL, (event, value) => {
+				if (!this.label_widget) {
+					return;
+				}
+				if (this.label_widget.val) {
+					let v = DueUI.evalValue(value, this.label_widget.val());
+					this.label_widget.val(v);
+				}
+				event.stopPropagation();
+			});
+		}
+
+		if (!this.on || !this.on[DUEUI.EVENTS.ENABLE]) {
+			this.jq.on(DUEUI.EVENTS.ENABLE, (event, value) => {
+				this.jq.children().attr("readonly", value);
+				if (value) {
+					this.jq.children().show();
+				} else {
+					this.jq.children().hide();
+				}
+				event.stopPropagation();
+			});
+		}
+
+		if (this.on) {
+			for (const o in this.on) {
+				this.jq.on(o, (event, value) => {
+					this.on[o].call(this, event, value);
+					event.stopPropagation();
+				});
+			}
+		}
 	}
 
 	hasClass(classname) {
@@ -400,7 +445,11 @@ class DueuiElement {
 					if (/^[-+]?([0-9]*)([.][0-9]+)?$/.test(a2.value)) {
 						val = Number(a2.value);
 					} else {
-						val = DueUI.evalValue(a2.value, this.val());
+						if (!a2.no_eval) {
+							val = DueUI.evalValue(a2.value, this.val());
+						} else {
+							val = a2.value;
+						}
 					}
 				} else {
 					val = this.val();
@@ -437,6 +486,15 @@ class DueuiElement {
 					break;
 				case "refresh":
 					location.reload(true);
+					break;
+				case "set_value":
+					$(a2.target).data.val(a2.value);
+					break;
+				case "enable":
+					$(a2.target).attr("readonly", false);
+					break;
+				case "disable":
+					$(a2.target).attr("readonly", true);
 					break;
 				default:
 					console.log(`Invalid UI action: ${a.action}`);
@@ -585,11 +643,11 @@ class DueUI{
 		this.getSetting('duet_polling_enabled', 0);
 		this.getSetting('duet_update_time', 0);
 		this.getSetting('show_tooltips', 1);
-		this.getSetting('backend_type', DUEUI.BACKENDS.NODSF);
+		this.getSetting('backend_type', DUEUI.BACKENDS.STANDALONE);
 		this.getSetting('theme', "Cerulean");
 		this.getSetting('duet_host', temp_hostname);
 		this.getSetting('duet_password', "reprap");
-		this.getSetting('dueui_config_url', `http://${this.settings.duet_host}/rr_download?name=/sys/dueui_config.json`);
+		this.getSetting('dueui_config_url', `http://${this.settings.duet_host}/rr_download?name=/sys/dueui_config_default_standalone.json`);
 		this.getSetting('duet_poll_interval_1', 1000);
 		this.getSetting('duet_poll_interval_2', 0);
 		this.getSetting('duet_poll_interval_3', 5000);
@@ -612,14 +670,21 @@ class DueUI{
 	severityMap = [ "I", "W", "E" ] ;
 
 	logMessage(severity, message) {
-		if (typeof(message) === undefined || message.trim().length == 0) {
+		if (typeof(message) === undefined) {
 			return;
 		}
+		if (typeof(message) === 'string') {
+			message = message.trim();
+			if (message.length == 0) {
+				return;
+			}
+		}
+
 		var d = new Date();
 		if (typeof(severity) === 'number') {
 			severity = this.severityMap[severity];
 		}
-		var msg = {"timestamp": d, "severity": severity, "message": message.trim()};
+		var msg = {"timestamp": d, "severity": severity, "message": message};
 		console.log(msg);
 		$(".log-message-listener").trigger("log_message", msg);
 	}
@@ -938,7 +1003,6 @@ class DueUI_DSF extends DueUI {
 		if (!resp.ok) {
 			return [];
 		}
-		console.log(resp);
 		return resp.data;
 	}
 
@@ -1076,7 +1140,7 @@ class DueUI_DSF extends DueUI {
 	}
 }
 
-class DueUI_NONDSF extends DueUI {
+class DueUI_Standalone extends DueUI {
 	constructor() {
 		super();
 		this.last_poll = [0, 0, 0, 0];
@@ -1328,5 +1392,5 @@ const backend_type = localStorage.getItem("backend_type");
 if (backend_type == DUEUI.BACKENDS.DSF) {
 	var dueui = new DueUI_DSF();
 } else {
-	var dueui = new DueUI_NONDSF();
+	var dueui = new DueUI_Standalone();
 }

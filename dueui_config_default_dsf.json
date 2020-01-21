@@ -1,14 +1,6 @@
 /*
  * This configuration file is a sample for use with a Duet3 and
  * the Duet Software Framework.
- * 
- * The only difference between this config and one for a Duet2,
- * Maestro or Duet3 in standalone mode are the references to
- * ${state...}.  See the Wiki for more info on Printer State.
- * 
- * There are also some M140 and T command parameters that I have
- * in my RRF which @dc42 has yet to accept.  They're noted below.
- * Just change them to the commands you like. 
  */
 
 class DueUIConfig {
