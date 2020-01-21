@@ -1201,6 +1201,17 @@ class DueuiImageWidget extends DueuiWidget {
 		this.jq_img = $(`<img src=${this.src}>`);
 		this.jq_img.css(this.style);
 		this.jq.append(this.jq_img);
+		if (this.refresh_seconds) {
+			setInterval(() => {
+				let src = this.src;
+				if (src.indexOf("?") > -1) {
+					src += `&_date=${new Date().getTime()}`;
+				} else {
+					src += `?_date=${new Date().getTime()}`;
+				}
+			    this.jq_img.attr("src", src);
+			},this.refresh_seconds * 1000);
+		}
 	}
 }
 DueuiElement.addElementType('image', DueuiImageWidget);
