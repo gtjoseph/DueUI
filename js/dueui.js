@@ -42,6 +42,10 @@ const DUEUI = {
 		STANDALONE: 0,
 		DSF: 1
 	},
+	BACKEND_CONFIGS: [
+		"rr_download?name=/sys/dueui_config.json",
+		"machine/file/sys/dueui_config.json"
+	],
 	ACTIONS: {
 		GCODE: "gcode",
 		EVENT: "event",
@@ -866,11 +870,7 @@ class DueUI{
 
 			let c_url;
 			if (this.settings.dueui_config_url.length == 0) {
-				if (this.settings.backend_type == DUEUI.BACKENDS.NODSF) {
-					c_url = `http://${this.settings.duet_host}/rr_download?name=/sys/dueui_config.json`
-				} else {
-					c_url = `http://${this.settings.duet_host}/machine/file/sys/dueui_config.json`
-				}
+				c_url = `http://${this.settings.duet_host}/${DUEUI.BACKEND_CONFIGS[this.settings.backend_type]}`;
 			} else {
 				c_url = this.settings.dueui_config_url;
 			}
