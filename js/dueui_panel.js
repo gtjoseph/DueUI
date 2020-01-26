@@ -32,6 +32,7 @@ class DueuiPanel extends DueuiElement {
 			}
 		}
 	}
+
 	makeTabbed(addTo, config) {
 		let c;
 		this.jq.hide();
@@ -123,6 +124,7 @@ class DueuiTabbedPanel extends DueuiPanel {
 			"enabled": true
 		}, this.menubar_widget.button_defaults), this.panel_area_widget);
 		this.settings_panel.makeTabbed(`#${this.menubar_widget.id}`, this.settings_panel.menu_button);
+		$(".state-poll-listener").trigger("duet_poll_response", dueui.model);
 
 		$(".dueui-panel-tab:eq(0)").show();
 	}

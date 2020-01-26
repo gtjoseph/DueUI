@@ -868,6 +868,11 @@ class DueUI{
 			}
 			this.connect_retry = 0;
 
+			resp = await this.startPolling();
+			if (!resp.ok) {
+				dueui.logMessage("E", resp.error);
+			}
+
 			let c_url;
 			if (this.settings.dueui_config_url.length == 0) {
 				c_url = `http://${this.settings.duet_host}/${DUEUI.BACKEND_CONFIGS[this.settings.backend_type]}`;
@@ -888,22 +893,12 @@ class DueUI{
 			this.status_map = resp.data.status_map;
 			this.dueui_content = resp.data.dueui_content;
 			DueUIConfig = resp.data;
+
 			this.populate(this.dueui_content);
 			this.logMessage("I", `DueUI Version ${dueui_version}`);
-/*
-			resp = await this.sendGcode({"gcode": "M115", "no_echo": true, "no_event": true});
-			if (!resp.ok) {
-				dueui.logMessage("E", resp.error);
-			} else {
-				for (let r of resp.replies) {
-					dueui.logMessage("I", r);
-				}
-			}
-*/
-			resp = await this.startPolling();
-			if (!resp.ok) {
-				dueui.logMessage("E", resp.error);
-			}
+
+
+			this.sendGcode({"gcode": "M115", "no_echo": true});
 
 			return resp;
 		}
@@ -1124,19 +1119,19 @@ class DueUI_DSF extends DueUI {
 			return resp;
 		}
 		try {
-			resp.data = await $.ajax({
-				dataType: "json",
-				url: `http://${host}/machine/status`,
-				timeout: 1000
-			});
+			let resp = await super.getJSON("/machine/status");
+			if (resp.ok) {
+				$.extend(true, this.model, resp.data.result);
+			}
 			resp.ok = true;
 			this.dsf = true;
+			return resp;
 		} catch(error) {
 			console.log(error);
 			resp.error = error;
 			resp.ok = false;
+			return resp;
 		}
-		return resp;
 	}
 }
 
@@ -1224,15 +1219,8 @@ class DueUI_Standalone extends DueUI {
 			this.poll_in_flight = true;
 		}
 		let resp = await super.getJSON(`/rr_status?type=${poll_level}`);
-
-//		let resp = await this.sendGcode('M409 F"v"')
-//		let resp0 = await super.getJSON("/rr_gcode?gcode=M409%20F%22v%22");
-//		let resp = await super.getJSON("/rr_reply");
 		if (resp.ok) {
-//			resp.data.result.state.status = resp.data.result.state.status.toLowerCase();
 			$.extend(true, this.model, resp.data);
-//			$.extend(true, this.model, resp.data.result);
-//			console.log(JSON.stringify(this.model));
 			if (this.sequence < 0) {
 				this.sequence = this.model.seq;
 			}
@@ -1306,8 +1294,19 @@ class DueUI_Standalone extends DueUI {
 			return resp;
 		}
 		try {
-			resp.data = await super.getJSON(`/rr_connect?password=${ encodeURI(this.settings.duet_password) }`);
-			resp.ok = true;
+			resp = await super.getJSON(`/rr_connect?password=${ encodeURI(this.settings.duet_password) }`);
+			if (!resp.ok) {
+				return resp;
+			}
+			resp = await super.getJSON("/rr_status?type=1");
+			if (resp.ok) {
+				$.extend(true, this.model, resp.data);
+			}
+			resp = await super.getJSON("/rr_status?type=3");
+			if (resp.ok) {
+				$.extend(true, this.model, resp.data);
+			}
+			return resp;
 		} catch(error) {
 			console.log(error);
 			resp.error = error;
