@@ -66,7 +66,8 @@ const DUEUI = {
 		JOG_SPEED: "jog_speed",
 		JOG_SCALE: "jog_scale",
 		JOG_SENSE: "jog_sense",
-		SUBMIT: "dueui-submit"
+		SUBMIT: "dueui-submit",
+		RECV_EVENTS: "recv-events"
 	},
 }
 
@@ -423,11 +424,13 @@ class DueuiElement {
 				break;
 			case "setting": {
 				if (run_on_startup) {
+					let val = dueui.getSetting(a2.setting);
 					if (keyExistsOn(this, "state.states[0].actions")) {
-						this.state.current = dueui.getSetting(a2.setting);
+						this.state.current = val;
 					} else {
-						this.val(dueui.getSetting(a2.setting));
+						this.val(val);
 					}
+					$(".dueui-setting-listener").trigger(a2.setting, val);
 				} else {
 					let val;
 					if (keyExistsOn(this, "state.states[0].actions")) {
@@ -440,6 +443,7 @@ class DueuiElement {
 						val = (a2.value ? DueUI.evalValue(a2.value, this.val()) : this.val());
 					}
 					dueui.setSetting(a2.setting, val);
+					$(".dueui-setting-listener").trigger(a2.setting, val);
 				}
 				break;
 			}
@@ -872,6 +876,14 @@ class DueUI{
 			if (!resp.ok) {
 				dueui.logMessage("E", resp.error);
 			}
+			$("body").addClass("dueui-setting-listener");
+			$("body").on("duet_polling_enabled", (event, value) => {
+				if (value) {
+					this.startPolling();
+				} else {
+					this.stopPolling();
+				}
+			});
 
 			let c_url;
 			if (this.settings.dueui_config_url.length == 0) {
@@ -1037,13 +1049,17 @@ class DueUI_DSF extends DueUI {
 				this.logMessage("E", `GCode: ${gc}  Error: ${single_resp.error.responseText}`);
 				return single_resp;
 			} else {
+				console.log(single_resp.data);
 				resp.replies.push(single_resp.data);
-				if (!ge.no_event && single_resp.data && single_resp.data.length > 0) {
-					d = new Date();
+				let response = "";
+				if (single_resp.data) {
+					response = single_resp.data.trimStart().trim();
+				}
+				if (!ge.no_event && response.length > 0) {
 					$(".gcode-reply-listener").trigger("gcode_reply", {
 						"timestamp": d,
 						"gcode": gc,
-						"response": single_resp.data.trim()
+						"response": response
 					});
 				}
 			}
@@ -1080,6 +1096,10 @@ class DueUI_DSF extends DueUI {
 		$(`.state-poll-listener`).trigger("duet_poll_response", this.model);
 	}
 
+	stopPolling() {
+		this.websocket.close();
+	}
+
 	async startPolling() {
 		let _this = this;
 		let resp = {};
@@ -1087,20 +1107,32 @@ class DueUI_DSF extends DueUI {
 
 		let ws_url = `ws://${this.settings.duet_host}/machine`;
 		try {
-			let socket = new WebSocket(ws_url);
+			this.websocket = new WebSocket(ws_url);
 
-			socket.onmessage = (data) => {
-				if (!this.settings.duet_polling_enabled) {
-					socket.close();
-					return;
-				}
+			this.websocket.onmessage = (data) => {
 				this.processWebSocketMsg(data);
-				socket.send("OK\n");
+				if (this.websocket.readyState == 1) {
+					this.websocket.send("OK\n");
+				}
 			};
 
-			socket.onclose = (e) => {
+			this.websocket.onopen = (e) => {
 				console.log(e);
-				this.logMessage("E", `Websocket closed.  Please refresh.`);
+				this.logMessage("E", `Websocket opened.`);
+				setTimeout(() => {
+					this.websocket.send("OK\n");
+				}, 1000);
+			};
+
+			this.websocket.onclose = (e) => {
+				console.log(e);
+				this.logMessage("E", `Websocket closed.`);
+				if (this.settings.duet_polling_enabled) {
+					this.logMessage("E", "Waiting 5 seconds to try");
+					setTimeout(() => {
+						this.startPolling();
+					}, 5000);
+				}
 			};
 		} catch(error) {
 			resp.ok = false;
@@ -1239,6 +1271,10 @@ class DueUI_Standalone extends DueUI {
 		return resp;
 	}
 
+	stopPolling() {
+		clearInterval(this.pollerIntervalId);
+	}
+
 	async startPolling() {
 		let interval = Math.min(
 			this.settings.duet_poll_interval_1,
@@ -1259,7 +1295,7 @@ class DueUI_Standalone extends DueUI {
 			return resp;
 		}
 
-		setInterval( async () => {
+		this.pollerIntervalId = setInterval( async () => {
 			if (!this.connected || !this.configured || this.settings.duet_polling_enabled != 1) {
 				return;
 			}

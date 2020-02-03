@@ -423,6 +423,12 @@ class DueuiTextAreaWidget extends DueuiWidget {
 				this.append(`(${log.severity}) ${log.message}`, log.timestamp);
 			});
 		}
+		if (this.show_gcode_sent) {
+			this.jq.addClass("gcode-sent-listener");
+			this.jq.on("gcode_sent", (event, sent) => {
+				this.append(`${sent.gcode}`, sent.timestamp);
+			});
+		}
 	}
 
 	append(data, timestamp) {
