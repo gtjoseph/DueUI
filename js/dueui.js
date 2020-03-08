@@ -568,9 +568,14 @@ class DueUI{
 			if (!value.startsWith("`")) {
 				value = "`" + value + "`";
 			}
-			let ev = eval(value);
-			let nv = nativeFromString(ev);
-			return nv;
+			try {
+				let ev = eval(value);
+				let nv = nativeFromString(ev);
+				return nv;
+			} catch(error) {
+				dueui.logMessage("E", error.message + ": " + value);
+				return Number.NaN;
+			}
 		}
 		return value;
 	}
@@ -589,7 +594,12 @@ class DueUI{
 			if (!str.startsWith("`")) {
 				str = "`" + str + "`";
 			}
-			return nativeFromString(eval(str));
+			try {
+				return nativeFromString(eval(str));
+			} catch (error) {
+				dueui.logMessage("E", error.message + ": " + value);
+				return Number.NaN;
+			}
 		}
 		return str;
 	}
@@ -599,23 +609,14 @@ class DueUI{
 			if (!str.startsWith("`")) {
 				str = "`" + str + "`";
 			}
-			return nativeFromString(eval(str));
+			try {
+				return nativeFromString(eval(str));
+			} catch (error) {
+				dueui.logMessage("E", error.message + ": " + value);
+				return Number.NaN;
+			}
 		}
 		return str;
-	}
-
-	static logDimensions(jq) {
-		console.log({
-			width: jq.width(),
-			height: jq.height(),
-			innerWidth: jq.innerWidth(),
-			innerHeight: jq.innerHeight(),
-			outerWidth: jq.outerWidth(),
-			outerHeight: jq.outerHeight(),
-			clientWidth: jq[0].clientWidth,
-			clientHeight: jq[0].clientHeight,
-			jq: jq
-		});
 	}
 
 	static formatTime(d) {
@@ -661,7 +662,7 @@ class DueUI{
 		this.getSetting('duet_poll_interval_3', 5000);
 
 		this.setSettings(this.settings);
-
+		this.lastLogMessage = "";
 		this.model = {};
 		this.model.seq = 0;
 		this.current_status = "";
@@ -687,6 +688,10 @@ class DueUI{
 				return;
 			}
 		}
+		if (message == this.lastLogMessage) {
+			return;
+		}
+		this.lastLogMessage = message;
 
 		var d = new Date();
 		if (typeof(severity) === 'number') {
