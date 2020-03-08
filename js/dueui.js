@@ -1234,6 +1234,7 @@ class DueUI_Standalone extends DueUI {
 	async processPollResponse() {
 		if (this.model.status !== this.current_status) {
 			$(`.status-change-listener`).trigger("duet_status_change", this.model.status);
+			console.log(this.model.status);
 			this.current_status = this.model.status;
 		}
 		$(`.state-poll-listener`).trigger("duet_poll_response", this.model);
@@ -1392,13 +1393,14 @@ class DueUI_Standalone extends DueUI {
 			if (typeof(ge) === 'string') {
 				ge = {"gcode": ge, "get_reply": false};
 			}
-			ge.gcode = ge.gcode.replace(/;/g, "\n");
-			let gc = ge.gcode.trim();
+			let gc = ge.gcode.trim().replace(/;/g, "\n");
+
 			if (this.settings.dueui_settings_dont_send_gcode == 1) {
 				this.logMessage("D", `GCode: ${gc}`);
 				continue;
 			}
-			let uri = `/rr_gcode?gcode=${gc.replace(/[+]/, "%2B")}`;
+
+			let uri = `/rr_gcode?gcode=${encodeURIComponent(gc)}`;
 			let single_resp = await super.getJSON(uri);
 			if (!single_resp.ok) {
 				this.logMessage("E", `GCode: ${gc}  Error: ${single_resp.error.responseText}`);

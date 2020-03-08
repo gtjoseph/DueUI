@@ -285,7 +285,7 @@ class DueUIConfig {
 							{
 								"id": "video_html",
 								"type": "image",
-								"src": "http://duet3j:8080/stream",
+								"src": "http://yourserver/stream",
 								"style": {
 									"width": "600px",
 									"height": "450px",
