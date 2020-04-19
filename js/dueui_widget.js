@@ -907,13 +907,14 @@ class DueuiHeaterWidget extends DueuiPanel {
 				},
 				"state": {
 					"states": [
-						{"state": 0, "classes": "btn-secondary"},
-						{"state": 1, "classes": "btn-warning"},
-						{"state": 2, "classes": "btn-success"},
-						{"state": 3, "classes": "btn-danger"},
-						{"state": 4, "classes": "btn-info"},
+						{"state": "off", "classes": "btn-secondary"},
+						{"state": "standby", "classes": "btn-warning"},
+						{"state": "on", "classes": "btn-success"},
+						{"state": "fault", "classes": "btn-danger"},
+						{"state": "tuning", "classes": "btn-info"},
 					],
 				},
+				"show_set_fields": true,
 				"actions_chooser": [
 					{"type": "log", "severity": "E", "value": "The 'Off' command for heater '${this.value}' is not configured", "label": "Off (not configued)"},
 					{"type": "log", "severity": "E", "value": "The 'Standby' command for heater '${this.value}' is not configured", "label": "Standby (not configued)"},
@@ -944,8 +945,10 @@ class DueuiHeaterWidget extends DueuiPanel {
 				"tolerance": this.tolerance,
 				"onstatus": this.tolerance ? function(status) {
 					_this.current_temp = Number(this.val());
-					if (0 < _this.current_state && _this.current_state < 3) {
-						let set_temp = _this.current_state == 1 ? _this.standby_temp : _this.active_temp;
+					_this.standby_temp = DueUI.evalStatus(status, _this.temp_fields.standby, _this);
+					_this.active_temp = DueUI.evalStatus(status, _this.temp_fields.active, _this);
+					if (_this.current_state == "standby" || _this.current_state == "active") {
+						let set_temp = _this.current_state == "standby" ? _this.standby_temp : _this.active_temp;
 						let diff = Math.abs(set_temp - _this.current_temp);
 						this.processTolerance(status, diff);
 					} else {
@@ -961,7 +964,6 @@ class DueuiHeaterWidget extends DueuiPanel {
 					"field_type": "number",
 					"value": this.temp_fields.active,
 					"style": {"text-align": "right"},
-					"onstatus": function(status) { _this.active_temp = Number(this.val()); },
 					"actions": {"type": "gcode", "gcode": keyExistsOn(this, "set_temp_commands.active")
 						? this.set_temp_commands.active
 						: `M117 "'set_temp_commands.active' is not set for heater ${config.label}"`, "get_reply": true}
@@ -980,7 +982,6 @@ class DueuiHeaterWidget extends DueuiPanel {
 					"field_type": "number",
 					"value": this.temp_fields.standby,
 					"style": {"text-align": "right"},
-					"onstatus": function(status) { _this.standby_temp = Number(this.val()); },
 					"actions": {"type": "gcode", "gcode": keyExistsOn(this, "set_temp_commands.standby")
 						? this.set_temp_commands.standby
 						: `M117 "'set_temp_commands.standby' is not set for heater ${config.label}"`, "get_reply": true}
@@ -995,9 +996,11 @@ class DueuiHeaterWidget extends DueuiPanel {
 		this.element_configs = [
 			state_button,
 			temp_button,
-			active_input,
-			standby_input
 		];
+		if (this.show_set_fields) {
+			this.element_configs.push(active_input);
+			this.element_configs.push(standby_input);
+		}
 
 		this.populate();
 	}
