@@ -367,6 +367,23 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_debug_polling"},
 			},
 			{
+				"id": "dueui_settings_test_mode",
+				"type": "button",
+				"style": {"height": "2.5em", "width": "25ch"},
+				"state": {
+					"states": [
+						{ "state": 0, "classes": "btn-danger", "value": "Turn Test Mode On",
+							"actions": {"type": "setting", "setting": "dueui_test_mode", "value": 1, "fire_on_startup": true}
+						},
+						{ "state": 1, "classes": "btn-success", "value": "Turn Test Mode Off",
+							"actions": {"type": "setting", "setting": "dueui_test_mode", "value": 0}
+						}
+					]
+				},
+				"value": "Test Mode",
+				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_dont_send_gcode"},
+			},
+			{
 				"id": "dueui_settings_polling",
 				"type": "button",
 				"style": {"height": "2.5em", "width": "25ch"},
@@ -381,12 +398,12 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					]
 				},
 				"value": "Polling",
-				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_dont_send_gcode"},
+				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_test_mode"},
 			},
 			{
 				"id": "dueui_settings_submit",
 				"type": "button",
-				"style": {"height": "2.5em", "width": "15ch"},
+				"style": {"height": "2.5em", "width": "10ch"},
 				"value": "Save",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_polling"},
 				"actions": {"type": "event", "event": "dueui-submit", "target": ".dueui-settings-field"}
@@ -395,9 +412,9 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_refresh",
 				"type": "button",
-				"style": {"height": "2.5em", "width": "15ch"},
+				"style": {"height": "2.5em", "width": "10ch"},
 				"value": "Refresh",
-				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_submit"},
+				"position": {"my": "left top", "at": "right+5 top", "of": "#dueui_settings_submit"},
 				"actions": {"type": "ui", "action": "refresh"}
 			},
 		];

@@ -650,6 +650,7 @@ class DueUI{
 		this.getSetting('duet_debug_polling_enabled', 0);
 		this.getSetting('dueui_settings_dont_send_gcode', 0);
 		this.getSetting('duet_polling_enabled', 0);
+		this.getSetting('dueui_test_mode', 0);
 		this.getSetting('duet_update_time', 0);
 		this.getSetting('show_tooltips', 1);
 		this.getSetting('backend_type', DUEUI.BACKENDS.STANDALONE);
@@ -855,19 +856,26 @@ class DueUI{
 	async connect(url) {
 		let resp = {};
 		this.connect_retry = 0;
-		$(".connection-listener").trigger("duet_connection_change", { "status": "connecting" });
 
-		while (this.connect_retry <= this.duet_connect_retries.number) {
-			resp = await this.connect_once(url);
-			if (!resp.ok) {
-				this.connect_retry++;
-				this.logMessage("W", `Connection attempt ${this.connect_retry} of ${this.duet_connect_retries.number} failed`);
-				$(".connection-listener").trigger("duet_connection_change", { "status": "retrying", "retry": this.connect_retry });
-				delay(this.duet_connect_retries.interval);
-				continue;
+		if (!this.settings.dueui_test_mode) {
+
+			$(".connection-listener").trigger("duet_connection_change", { "status": "connecting" });
+			this.connected = false;
+			while (!this.connected && this.connect_retry <= this.duet_connect_retries.number) {
+				resp = await this.connect_once(url);
+				if (!resp.ok) {
+					this.connect_retry++;
+					this.logMessage("W", `Connection attempt ${this.connect_retry} of ${this.duet_connect_retries.number} failed`);
+					$(".connection-listener").trigger("duet_connection_change", { "status": "retrying", "retry": this.connect_retry });
+					delay(this.duet_connect_retries.interval);
+					continue;
+				}
+				this.connected = true;
+			}
+			if (!this.connected) {
+				return resp;
 			}
 
-			this.connected = true;
 			if (this.connect_retry > 0) {
 				$(".connection-listener").trigger("duet_connection_change", { "status": "reconnected", "response": "OK" });
 				this.logMessage("I", "Reconnected");
@@ -876,6 +884,7 @@ class DueUI{
 				this.logMessage("I", "Connected");
 			}
 			this.connect_retry = 0;
+
 
 			resp = await this.startPolling();
 			if (!resp.ok) {
@@ -889,35 +898,33 @@ class DueUI{
 					this.stopPolling();
 				}
 			});
+		}
 
-			let c_url;
-			if (this.settings.dueui_config_url.length == 0) {
-				c_url = `http://${this.settings.duet_host}/${DUEUI.BACKEND_CONFIGS[this.settings.backend_type]}`;
-			} else {
-				c_url = this.settings.dueui_config_url;
-			}
-			resp = await this.getConfig(c_url);
-			if (!resp.ok) {
-				alert(`Could not retrieve config from ${c_url}`);
-				return resp;
-			}
-			if (this.settings.dueui_config_url.length == 0) {
-				this.setSetting("dueui_config_url", c_url);
-			}
-
-			this.active_config_url = resp.config_url;
-			this.configured = true;
-			this.status_map = resp.data.status_map;
-			this.dueui_content = resp.data.dueui_content;
-			DueUIConfig = resp.data;
-
-			this.populate(this.dueui_content);
-			this.logMessage("I", `DueUI Version ${dueui_version}`);
-
-
-			this.sendGcode({"gcode": "M115", "no_echo": true});
-
+		let c_url;
+		if (this.settings.dueui_config_url.length == 0) {
+			c_url = `http://${this.settings.duet_host}/${DUEUI.BACKEND_CONFIGS[this.settings.backend_type]}`;
+		} else {
+			c_url = this.settings.dueui_config_url;
+		}
+		resp = await this.getConfig(c_url);
+		if (!resp.ok) {
+			alert(`Could not retrieve config from ${c_url}`);
 			return resp;
+		}
+		if (this.settings.dueui_config_url.length == 0) {
+			this.setSetting("dueui_config_url", c_url);
+		}
+		this.active_config_url = resp.config_url;
+		this.configured = true;
+		this.status_map = resp.data.status_map;
+		this.dueui_content = resp.data.dueui_content;
+		DueUIConfig = resp.data;
+
+		this.populate(this.dueui_content);
+		this.logMessage("I", `DueUI Version ${dueui_version}`);
+
+		if (!this.settings.dueui_test_mode) {
+			this.sendGcode({"gcode": "M115", "no_echo": true});
 		}
 
 		return resp;
