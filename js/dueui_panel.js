@@ -1,3 +1,4 @@
+
 class DueuiPanel extends DueuiElement {
 	constructor(config, parent){
 		super("div", $.extend(true, {
@@ -124,6 +125,7 @@ class DueuiTabbedPanel extends DueuiPanel {
 			"enabled": true
 		}, this.menubar_widget.button_defaults), this.panel_area_widget);
 		this.settings_panel.makeTabbed(`#${this.menubar_widget.id}`, this.settings_panel.menu_button);
+
 		$(".state-poll-listener").trigger("duet_poll_response", dueui.model);
 
 		$(".dueui-panel-tab:eq(0)").show();
@@ -133,17 +135,13 @@ DueuiElement.addElementType("tabbed_panel", DueuiTabbedPanel);
 
 class DueuiSettingsPanel extends DueuiTabPanel {
 
-	async getThemes(custom) {
+	async getThemes() {
 		let t = $("#dueui_theme");
 		let themes = await dueui.getThemeList(false);
 		for (let theme of themes) {
 			t.append(`<option value="${theme.value}">${theme.label}</option>`);
 		}
-		themes = await dueui.getThemeList(true);
-		for (let theme of themes) {
-			t.append(`<option value="${theme.value}">${theme.label}</option>`);
-		}
-		t.val(dueui.getSetting("theme"));
+		t.val(getSetting("theme"));
 	}
 
 	constructor(config, parent){

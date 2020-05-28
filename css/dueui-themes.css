@@ -1,5 +1,4 @@
-/* This is actually a JSONP response.  Don't mess with the DueUIThemes line below */
-DueUIThemes({
+{
 "themes": [
 	{"label": "Cerulean", "value": "css/dueui-Cerulean.theme.css"},
 	{"label": "Cosmo", "value": "css/dueui-Cosmo.theme.css"},
@@ -25,4 +24,4 @@ DueUIThemes({
 	{"label": "Yeti", "value": "css/dueui-Yeti.theme.css"},
 	{"label": "bootstrap", "value": "css/dueui-bootstrap.theme.css"}
 ]
-});
+}

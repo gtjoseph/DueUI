@@ -4,18 +4,20 @@
  * of jQuery-UI)
  */
 
-String.prototype.basename = function() { return this.split('/').slice(this[this.length-1] == '/' ? -2 : -1)[0]; }
-String.prototype.dirname = function() { return this.split('/').slice(0,this[this.length-1] == '/' ? -2 : -1).join('/'); }
+String.prototype.basename = function() { return this.split('/').slice(this[this.length - 1] == '/' ? -2 : -1)[0]; };
+String.prototype.dirname = function() { return this.split('/').slice(0, this[this.length - 1] == '/' ? -2 : -1).join('/'); };
 
-keyExistsOn = (o, k) => k.replace('[','.').replace(']','').split(".")
+keyExistsOn = (o, k) => k.replace('[', '.').replace(']', '').split(".")
 	.reduce((a, c) => a.hasOwnProperty(c) ? a[c] || 1 : false, Object.assign({}, o)) === false ? false : true;
+
+classExists = (c) => typeof(c) == "function" && typeof(c.prototype) == "object" ? true : false;
 
 async function delay(ms) {
 	return await new Promise(resolve => setTimeout(resolve, ms));
 }
 
 function nativeFromString(vs) {
-	if (typeof(vs) !== 'string') {
+	if (typeof vs !== 'string') {
 		return vs;
 	}
 
@@ -37,12 +39,20 @@ function extendObject(current, extra) {
 	return $.extend(true, {}, ...arguments);
 }
 
+var dueui;
 const DUEUI = {
 	BACKENDS: {
-		STANDALONE: 0,
-		DSF: 1
+		UNKNOWN: 0,
+		STANDALONE: 1,
+		DSF: 2
+	},
+	BACKEND_NAMES: {
+		0: "Unknown",
+		1: "Standalone",
+		2: "DSF",
 	},
 	BACKEND_CONFIGS: [
+		"",
 		"rr_download?name=/sys/dueui_config.json",
 		"machine/file/sys/dueui_config.json"
 	],
@@ -71,489 +81,39 @@ const DUEUI = {
 	},
 }
 
-jQuery.fn.extend({
-	calcOffset: function calcOffset(pos) {
-		let n = pos.match(/(left|center|right)(([+-])(\d+))?\s+(top|center|bottom)(([+-])(\d+))?/i);
-		let width = this.outerWidth();
-		let height = this.outerHeight();
+var resolvedSettings = {
+	'duet_host': document.location.host,
+	'duet_debug_polling_enabled': 0,
+	'dueui_settings_dont_send_gcode': 0,
+	'duet_polling_enabled': 0,
+	'dueui_test_mode': 0,
+	'duet_update_time': 0,
+	'show_tooltips': 1,
+	'backend_type': DUEUI.BACKENDS.UNKNOWN,
+	'theme': "css/dueui-Cerulean.theme.css",
+	'duet_password': "reprap",
+	'duet_poll_interval_1': 1000,
+	'duet_poll_interval_2': 0,
+	'duet_poll_interval_3': 5000,
+	'rrf_version': 0,
+};
 
-		let left = 0;
-		switch(n[1]) {
-		case "left":
-			break;
-		case "right":
-			left += width;
-			break;
-		case "center":
-			left += (width / 2);
-			break;
-		}
-		if (n[2]) {
-			left += parseFloat(n[2]);
-		}
-
-		let top = 0;
-		switch(n[5]) {
-		case "top":
-			break;
-		case "bottom":
-			top += height;
-			break;
-		case "center":
-			top += (height / 2);
-			break;
-		}
-		if (n[6]) {
-			top += parseFloat(n[6]);
-		}
-
-		return {"left": left, "top": top};
-	},
-	dueuiPosition: function dueuiPosition(pos) {
-		let my_offset = this.calcOffset(pos.my);
-		let of_offset = $(pos.of).calcOffset(pos.at);
-		let of_pos = $(pos.of).offset();
-		let dest = {"left": of_pos.left + of_offset.left, "top": of_pos.top + of_offset.top};
-
-		this.offset({"left": (dest.left - my_offset.left), "top": (dest.top - my_offset.top)});
+function getSetting(setting, default_value) {
+	if (setting in resolvedSettings) {
+		return resolvedSettings[setting];
 	}
-});
+	return default_value;
+}
 
-class DueuiElement {
-
-	static addElementType(type_name, type_class) {
-		DueuiElement.registry[type_name] = type_class;
-	}
-
-	static getElementClass(type_name) {
-		return DueuiElement.registry[type_name];
-	}
-
-	constructor(html_element_type, config, parent) {
-		$.extend(true, this, {
-			"origin": "left top",
-			"classes": [],
-			"style": {
-			},
-			"element_configs": [],
-			"element_defaults": {},
-			"elements": []
-		}, config);
-
-		this.jq = $(`<${html_element_type}/>`);
-		if (this.id) {
-			this.jq.attr("id", this.id);
-		}
-		if (this.attr) {
-			this.jq.attr(this.attr);
-		}
-
-		this.updateClass(this.classes);
-
-		if (parent && parent.hasClass("dueui-panel-tab")) {
-			this.style = $.extend(true, {"position": "absolute"}, this.style);
-		}
-		this.css(this.style);
-
-		if (parent) {
-			if (parent instanceof jQuery) {
-				parent.append(this.jq);
-			} else {
-				parent.append(this);
-			}
-		}
-		this.parent = parent;
-		this.jq.data(this);
-
-		if (!this.on || !this.on[DUEUI.EVENTS.UPDATE_VALUE]) {
-			this.jq.on(DUEUI.EVENTS.UPDATE_VALUE, (event, value) => {
-				if (this.val) {
-					let v = DueUI.evalValue(value, this.val());
-					this.val(v);
-				}
-				event.stopPropagation();
-			});
-		}
-
-		if (!this.on || !this.on[DUEUI.EVENTS.UPDATE_LABEL]) {
-			this.jq.on(DUEUI.EVENTS.UPDATE_LABEL, (event, value) => {
-				if (!this.label_widget) {
-					return;
-				}
-				if (this.label_widget.val) {
-					let v = DueUI.evalValue(value, this.label_widget.val());
-					this.label_widget.val(v);
-				}
-				event.stopPropagation();
-			});
-		}
-
-		if (!this.on || !this.on[DUEUI.EVENTS.ENABLE]) {
-			this.jq.on(DUEUI.EVENTS.ENABLE, (event, value) => {
-				this.jq.children().attr("readonly", value);
-				if (value) {
-					this.jq.children().show();
-				} else {
-					this.jq.children().hide();
-				}
-				event.stopPropagation();
-			});
-		}
-
-		if (this.on) {
-			for (const o in this.on) {
-				this.jq.on(o, (event, value) => {
-					this.on[o].call(this, event, value);
-					event.stopPropagation();
-				});
-			}
-		}
-	}
-
-	hasClass(classname) {
-		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
-		return t.hasClass(classname);
-	}
-
-	addClasses(classes) {
-		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
-		t.addClass(Array.isArray(classes) ? classes.join(" ") : classes);
-	}
-	addClass(classes) {
-		this.addClasses(classes);
-	}
-
-	removeClasses(classes) {
-		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
-		t.removeClass(Array.isArray(classes) ? classes.join(" ") : classes);
-	}
-	removeClass(classes) {
-		this.removeClasses(classes);
-	}
-
-	static updateClasses(obj, classes) {
-		let t = (obj instanceof jQuery) ? obj : (obj.css_object ? obj.css_object : obj.jq);
-		let class_array = Array.isArray(classes) ? classes : classes.split(' ');
-		for (let c of class_array) {
-			if (c[0] === '+' || c[0] === '-') {
-				if (c[0] === '-') {
-					t.removeClass(c.slice(1));
-				} else {
-					t.addClass(c.slice(1));
-				}
-			} else {
-				t.addClass(c);
-			}
-		}
-	}
-
-	updateClass(classes) {
-		DueuiElement.updateClasses(this, classes);
-	}
-
-	getStateObject(state) {
-		if (!keyExistsOn(this, "state.states") || !Array.isArray(this.state.states)) {
-			return undefined;
-		}
-		return this.state.states.find((e) => e.state === state);
-	}
-
-	applyState() {
-
-		if (!keyExistsOn(this, "state.current") || this.state.current === this.state.last) {
-			return;
-		}
-
-		let cs = this.getStateObject(this.state.current);
-		if (!cs) {
-			return;
-		}
-
-		this.state.last = this.state.current;
-
-		if (cs.style) {
-			this.css($.extend(true, {}, this.style, cs.style));
-		}
-
-		if (cs.classes) {
-			this.removeClasses(this.state.merged_classes);
-			this.addClasses(cs.classes);
-		}
-
-		if (cs.value) {
-			this.val(cs.value);
-		}
-	}
-
-	clearState() {
-		this.removeClasses(this.state.merged_classes || []);
-		this.state.last = -2;
-		this.state.current = 0;
-	}
-
-	css(style) {
-		let t = (this instanceof jQuery) ? this : (this.css_object ? this.css_object : this.jq);
-		return t.css(style);
-	}
-
-	updateId(new_id) {
-		this.id = new_id;
-		if (this.jq) {
-			this.jq.attr("id", new_id);
-		}
-	}
-
-	append(e) {
-		if (e instanceof jQuery) {
-			this.jq.append(e);
-			return;
-		}
-
-		e.parent_element = this;
-		this.jq.append(e.jq);
-		if (e.position) {
-			e.jq.dueuiPosition(e.position);
-		}
-	}
-
-	appendTo(dest) {
-		dest.append(this);
-	}
-
-	publishEvents(events, data, event) {
-		let eas;
-		if (Array.isArray(events)){
-			eas = events;
-		} else {
-			eas = [events];
-		}
-		for(let ea of eas) {
-			$(`#${ea.target}`).trigger(ea.event, data, event);
-		}
-	}
-
-	setOnEvent(trigger, onevent, data){
-		this.jq.on(trigger, (event) => {
-			onevent(event, data);
-		});
-	}
-
-	setupEvents(native_event, run_startup_actions) {
-		if (native_event && native_event.length > 0) {
-			this.jq.on(native_event, (event) => {
-				if (native_event === 'keypress' && event.key !== "Enter") {
-					return;
-				}
-				this.jq.trigger("dueui-submit", event);
-			});
-		}
-		if (this.submit_on_event) {
-			this.jq.on(this.submit_on_event, (event) => {
-				this.jq.trigger("dueui-submit", event);
-			});
-		}
-
-		this.jq.on("dueui-submit", (event) => {
-			if (this.onsubmit) {
-				this.onsubmit(event);
-			}
-			if (keyExistsOn(this, "state.current")) {
-				let cs = this.getStateObject(this.state.current);
-				if (cs && cs.actions) {
-					this.runActions(cs.actions, false);
-					this.applyState();
-				}
-			}
-			if (this.actions) {
-				this.runActions(this.actions, false);
-			}
-		});
-
-		if (this.actions && run_startup_actions) {
-			this.runActions(this.actions, true);
-			setTimeout(() => {this.applyState();}, 500);
-		}
-
-		if (keyExistsOn(this, "state.states[0].actions")) {
-			let a = [];
-			for(let s of this.state.states) {
-				if (s.actions) {
-					if (Array.isArray(s.actions)) {
-						a.push(...s.actions);
-					} else {
-						a.push(s.actions);
-					}
-				}
-			}
-			a = a.filter((e) => e.fire_on_startup);
-			if (a.length > 0) {
-				this.runActions(a, true);
-				setTimeout(() => {this.applyState();}, 500);
-			}
-		}
-	}
-
-	runActions(action, run_on_startup) {
-		if (!Array.isArray(action)) {
-			action = [ action ];
-		}
-		loop:
-		for(let a of action) {
-			if (run_on_startup && !a.fire_on_startup) {
-				continue;
-			}
-			let a2 = $.extend(true, {}, a);
-			switch(a.type) {
-			case "gcode":
-				a2.gcode = DueUI.evalValueStatus(a2.gcode, this.val(), this.current_status);
-				dueui.sendGcode(a2);
-				break;
-			case "macro":
-				if (a2.file) {
-					if (!a2.file.endsWith(".g")) a2.file += ".g";
-					dueui.sendGcode({"gcode": `M98 P"${a2.file}"`});
-				} else if (a2.macro) {
-					if (!a2.macro.endsWith(".g")) a2.macro += ".g";
-					dueui.sendGcode({"gcode": `M98 P"/macros/${a2.macro}"`});
-				} else {
-					dueui.logMessage("E", "No 'file' or 'macro' parameter present");
-				}
-				break;
-			case "print":
-				dueui.printFile(a2.file);
-				break;
-			case "setting": {
-				if (run_on_startup) {
-					let val = dueui.getSetting(a2.setting);
-					if (keyExistsOn(this, "state.states[0].actions")) {
-						this.state.current = val;
-					} else {
-						this.val(val);
-					}
-					$(".dueui-setting-listener").trigger(a2.setting, val);
-				} else {
-					let val;
-					if (keyExistsOn(this, "state.states[0].actions")) {
-						this.state.current++;
-						if (this.state.current >= this.state.states.length) {
-							this.state.current = 0;
-						}
-						val = this.state.current;
-					} else {
-						val = (a2.value ? DueUI.evalValue(a2.value, this.val()) : this.val());
-					}
-					dueui.setSetting(a2.setting, val);
-					$(".dueui-setting-listener").trigger(a2.setting, val);
-				}
-				break;
-			}
-			case "event": {
-				let val;
-				if (a2.value) {
-					if (/^[-+]?([0-9]*)([.][0-9]+)?$/.test(a2.value)) {
-						val = Number(a2.value);
-					} else {
-						if (!a2.no_eval) {
-							val = DueUI.evalValue(a2.value, this.val());
-						} else {
-							val = a2.value;
-						}
-					}
-				} else {
-					val = this.val();
-				}
-				let t = 0;
-				if (run_on_startup) {
-					t = 1000;
-				}
-				setTimeout(() => {
-					$(`${a2.target}`).trigger(a2.event, val);
-				}, t);
-				break;
-			}
-			case "log": {
-				let val = (a2.value ? DueUI.evalValue(a2.value, this.val()) : this.val());
-				dueui.logMessage(a2.severity || "I", val);
-				break;
-			}
-			case "callback":
-				a2.callback();
-				break;
-			case "ui":
-				switch(a2.action) {
-				case "fullscreen_toggle":
-					if (!document.fullscreenElement) {
-						document.body.requestFullscreen();
-					} else {
-						document.exitFullscreen();
-					}
-					break;
-				case "tab_change":
-					$(".dueui-panel-tab").hide();
-					a2.panel.show();
-					break;
-				case "refresh":
-					location.reload(true);
-					break;
-				case "set_value":
-					$(a2.target).data.val(a2.value);
-					break;
-				case "enable":
-					$(a2.target).attr("readonly", false);
-					break;
-				case "disable":
-					$(a2.target).attr("readonly", true);
-					break;
-				default:
-					console.log(`Invalid UI action: ${a.action}`);
-				}
-				break;
-			case "cgi":
-				var uri = `http://${dueui.settings.duet_host}/${a2.cgi}`;
-				if (a2.params) {
-					uri += '?';
-					if (typeof(a2.params) === 'string') {
-						uri += encodeURI(a2.params);
-					} else {
-						let names = a2.params.getOwnPropertyNames();
-						names.forEach((name, ix) => {
-							if (ix > 0) {
-								uri += '&';
-							}
-							uri += `${encodeURIComponent(name)}=${encodeURIComponent(a2.params[name])}`;
-						});
-					}
-				}
-				$.getJSON(uri).then((response) => {
-				}).fail((xhr, reason, error) => {
-					dueui.logMessage("E", reason);
-				});
-				break;
-			case "http":
-				$.getJSON(encodeURI(a2.uri)).then((response) => {
-					dueui.logMessage("I", response);
-				}).fail((xhr, reason, error) => {
-					dueui.logMessage("E", reason);
-				});
-				break;
-			case "deleteFile":
-				dueui.deleteFile(a2.file);
-				break;
-			default:
-				if (a.type) {
-					console.log(`Invalid action: ${a.type}`);
-				}
-			}
-			if (a2.message) {
-				a2.message = DueUI.evalValue(a2.message, this.val());
-				dueui.logMessage("I", a2.message);
-			}
-		}
+function setSetting(setting, value) {
+	resolvedSettings[setting] = value;
+	localStorage.setItem(setting, value);
+	if (setting === "theme") {
+		DueUI.setCurrentTheme(value);
 	}
 }
-DueuiElement.registry = {};
 
-class DueUI{
+class DueUI {
 
 	static getCurrentTheme() {
 		return $("link[href$='.theme.css']").attr("href");
@@ -572,7 +132,7 @@ class DueUI{
 				let ev = eval(value);
 				let nv = nativeFromString(ev);
 				return nv;
-			} catch(error) {
+			} catch (error) {
 				dueui.logMessage("E", error.message + ": " + value);
 				return Number.NaN;
 			}
@@ -638,52 +198,181 @@ class DueUI{
 		return `${h}:${m}:${seconds}`;
 	}
 
-	constructor(){
-		this.settings = this.getSettings();
-		let temp_hostname = document.location.host;
-		if (keyExistsOn(this.settings, "duet_url")) {
-			temp_hostname = this.settings.duet_url.replace("http://", "");
-			delete this.settings.duet_url;
+	static getQueryParams() {
+		let params = window.location.search.substr(1, window.location.search.length).split("&");
+		let queryParams = {};
+		for (let q of params) {
+			let kvp = q.split("=");
+			let val = nativeFromString(decodeURIComponent(kvp[1]));
+			queryParams[decodeURIComponent(kvp[0])] = val;
+		}
+		return queryParams;
+	}
+
+	static async getSettingsFromConfig(configUrl) {
+		let resp = {};
+		try {
+			resp.data = await $.ajax({
+				url: configUrl,
+				cache: false,
+				dataType: "script",
+				timeout: 2000
+			});
+			resp.data = new DueUISettings();
+			resp.ok = true;
+			console.log(`Retrieved config from ${configUrl}`);
+			return resp.data;
+		} catch (error) {
+			console.log(error);
+			resp.ok = false;
+			resp.error = error;
+			return resp;
+		}
+	}
+
+	static async getSettings() {
+		let l = localStorage.length;
+		let localSettings = {};
+		for (let i = 0; i < l; i++) {
+			let name = localStorage.key(i);
+			let val = localStorage.getItem(name);
+			localSettings[name] = nativeFromString(val);
+		}
+		console.log({"localSettings": localSettings});
+
+		let configSettings;
+		let queryParams = DueUI.getQueryParams();
+		console.log({"queryParams": queryParams});
+
+		if ("dueui_config_url" in queryParams) {
+			configSettings = await DueUI.getSettingsFromConfig(queryParams["dueui_config_url"]);
+		}
+		console.log({"configSettings": configSettings});
+
+		$.extend(resolvedSettings, localSettings, configSettings, queryParams);
+
+		let backendType = resolvedSettings["backend_type"];
+		if (typeof backendType === "string") {
+			if (backendType.toUpperCase() === "DSF") {
+				val = DUEUI.BACKENDS.DSF;
+			} else if (kvp[1].toUpperCase() === "STANDALONE") {
+				val = DUEUI.BACKENDS.STANDALONE;
+			} else {
+				val = DUEUI.BACKENDS.UNKNOWN;
+			}
+			resolvedSettings["backend_type"] = val;
 		}
 
+		if ("theme" in resolvedSettings) {
+			let theme = resolvedSettings["theme"];
+			if (!theme.match(/[.]css$/)) {
+				resolvedSettings["theme"] = `css/dueui-${theme}.theme.css`;
+			}
+		}
 
-		this.getSetting('duet_debug_polling_enabled', 0);
-		this.getSetting('dueui_settings_dont_send_gcode', 0);
-		this.getSetting('duet_polling_enabled', 0);
-		this.getSetting('dueui_test_mode', 0);
-		this.getSetting('duet_update_time', 0);
-		this.getSetting('show_tooltips', 1);
-		this.getSetting('backend_type', DUEUI.BACKENDS.STANDALONE);
-		this.getSetting('theme', "Cerulean");
-		this.getSetting('duet_host', temp_hostname);
-		this.getSetting('duet_password', "reprap");
-		this.getSetting('dueui_config_url', `http://${this.settings.duet_host}/rr_download?name=/sys/dueui_config_default_standalone.json`);
-		this.getSetting('duet_poll_interval_1', 1000);
-		this.getSetting('duet_poll_interval_2', 0);
-		this.getSetting('duet_poll_interval_3', 5000);
+		console.log({"resolvedSettings": resolvedSettings});
+		return resolvedSettings;
+	}
 
-		this.setSettings(this.settings);
+	static saveSettings(settings) {
+		localStorage.clear();
+		let keys = Object.keys(settings);
+		for (let name of keys) {
+			localStorage.setItem(name, settings[name]);
+		}
+	}
+
+	static async startup() {
+		let settings = await DueUI.getSettings();
+
+		if (settings.backend_type == DUEUI.BACKENDS.DSF) {
+			console.log("Initializing with existing backend type DSF");
+			dueui = new DueUI_DSF(settings);
+			dueui.startup();
+			return;
+		} else if (settings.backend_type == DUEUI.BACKENDS.STANDALONE) {
+			console.log("Initializing with existing backend type STANDALONE");
+			dueui = new DueUI_Standalone(settings);
+			dueui.startup();
+			return;
+		} else {
+			console.log("Probing backend type DSF");
+			settings.backend_type = DUEUI.BACKENDS.DSF;
+			let tmp_dueui = new DueUI_DSF(settings);
+			let resp = await tmp_dueui.connect_once();
+			if (!resp.ok) {
+				console.log(resp);
+				console.log("Probing backend type STANDALONE");
+				settings.backend_type = DUEUI.BACKENDS.STANDALONE;
+				tmp_dueui = new DueUI_Standalone(settings);
+				resp = await tmp_dueui.connect_once();
+			}
+
+			if (!resp.ok) {
+				console.log(resp);
+				console.log("Unknown backend.  Showing settings");
+				settings.backend_type = DUEUI.BACKENDS.UNKNOWN;
+				new DueuiSettingsPanel(
+					{ "position": "left top+64" }, $("body"));
+				return;
+			}
+			dueui = tmp_dueui;
+		}
+		DueUI.saveSettings(settings);
+		dueui.startup();
+	}
+
+	constructor(settings) {
+		console.log(settings);
 		this.lastLogMessage = "";
-		this.model = {};
-		this.model.seq = 0;
-		this.current_status = "";
+		this.model = this.initializeModel({}, settings.rrf_version);
 		this.connected = false;
 		this.connect_retry = 0;
 		this.duet_connect_retries = {
-				"number": 10,
-				"interval": 5000
+			"number": 10,
+			"interval": 5000
 		};
 		this.configured = false;
-		$("head > title").html(`DueUI - ${this.settings.duet_host}`);
+		$("head > title").html(`DueUI - ${getSetting("duet_host")}`);
 	}
 
-	severityMap = [ "I", "W", "E" ] ;
+	patchModel(model, change) {
+		return $.extend(true, model, change);
+	}
+
+	initializeModel(model, rrf_version) {
+		this.patchModel(model, {
+			"meta": {
+				"rrfVersion": rrf_version,
+			},
+			"last": {
+				"status": "",
+				"reply_seq": 0,
+				"messageBox": {
+					"seq": 0
+				},
+				displayMessage: ""
+			},
+			"current": {
+				"status": "",
+				"reply_seq": 0,
+				"messageBox": {
+					"seq": 0
+				},
+				displayMessage: ""
+			}
+		});
+		return model;
+	}
+
+	severityMap = ["I", "W", "E"];
+
 
 	logMessage(severity, message) {
-		if (typeof(message) === undefined) {
+		if (typeof (message) === undefined) {
 			return;
 		}
-		if (typeof(message) === 'string') {
+		if (typeof (message) === 'string') {
 			message = message.trim();
 			if (message.length == 0) {
 				return;
@@ -695,63 +384,16 @@ class DueUI{
 		this.lastLogMessage = message;
 
 		var d = new Date();
-		if (typeof(severity) === 'number') {
+		if (typeof (severity) === 'number') {
 			severity = this.severityMap[severity];
 		}
-		var msg = {"timestamp": d, "severity": severity, "message": message};
-		console.log(msg);
+		var msg = { "timestamp": d, "severity": severity, "message": message };
+		console.log("Log: ", msg);
 		$(".log-message-listener").trigger("log_message", msg);
 	}
 
-	getSetting(setting, default_value) {
-		if (!keyExistsOn(this.settings, setting)) {
-			this.settings[setting] = nativeFromString(localStorage.getItem(setting));
-		}
-		if (typeof(this.settings[setting]) !== 'undefined' && this.settings[setting] !== null
-				&& this.settings[setting] !== 'null') {
-			return this.settings[setting];
-		}
-
-		let local = localStorage.getItem(setting);
-		if (local === null || local === "null") {
-			local = default_value;
-		}
-		this.settings[setting] = nativeFromString(local);
-		return this.settings[setting];
-	}
-
-	getSettings() {
-		let l = localStorage.length;
-		if (l == 0) {
-			return {};
-		}
-		let settings = {};
-		for (let i = 0; i < l; i++) {
-			let name = localStorage.key(i);
-			let val = localStorage.getItem(name);
-			settings[name] = nativeFromString(val);
-		}
-		return settings;
-	}
-
-	setSetting(setting, value) {
-		this.settings[setting] = value;
-		localStorage.setItem(setting, value);
-		if (setting === "theme") {
-			DueUI.setCurrentTheme(value);
-		}
-	}
-
-	setSettings(settings) {
-		localStorage.clear();
-		let keys = Object.keys(settings);
-		for(let name of keys) {
-			localStorage.setItem(name, settings[name]);
-		}
-	}
-
 	printFile(file) {
-		this.sendGcode({"gcode": `M32 "${file}"`, "get_reply": true});
+		this.sendGcode({ "gcode": `M32 "${file}"`, "get_reply": true });
 	}
 
 	addGcodeReplyListener(callback) {
@@ -763,7 +405,7 @@ class DueUI{
 
 	showStartupSettings(msg) {
 		this.startup_settings = new DueuiSettingsPanel(
-				{"position": "left top+64"}, $("body"));
+			{ "position": "left top+64" }, $("body"));
 
 	}
 	removeStartupSettings() {
@@ -786,10 +428,10 @@ class DueUI{
 		var p = new (DueuiElement.getElementClass(this.dueui_content.type))(ec, $("body"));
 	}
 
-	async postData(path, data) {
+	async postData(rawpath, data) {
 		let resp = {};
 		try {
-			resp.data = await $.post(`http://${this.settings.duet_host}${path}`, data);
+			resp.data = await $.post(`http://${getSetting("duet_host")}${rawpath}`, data);
 			resp.ok = true;
 		} catch (error) {
 			resp.error = error;
@@ -799,30 +441,33 @@ class DueUI{
 		return resp;
 	}
 
-	async getText(path) {
+	async getText(rawpath) {
 		let resp = {};
+
 		try {
-			resp.data = await $.get(`http://${this.settings.duet_host}${path}`);
+			resp.data = await $.get(`http://${getSetting("duet_host")}${rawpath}`);
 			resp.ok = true;
 		} catch (error) {
 			resp.error = error;
 			resp.ok = false;
-			console.log(path, error);
+			console.log(rawpath, error);
 		}
 		return resp;
 	}
 
-	async getJSON(path, jsonpCallback) {
+	async getJSON(rawpath, jsonpCallback) {
 		let resp = {};
+		let path = `http://${getSetting("duet_host")}${rawpath}`;
 		try {
-			if (typeof(jsonpCallback) === "undefined") {
-				resp.data = await $.getJSON(`http://${this.settings.duet_host}${path}`);
+			if (typeof jsonpCallback === "undefined") {
+				resp.data = await $.getJSON(path);
 			} else {
 				resp.data = await $.ajax({
-					url: `http://${this.settings.duet_host}${path}`,
+					url: path,
 					dataType: "jsonp",
 					jsonp: "callback",
-					jsonpCallback: jsonpCallback});
+					jsonpCallback: jsonpCallback
+				});
 			}
 			resp.ok = true;
 		} catch (error) {
@@ -833,8 +478,59 @@ class DueUI{
 		return resp;
 	}
 
+	async getWebFile(path) {
+		let resp = {};
+		try {
+			resp.data = await $.get(path);
+			resp.ok = true;
+		} catch (error) {
+			resp.error = error;
+			resp.ok = false;
+			console.log(path, error);
+		}
+		return resp;
+	}
+
+	async getThemeList() {
+		let resp = {};
+		let themeList = [];
+
+		try {
+			resp = await this.getWebFile("css/dueui-themes.css");
+			if (resp.ok) {
+				let obj = JSON.parse(resp.data);
+				themeList.push(...obj.themes);
+			}
+		} catch (error) {
+			console.log("No themes: css/dueui-themes.css: ", error);
+			return [];
+		}
+
+		try {
+			resp = await this.getWebFile("css/dueui-themes-custom.css");
+			if (resp.ok) {
+				let obj = JSON.parse(resp.data);
+				themeList.push(...obj.themes);
+			}
+		} catch (error) {
+			console.log("No themes: css/dueui-themes-custom.css: ", error);
+		}
+
+		themeList.sort((a, b) => {
+			return a.label.localeCompare(b.label);
+		});
+
+		return themeList;
+	}
+
 	async getConfig(config) {
 		let resp = {};
+		if (classExists(DueUIConfig)) {
+			resp.data = new DueUIConfig();
+			resp.ok = true;
+			this.logMessage("I", `Retrieved config from ${config}`);
+			return resp;
+		}
 		try {
 			resp.data = await $.ajax({
 				url: config,
@@ -857,7 +553,7 @@ class DueUI{
 		let resp = {};
 		this.connect_retry = 0;
 
-		if (!this.settings.dueui_test_mode) {
+		if (!getSetting("dueui_test_mode", false)) {
 
 			$(".connection-listener").trigger("duet_connection_change", { "status": "connecting" });
 			this.connected = false;
@@ -885,7 +581,6 @@ class DueUI{
 			}
 			this.connect_retry = 0;
 
-
 			resp = await this.startPolling();
 			if (!resp.ok) {
 				dueui.logMessage("E", resp.error);
@@ -901,18 +596,18 @@ class DueUI{
 		}
 
 		let c_url;
-		if (this.settings.dueui_config_url.length == 0) {
-			c_url = `http://${this.settings.duet_host}/${DUEUI.BACKEND_CONFIGS[this.settings.backend_type]}`;
+		if (getSetting("dueui_config_url", "").length == 0) {
+			c_url = `http://${getSetting("duet_host")}/${DUEUI.BACKEND_CONFIGS[getSetting("backend_type", 0)]}`;
 		} else {
-			c_url = this.settings.dueui_config_url;
+			c_url = getSetting("dueui_config_url", "");
 		}
 		resp = await this.getConfig(c_url);
 		if (!resp.ok) {
 			alert(`Could not retrieve config from ${c_url}`);
 			return resp;
 		}
-		if (this.settings.dueui_config_url.length == 0) {
-			this.setSetting("dueui_config_url", c_url);
+		if (getSetting("dueui_config_url", "").length == 0) {
+			setSetting("dueui_config_url", c_url);
 		}
 		this.active_config_url = resp.config_url;
 		this.configured = true;
@@ -923,8 +618,8 @@ class DueUI{
 		this.populate(this.dueui_content);
 		this.logMessage("I", `DueUI Version ${dueui_version}`);
 
-		if (!this.settings.dueui_test_mode) {
-			this.sendGcode({"gcode": "M115", "no_echo": true});
+		if (!getSetting("dueui_test_mode", false)) {
+			this.sendGcode({ "gcode": "M115", "no_echo": true });
 		}
 
 		return resp;
@@ -933,24 +628,24 @@ class DueUI{
 	disconnect() {
 		this.connect_retry = 0;
 		this.connected = false;
-		$(".connection-listener").trigger("duet_connection_change", {"status": "disconnected"});
+		$(".connection-listener").trigger("duet_connection_change", { "status": "disconnected" });
 	}
 
 	async startup() {
 		$("#dueui_startup").remove();
-		DueUI.setCurrentTheme(this.settings.theme);
+		DueUI.setCurrentTheme(getSetting("theme", "Cerulean"));
 		this.id = "dueui";
 		this.jq = $("#dueui");
 		$("body").addClass(`connection-listener ui ui-widget-content bg-light`);
 
-		if (this.settings.duet_polling_enabled != 1) {
+		if (getSetting("duet_polling_enabled", 0) != 1) {
 			this.showStartupSettings();
 			return;
 		}
 
-		let resp = await this.connect(this.settings.duet_host);
+		let resp = await this.connect(getSetting("duet_host"));
 		if (!resp.ok) {
-			alert(`Could not connect to ${this.settings.duet_host} or retrieve any config files`);
+			alert(`Could not connect to ${getSetting("duet_host")} or retrieve any config files`);
 			this.showStartupSettings();
 			return;
 		}
@@ -968,8 +663,35 @@ class DueUI{
 
 class DueUI_DSF extends DueUI {
 
-	constructor() {
-		super();
+	async connect_once(host) {
+		let resp = {};
+		try {
+			let resp = await super.getJSON("/machine/status");
+			if (resp.ok) {
+				this.initializeModel(this.model, 3);
+				this.connected = true;
+				let data = resp.data;
+				if (resp.data.result) {
+					data = resp.data.result;
+				}
+				this.patchModel(this.model, data);
+				this.model.current.status = this.model.state.status;
+				this.model.current.displayMessage = this.model.state.displayMessage;
+				this.patchModel(this.model.current.messageBox, data.state.messageBox);
+				console.log("Combined Model:", this.model);
+			}
+		} catch (error) {
+			console.log(error);
+			resp.error = error;
+			this.model.meta.rrfVersion = 0;
+			resp.ok = false;
+			this.connected = false;
+		}
+		return resp;
+	}
+
+	constructor(settings) {
+		super(settings);
 	}
 
 	normalizePath(path) {
@@ -980,25 +702,12 @@ class DueUI_DSF extends DueUI {
 		}
 	}
 
-	async postData(path, data) {
-		return super.postData(this.normalizePath(path), data);
+	async getText(rawpath) {
+		return super.getText(this.normalizePath(rawpath));
 	}
 
-	async getText(path) {
-		return super.getText(this.normalizePath(path));
-	}
-
-	async getJSON(path, jsonpCallback) {
-		return super.getJSON(this.normalizePath(path), jsonpCallback);
-	}
-
-	async getThemeList(custom) {
-		let resp = await super.getJSON(custom ? "/dueui/css/dueui-themes_custom.css" : "/dueui/css/dueui-themes.css",
-				custom ? "DueUICustomThemes" : "DueUIThemes");
-		if (!resp.ok) {
-			return [];
-		}
-		return resp.data.themes;
+	async getJSON(rawpath, jsonpCallback) {
+		return super.getText(this.normalizePath(rawpath));
 	}
 
 	async deleteFile(path) {
@@ -1006,8 +715,9 @@ class DueUI_DSF extends DueUI {
 		try {
 			path = this.normalizePath(path);
 			resp.data = await $.ajax({
-				url: `http://${this.settings.duet_host}${path}`,
-				method: "DELETE"});
+				url: `http://${getSetting("duet_host")}${path}`,
+				method: "DELETE"
+			});
 			resp.ok = true;
 		} catch (error) {
 			resp.error = error;
@@ -1032,12 +742,12 @@ class DueUI_DSF extends DueUI {
 		};
 
 		if (!Array.isArray(gcodes)) {
-			gcodes = [ gcodes ];
+			gcodes = [gcodes];
 		}
 
 		for (let ge of gcodes) {
-			if (typeof(ge) === 'string') {
-				ge = {"gcode": ge, "get_reply": false};
+			if (typeof (ge) === 'string') {
+				ge = { "gcode": ge, "get_reply": false };
 			}
 			if (!keyExistsOn(ge, "no_event")) {
 				ge.no_event = false;
@@ -1051,7 +761,7 @@ class DueUI_DSF extends DueUI {
 
 			ge.gcode = ge.gcode.replace(/;/g, "\n");
 			let gc = ge.gcode.trim();
-			if (this.settings.dueui_settings_dont_send_gcode == 1) {
+			if (getSetting("dueui_settings_dont_send_gcode", 0) == 1) {
 				this.logMessage("D", `GCode: ${gc}`);
 				continue;
 			}
@@ -1061,7 +771,6 @@ class DueUI_DSF extends DueUI {
 				this.logMessage("E", `GCode: ${gc}  Error: ${single_resp.error.responseText}`);
 				return single_resp;
 			} else {
-				console.log(single_resp.data);
 				resp.replies.push(single_resp.data);
 				let response = "";
 				if (single_resp.data) {
@@ -1082,7 +791,7 @@ class DueUI_DSF extends DueUI {
 
 	processWebSocketMsg(msg) {
 		let data = JSON.parse(msg.data);
-		if (this.settings.duet_debug_polling_enabled) {
+		if (getSetting("duet_debug_polling_enabled", false)) {
 			console.log(data);
 		}
 
@@ -1094,7 +803,7 @@ class DueUI_DSF extends DueUI {
 		}
 
 		$.extend(true, this.model, data);
-		if (this.settings.duet_debug_polling_enabled) {
+		if (getSetting("duet_debug_polling_enabled", false)) {
 			console.log(this.model);
 		}
 
@@ -1108,6 +817,10 @@ class DueUI_DSF extends DueUI {
 		$(`.state-poll-listener`).trigger("duet_poll_response", this.model);
 	}
 
+	async pollOnce(poll_level, notify, lock) {
+
+	}
+
 	stopPolling() {
 		this.websocket.close();
 	}
@@ -1117,11 +830,12 @@ class DueUI_DSF extends DueUI {
 		let resp = {};
 		resp.ok = true;
 
-		let ws_url = `ws://${this.settings.duet_host}/machine`;
+		let ws_url = `ws://${getSetting("duet_host")}/machine`;
 		try {
 			this.websocket = new WebSocket(ws_url);
 
 			this.websocket.onmessage = (data) => {
+
 				this.processWebSocketMsg(data);
 				if (this.websocket.readyState == 1) {
 					this.websocket.send("OK\n");
@@ -1139,14 +853,14 @@ class DueUI_DSF extends DueUI {
 			this.websocket.onclose = (e) => {
 				console.log(e);
 				this.logMessage("E", `Websocket closed.`);
-				if (this.settings.duet_polling_enabled) {
+				if (getSetting("duet_polling_enabled", false)) {
 					this.logMessage("E", "Waiting 5 seconds to try");
 					setTimeout(() => {
 						this.startPolling();
 					}, 5000);
 				}
 			};
-		} catch(error) {
+		} catch (error) {
 			resp.ok = false;
 			resp.error = error;
 			console.log(error);
@@ -1155,35 +869,80 @@ class DueUI_DSF extends DueUI {
 
 		return resp;
 	}
-
-	async connect_once(host) {
-		let resp = {};
-		if (this.connected) {
-			resp.ok = true;
-			return resp;
-		}
-		try {
-			let resp = await super.getJSON("/machine/status");
-			if (resp.ok) {
-				$.extend(true, this.model, resp.data.result);
-			}
-			resp.ok = true;
-			this.dsf = true;
-			return resp;
-		} catch(error) {
-			console.log(error);
-			resp.error = error;
-			resp.ok = false;
-			return resp;
-		}
-	}
 }
 
 class DueUI_Standalone extends DueUI {
-	constructor() {
-		super();
+
+	async connect_once(url) {
+		let resp = {};
+		try {
+			resp = await super.getJSON(`/rr_connect?password=${encodeURI(getSetting("duet_password", ""))}`);
+			if (!resp.ok) {
+				return resp;
+			}
+
+			if (this.model.meta.rrfVersion === 3 || this.model.meta.rrfVersion === 0) {
+				resp = await super.getJSON("/rr_model");
+				console.log("rr_model resp: ", resp);
+				if (resp.ok) {
+					let keys = Object.keys(resp.data.result);
+					this.model = resp.data.result;
+					for (let name of keys) {
+						let resp2 = await super.getJSON(`/rr_model?key=${name}&flags=nvd10`);
+						this.patchModel(resp.data.result[name], resp2.data.result);
+					}
+					this.initializeModel(this.model, 3);
+					this.connected = true;
+					this.patchModel(this.model, resp.data.result);
+					this.model.current.status = this.model.state.status;
+					this.model.current.reply_seq = this.model.seqs.reply;
+					this.model.current.displayMessage = this.model.state.displayMessage;
+					this.patchModel(this.model.current.messageBox, resp.data.result.state.messageBox);
+					console.log({ "model": this.model });
+
+					return resp;
+				}
+			}
+
+			if (this.model.meta.rrfVersion === 2 || this.model.meta.rrfVersion === 0) {
+				resp = await super.getJSON("/rr_status?type=1");
+				if (resp.ok) {
+					$.extend(true, this.model, resp.data);
+					resp = await super.getJSON("/rr_status?type=3");
+					if (resp.ok) {
+						this.initializeModel(this.model, 2);
+						this.connected = true;
+						this.initializeModel(this.model);
+						this.patchModel(this.model, resp.data);
+
+						this.model.current.status = this.model.status;
+						this.model.current.reply_seq = this.model.seq;
+						this.model.current.displayMessage = this.model.output.displayMessage;
+						this.model.current.messageBox.axisControls = this.model.output.msgBox.controls;
+						this.model.current.messageBox.mode = this.model.output.msgBox.mode;
+						this.model.current.messageBox.message = this.model.output.msgBox.msg;
+						this.model.current.messageBox.seq = this.model.output.msgBox.seq;
+						this.model.current.messageBox.timeout = this.model.output.msgBox.timeout;
+						this.model.current.messageBox.title = this.model.output.msgBox.title;
+						console.log("Combined Model:", this.model);
+
+						return resp;
+					}
+				}
+			}
+		} catch (error) {
+			console.log(error);
+			this.model.meta.rrfVersion = 0;
+			resp.error = error;
+			this.connected = false;
+			resp.ok = false;
+		}
+		return resp;
+	}
+
+	constructor(settings) {
+		super(settings);
 		this.last_poll = [0, 0, 0, 0];
-		this.sequence = -1;
 		this.current_poll_response = {};
 		this.poll_in_flight = false;
 		this.pollOnce(3, false, true);
@@ -1197,26 +956,12 @@ class DueUI_Standalone extends DueUI {
 		}
 	}
 
-	async postData(path, data) {
-		return super.postData(this.normalizePath(path), data);
+	async getText(rawpath) {
+		return super.getText(this.normalizePath(rawpath));
 	}
 
-	async getText(path) {
-		return super.getText(this.normalizePath(path));
-	}
-
-	async getJSON(path, jsonpCallback) {
-		return super.getJSON(this.normalizePath(path), jsonpCallback);
-	}
-
-	async getThemeList(custom) {
-		let resp = await super.getJSON(custom ? "/css/dueui-themes_custom.css" : "/css/dueui-themes.css",
-				custom ? "DueUICustomThemes" : "DueUIThemes");
-		if (!resp.ok) {
-			return [];
-		}
-		console.log(resp);
-		return resp.data.themes;
+	async getJSON(rawpath, jsonpCallback) {
+		return super.getText(this.normalizePath(rawpath));
 	}
 
 	async getFileList(directory) {
@@ -1239,14 +984,17 @@ class DueUI_Standalone extends DueUI {
 	}
 
 	async processPollResponse() {
-		if (this.model.status !== this.current_status) {
-			$(`.status-change-listener`).trigger("duet_status_change", this.model.status);
-			console.log(this.model.status);
-			this.current_status = this.model.status;
+
+		if (this.model.current.status !== this.model.last.status) {
+			$(`.status-change-listener`).trigger("duet_status_change", this.model.current.status);
 		}
 		$(`.state-poll-listener`).trigger("duet_poll_response", this.model);
 
-		if (this.model.seq > this.sequence) {
+		if (this.model.current.displayMessage !== this.model.last.displayMessage) {
+			this.logMessage("I", this.model.current.displayMessage);
+		}
+
+		if (this.model.current.reply_seq !== this.model.last.reply_seq) {
 			let resp = await this.getGcodeReply();
 			if (resp.replies.length > 0) {
 				for (let r in resp.replies) {
@@ -1257,26 +1005,70 @@ class DueUI_Standalone extends DueUI {
 	}
 
 	async pollOnce(poll_level, notify, lock) {
+		if (!this.connected) {
+			return { "ok": false, "error": "not connected" };
+		}
 		if (lock) {
 			if (this.poll_in_flight) {
-				return;
+				if (getSetting("duet_debug_polling_enabled", false) == 1) {
+					console.log({ "poll_level": poll_level }, "Locked");
+				}
+				return { "ok": false, "error": "locked" };
 			}
 			this.poll_in_flight = true;
 		}
-		let resp = await super.getJSON(`/rr_status?type=${poll_level}`);
-		if (resp.ok) {
-			$.extend(true, this.model, resp.data);
-			if (this.sequence < 0) {
-				this.sequence = this.model.seq;
-			}
-			if (this.settings.duet_debug_polling_enabled == 1) {
-				console.log({"poll_level": poll_level, "response": this.model});
-			}
-			if (notify) {
-				await this.processPollResponse();
-			}
+
+		let purl = "";
+		if (this.model.meta.rrfVersion === 3) {
+			purl = "/rr_model?flags=fnd10"
 		} else {
+			purl = `/rr_status?type=${poll_level}`;
+		}
+
+		$.extend(true, this.model.last, this.model.current);
+
+		let resp = await super.getJSON(purl);
+		if (!resp.ok) {
 			this.logMessage("W", `Poll type ${poll_level} failed`);
+			this.poll_in_flight = false;
+			return resp;
+		}
+
+		if (this.model.meta.rrfVersion === 3) {
+			let newseq = resp.data.result.seqs;
+			let keys = Object.keys(newseq);
+			for (let key of keys) {
+				if (newseq[key] != this.model.seqs[key]) {
+					let resp2 = await super.getJSON(`/rr_model?key=${key}&flags=nvd10`);
+					if (!resp.ok) {
+						this.logMessage("W", `Poll type ${poll_level} failed`);
+						this.poll_in_flight = false;
+						return resp;
+					}
+					$.extend(true, resp.data.result[key], resp2.data.result);
+				}
+			}
+			$.extend(true, this.model, resp.data.result);
+			this.model.current.status = this.model.state.status;
+			this.model.current.reply_seq = this.model.seqs.reply;
+			this.model.current.displayMessage = this.model.state.displayMessage;
+			$.extend(true, this.model.current.messageBox, resp.data.result.state.messageBox);
+		} else {
+			$.extend(true, this.model, resp.data);
+			this.model.current.displayMessage = this.model.output.displayMessage;
+			this.model.current.messageBox.axisControls = this.model.output.msgBox.controls;
+			this.model.current.messageBox.mode = this.model.output.msgBox.mode;
+			this.model.current.messageBox.message = this.model.output.msgBox.msg;
+			this.model.current.messageBox.seq = this.model.output.msgBox.seq;
+			this.model.current.messageBox.timeout = this.model.output.msgBox.timeout;
+			this.model.current.messageBox.title = this.model.output.msgBox.title;
+		}
+
+		if (getSetting("duet_debug_polling_enabled", false) == 1) {
+			console.log({ "poll_level": poll_level, "response": this.model });
+		}
+		if (notify) {
+			await this.processPollResponse();
 		}
 		if (lock) {
 			this.poll_in_flight = false;
@@ -1289,10 +1081,17 @@ class DueUI_Standalone extends DueUI {
 	}
 
 	async startPolling() {
+		let pi_1 = getSetting("duet_poll_interval_1", 0);
+		let pi_2 = getSetting("duet_poll_interval_2", 0);
+		let pi_3 = getSetting("duet_poll_interval_3", 0);
+		let dpi = getSetting("duet_polling_enabled", 0);
+
+
 		let interval = Math.min(
-			this.settings.duet_poll_interval_1,
-			this.settings.duet_poll_interval_2,
-			this.settings.duet_poll_interval_3
+			250,
+			getSetting("duet_poll_interval_1", 99999),
+			getSetting("duet_poll_interval_2", 99999),
+			getSetting("duet_poll_interval_3", 99999)
 		);
 
 		let resp = await this.pollOnce(1, false, true);
@@ -1308,77 +1107,49 @@ class DueUI_Standalone extends DueUI {
 			return resp;
 		}
 
-		this.pollerIntervalId = setInterval( async () => {
-			if (!this.connected || !this.configured || this.settings.duet_polling_enabled != 1) {
+		this.pollerIntervalId = setInterval(async () => {
+			if (!this.connected || !this.configured || dpi != 1) {
 				return;
 			}
-
 			let now = Date.now();
 			let poll_level = -1;
-			if (this.settings.duet_poll_interval_3 > 250
-					&& now - this.last_poll[3] >= this.settings.duet_poll_interval_3) {
+			if (pi_3 > 250
+				&& now - this.last_poll[3] >= pi_3) {
 				poll_level = 3;
 				this.last_poll[3] = now;
-			} else if (this.settings.duet_poll_interval_2 > 250
-					&& now - this.last_poll[2] >= this.settings.duet_poll_interval_2) {
+			} else if (pi_2 > 250
+				&& now - this.last_poll[2] >= pi_2) {
 				poll_level = 2;
 				this.last_poll[2] = now;
-			} else if (this.settings.duet_poll_interval_1 > 250
-					&& now - this.last_poll[1] >= this.settings.duet_poll_interval_1) {
+			} else if (pi_1 > 250
+				&& now - this.last_poll[1] >= pi_1) {
 				poll_level = 1;
 				this.last_poll[1] = now;
 			}
 
-			if (this.connected && poll_level > 0 && this.settings.duet_polling_enabled == 1) {
+			if (this.connected && poll_level > 0 && dpi == 1) {
 				this.pollOnce(poll_level, true, true);
 			}
 		}, interval);
 		return resp;
 	}
 
-	async connect_once(url) {
-		let resp = {};
-		if (this.connected) {
-			resp.ok = true;
-			return resp;
-		}
-		try {
-			resp = await super.getJSON(`/rr_connect?password=${ encodeURI(this.settings.duet_password) }`);
-			if (!resp.ok) {
-				return resp;
-			}
-			resp = await super.getJSON("/rr_status?type=1");
-			if (resp.ok) {
-				$.extend(true, this.model, resp.data);
-			}
-			resp = await super.getJSON("/rr_status?type=3");
-			if (resp.ok) {
-				$.extend(true, this.model, resp.data);
-			}
-			return resp;
-		} catch(error) {
-			console.log(error);
-			resp.error = error;
-			resp.ok = false;
-		}
-		return resp;
-	}
-
 	async getGcodeReply(gc) {
-		let tempgc = gc || { no_echo: true, gcode: ""};
+		let tempgc = gc || { no_echo: true, gcode: "" };
 		let resp = {
 			ok: true,
 			replies: []
 		};
+		let mseq = this.model.meta.rrfVersion === 3 ? this.model.seqs.reply : this.model.seq;
 
-		while (this.sequence < this.model.seq) {
+		while (this.model.last.reply_seq < this.model.current.reply_seq) {
 			let tempresp = await super.getText("/rr_reply");
 			if (!tempresp.ok) {
 				this.logMessage("E", tempresp.error);
 				return tempresp;
 			}
 			resp.replies.push(tempresp.data);
-			this.sequence++;
+			this.model.last.reply_seq++;
 		}
 
 		return resp;
@@ -1393,16 +1164,16 @@ class DueUI_Standalone extends DueUI {
 		};
 
 		if (!Array.isArray(gcodes)) {
-			gcodes = [ gcodes ];
+			gcodes = [gcodes];
 		}
 
 		for (let ge of gcodes) {
-			if (typeof(ge) === 'string') {
-				ge = {"gcode": ge, "get_reply": false};
+			if (typeof (ge) === 'string') {
+				ge = { "gcode": ge, "get_reply": false };
 			}
 			let gc = ge.gcode.trim().replace(/;/g, "\n");
 
-			if (this.settings.dueui_settings_dont_send_gcode == 1) {
+			if (getSetting("dueui_settings_dont_send_gcode", 0) == 1) {
 				this.logMessage("D", `GCode: ${gc}`);
 				continue;
 			}
@@ -1435,11 +1206,4 @@ class DueUI_Standalone extends DueUI {
 		this.poll_in_flight = false;
 		return resp;
 	}
-}
-
-const backend_type = localStorage.getItem("backend_type");
-if (backend_type == DUEUI.BACKENDS.DSF) {
-	var dueui = new DueUI_DSF();
-} else {
-	var dueui = new DueUI_Standalone();
 }

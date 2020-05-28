@@ -3,6 +3,32 @@
  * the Duet Software Framework.
  */
 
+/*
+ * You now have the capability to specify DueUI settings
+ * in this file as well as in the Settings page and
+ * URL.
+ * Example:
+ * http://<your_dueui_install>?dueui_config_url=http://<config_server>/dueui_config.json
+ *
+ * If the file is on the same server as the DueUI installation,
+ * you can just specify the file path relative to the root of the server:
+ * http://<your_dueui_install>?dueui_config_url=dueui_config.json 
+/*
+class DueUISettings {
+	backend_type = "STANDALONE";
+	duet_debug_polling_enabled = 0;
+	duet_host = "duet3.f5.int";
+	duet_password = "reprap";
+	duet_poll_interval_1 = 500;
+	duet_poll_interval_2 = 0;
+	duet_poll_interval_3 = 3000;
+	duet_polling_enabled = 1;
+	dueui_settings_dont_send_gcode = 0;
+	dueui_test_mode = 0;
+	theme = "Darkly";
+}
+*/
+
 class DueUIConfig {
 
 	calculateLayers(state) {

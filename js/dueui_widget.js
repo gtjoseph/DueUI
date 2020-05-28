@@ -244,13 +244,13 @@ class DueuiInputFieldWidget extends DueuiWidget {
 		if (this.autocomplete_key) {
 			this.jq.on("dueui-submit", (event) => {
 				let val = this.jq.val();
-				let ac = dueui.getSetting(`ac_${this.autocomplete_key}`) || [];
+				let ac = getSetting(`ac_${this.autocomplete_key}`) || [];
 				if (!Array.isArray(ac)) {
 					ac = ac.split(',');
 				}
 				if (!ac.includes(val)) {
 					ac.push(val);
-					dueui.setSetting(`ac_${this.autocomplete_key}`, ac);
+					setSetting(`ac_${this.autocomplete_key}`, ac);
 				}
 			});
 
@@ -259,7 +259,7 @@ class DueuiInputFieldWidget extends DueuiWidget {
 				"resolver": "custom",
 				"events": {
 					"search": (query, callback) => {
-						let ac = dueui.getSetting(`ac_${this.autocomplete_key}`) || [];
+						let ac = getSetting(`ac_${this.autocomplete_key}`) || [];
 						if (!Array.isArray(ac)) {
 							ac = ac.split(',');
 						}
@@ -623,19 +623,25 @@ class DueuiFileDropdownWidget extends DueuiSelectWidget {
 		let options = [];
 		this.jq.append(`<option value="#####">Select a file...</option>`)
 		for (let fe of files) {
-
-			options.push({"value": fe.name, "label": this.formatName(fe.name)});
+			options.push({"value": fe.name, "label": this.formatName(fe.name), "date": fe.date});
 		}
-		if (this.sort &&
-			(this.sort === "label" || this.sort === "file")) {
-			if (this.sort === "file") {
-				this.sort = "value";
+		if (this.sort) {
+			let sortkey;
+			if (this.sort.match("label")) {
+				sortkey = "label";
+			} else if (this.sort.match("file")) {
+				sortkey = "value";
+			} else if (this.sort.startsWith("date")) {
+				sortkey = "date";
 			}
 			options.sort((a, b) => {
-				return a[this.sort].localeCompare(b[this.sort]);
+				return a[sortkey].localeCompare(b[sortkey]);
 			});
 		} else {
 			options.sort();
+		}
+		if (this.sort.match("desc")) {
+			options.reverse();
 		}
 		for (let o of options) {
 			this.jq.append(`<option value="${o.value}">${o.label}</option>`);
@@ -1207,6 +1213,9 @@ class DueuiImageWidget extends DueuiWidget {
 	constructor(config, parent) {
 		super("div", $.extend(true, {
 		}, config), parent);
+		if (!this.src || this.src.length === 0) {
+			return;
+		}
 		this.jq_img = $(`<img src=${this.src}>`);
 		this.jq_img.css(this.style);
 		this.jq.append(this.jq_img);
