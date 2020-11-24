@@ -253,9 +253,10 @@ class DueUI {
 
 		let backendType = resolvedSettings["backend_type"];
 		if (typeof backendType === "string") {
+			let val;
 			if (backendType.toUpperCase() === "DSF") {
 				val = DUEUI.BACKENDS.DSF;
-			} else if (kvp[1].toUpperCase() === "STANDALONE") {
+			} else if (backendType.toUpperCase() === "STANDALONE") {
 				val = DUEUI.BACKENDS.STANDALONE;
 			} else {
 				val = DUEUI.BACKENDS.UNKNOWN;
