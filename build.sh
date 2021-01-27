@@ -11,9 +11,9 @@ cd dist
 zip -r ../DueUI-DSF-${version}.zip dueui
 
 cd dueui
-rm index.html
 sed -r -e "s/jquery.js/dueui-vendor-bundle.js/g" -e "/bootstrap/d" \
 	-e "s/dueui.js/dueui-bundle.js/g" -e "/dueui_(element|panel|widget)/d" index.html > dueui.html
+rm index.html
 gzip *.html
 
 cd js

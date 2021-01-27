@@ -17,7 +17,6 @@
 class DueUISettings {
 	backend_type = "STANDALONE";
 	duet_debug_polling_enabled = 0;
-	duet_host = "duet3.f5.int";
 	duet_password = "reprap";
 	duet_poll_interval_1 = 500;
 	duet_poll_interval_2 = 0;
