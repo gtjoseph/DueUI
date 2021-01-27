@@ -10,7 +10,7 @@ String.prototype.dirname = function() { return this.split('/').slice(0, this[thi
 keyExistsOn = (o, k) => k.replace('[', '.').replace(']', '').split(".")
 	.reduce((a, c) => a.hasOwnProperty(c) ? a[c] || 1 : false, Object.assign({}, o)) === false ? false : true;
 
-classExists = (c) => typeof(c) == "function" && typeof(c.prototype) == "object" ? true : false;
+classExists = (c) => c && typeof(c) == "function" && typeof(c.prototype) == "object" ? true : false;
 
 async function delay(ms) {
 	return await new Promise(resolve => setTimeout(resolve, ms));
@@ -526,7 +526,7 @@ class DueUI {
 
 	async getConfig(config) {
 		let resp = {};
-		if (classExists(DueUIConfig)) {
+		if (classExists("DueUIConfig")) {
 			resp.data = new DueUIConfig();
 			resp.ok = true;
 			this.logMessage("I", `Retrieved config from ${config}`);
