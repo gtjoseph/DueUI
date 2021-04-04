@@ -294,12 +294,12 @@ class DueuiElement {
 			if (keyExistsOn(this, "state.current")) {
 				let cs = this.getStateObject(this.state.current);
 				if (cs && cs.actions) {
-					this.runActions(cs.actions, false);
+					this.runActions(cs.actions, false, event);
 					this.applyState();
 				}
 			}
 			if (this.actions) {
-				this.runActions(this.actions, false);
+				this.runActions(this.actions, false, event);
 			}
 		});
 
@@ -327,7 +327,7 @@ class DueuiElement {
 		}
 	}
 
-	runActions(action, run_on_startup) {
+	runActions(action, run_on_startup, event = {}) {
 		if (!Array.isArray(action)) {
 			action = [ action ];
 		}
@@ -358,7 +358,7 @@ class DueuiElement {
 				break;
 			case "setting": {
 				if (run_on_startup) {
-					let val = getSetting(a2.setting);
+					let val = resolvedSettings[a2.setting];
 					if (keyExistsOn(this, "state.states[0].actions")) {
 						this.state.current = val;
 					} else {
@@ -379,6 +379,12 @@ class DueuiElement {
 					setSetting(a2.setting, val);
 					$(".dueui-setting-listener").trigger(a2.setting, val);
 				}
+				break;
+			}
+			case "theme": {
+				resolvedSettings.theme_path = event.target.selectedOptions[0].value;
+				resolvedSettings.theme_name = event.target.selectedOptions[0].label;
+				setTheme();
 				break;
 			}
 			case "event": {

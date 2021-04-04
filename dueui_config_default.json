@@ -1,57 +1,43 @@
 /*
- * This configuration file is a sample for use with any
- * Duet in Standalone mode.
+ * This configuration file is a sample for use with any Duet
+ * running RepRapFirmware 3.2 or greater.   This same config
+ * should also work with the Duet Software Framework 3.2 or above.
  */
 
 /*
  * You now have the capability to specify DueUI settings
- * in this file as well as in the Settings page and
- * URL.
+ * in this file as well as in the Settings page and URL.
  * Example:
  * http://<your_dueui_install>?dueui_config_url=http://<config_server>/dueui_config.json
  *
  * If the file is on the same server as the DueUI installation,
  * you can just specify the file path relative to the root of the server:
- * http://<your_dueui_install>?dueui_config_url=dueui_config.json 
-/*
-class DueUISettings {
-	backend_type = "STANDALONE";
-	duet_debug_polling_enabled = 0;
-	duet_password = "reprap";
-	duet_poll_interval_1 = 500;
-	duet_poll_interval_2 = 0;
-	duet_poll_interval_3 = 3000;
-	duet_polling_enabled = 1;
-	dueui_settings_dont_send_gcode = 0;
-	dueui_test_mode = 0;
-	theme = "Darkly";
-}
+ * http://<your_dueui_install>?dueui_config_url=dueui_config.json
+ *
+ * See the wiki at https://github.com/gtjoseph/DueUI/wiki/Settings
+ * for more info. 
+
+configFileSettings = {
+	duet_debug_polling_enabled: 0,
+	duet_host: "<your_duet_or_DSF_address>",
+	duet_password: "reprap",
+	duet_poll_interval_1: 500,
+	duet_debug_polling_enabled: 0,
+	dueui_settings_dont_send_gcode: 0,
+	dueui_test_mode: 0,
+	duet_polling_enabled: 0,
+	theme_name: "Darkly"
+};
 */
 
 class DueUIConfig {
 
-	calculateLayers(state) {
-		let rtn = "";
-		if (state.state.status == 'idle' || state.job.file.height == 0) {
-			rtn += "0/";
-		} else {
-			rtn += ((state.move.axes[2].machinePosition / state.job.file.height) * state.job.file.numLayers).toFixed(0) + "/";
-		}
-
-		if (state.job.file.numLayers != null) {
-			rtn += state.job.file.numLayers;
-		} else {
-			rtn += "0";
-		}
-		return rtn;
-	}
-
 	heater_states = [
-		{"state": 0, "classes": "btn-secondary"},
-		{"state": 1, "classes": "btn-warning"},
-		{"state": 2, "classes": "btn-success"},
-		{"state": 3, "classes": "btn-danger"},
-		{"state": 4, "classes": "btn-info"}
+		{"state": "off", "classes": "btn-secondary"},
+		{"state": "standby", "classes": "btn-warning"},
+		{"state": "active", "classes": "btn-success"},
+		{"state": "fault", "classes": "btn-danger"},
+		{"state": "tuning", "classes": "btn-info"}
 	];
 
 	axes_position = {
@@ -67,27 +53,36 @@ class DueUIConfig {
 			},
 			"state": {
 				"states": [
-					{"state": 0, "classes": "btn-warning"},
-					{"state": 1, "classes": "btn-success"}
+					{"state": false, "classes": "btn-warning"},
+					{"state": true, "classes": "btn-success"}
 				]
 			}
 		},
 		"direction": "column",
 		"axes": [
 			{"label": "X:  ", "gcode_axis": "X",
-				"position_field": "${state.coords.machine[0].toFixed(3).padStart(7)}",
-				"state_field": "${state.coords.axesHomed[0]}"
+				"position_field": "${state.move.axes[0].machinePosition.toFixed(3).padStart(7)}",
+				"state_field": "${state.move.axes[0].homed}"
 			},
 			{"label": "Y:  ", "gcode_axis": "Y",
-				"position_field": "${state.coords.machine[1].toFixed(3).padStart(7)}",
-				"state_field": "${state.coords.axesHomed[1]}"
+				"position_field": "${state.move.axes[1].machinePosition.toFixed(3).padStart(7)}",
+				"state_field": "${state.move.axes[1].homed}"
 			},
 			{"label": "Z:  ", "gcode_axis": "Z",
-				"position_field": "${state.coords.machine[2].toFixed(3).padStart(7)}",
-				"state_field": "${state.coords.axesHomed[2]}"
+				"position_field": "${state.move.axes[2].machinePosition.toFixed(3).padStart(7)}",
+				"state_field": "${state.move.axes[2].homed}"
 			},
 		]
 	};
+
+	probe_tolerance = {
+			"tolerances": [
+				{"limit": 560, "classes": "btn-success"},
+				{"limit": 565, "classes": "btn-warning"},
+				{"limit": 999, "classes": "btn-danger"}
+			],
+			"field": "${state.sensors.probes[0].value}"
+		};
 
 	dueui_content = {
 		"id": "dueui",
@@ -139,16 +134,16 @@ class DueUIConfig {
 					},
 					"state": {
 						"states": [
-							{ "state": 0, "classes": "btn-danger", "value": "ATX is<br>Off",
+							{ "state": false, "classes": "btn-danger", "value": "ATX is<br>Off",
 								"actions": {"type": "gcode", "gcode": "M80", "message": "Power ON"}
 							},
-							{ "state": 1, "classes": "btn-success", "value": "ATX is<br>On",
+							{ "state": true, "classes": "btn-success", "value": "ATX is<br>On",
 								"actions": {"type": "gcode", "gcode": "M81", "message": "Power OFF"}
 							}
 						],
-						"field": "${state.params.atxPower}"
+						"field": "${state.state.atxPower}"
 					},
-					"value": 'ATX Pwr',
+					"value": "ATX Pwr",
 				},
 				{
 					"id": "log",
@@ -208,11 +203,11 @@ class DueUIConfig {
 								"strip_suffix": true,
 								"show_refresh_button": true,
 								"show_action_button": true,
-								"sort": "label",
+								"sort": "date,desc",
 								"style": {
-									"width": "620px",
-									"height": "3em",
-									"font-size": "18px"
+									"width": "30ch",
+									"height": "2em",
+									"font-size": "20px"
 								},
 								"position": {
 									"my": "left top",
@@ -221,77 +216,65 @@ class DueUIConfig {
 								},
 							},
 							{
-								"id": "bed_label",
-								"type": "label",
-								"value": "Bed: ",
-								"style": {
-									"width": "5ch",
-									"height": "2em",
-									"vertical-align": "middle",
-									"text-align": "right",
-								},
+								"id": "print_bed_heater",
+								"type": "heater",
+								"label": "Bed",
 								"position": {
 									"my": "left top",
 									"at": "left bottom+10",
 									"of": "#selectafile"
 								},
-							},							
-							{
-								"id": "bed_button",
-								"type": "button",
-								"value": "${state.temps.bed.current.toFixed(1)}",
 								"style": {
-									"width": "10ch",
-									"height": "2em"
+									"flex-direction": "row",
 								},
-								"position": {
-									"my": "left center",
-									"at": "right+10 center",
-									"of": "#bed_label"
+								"show_set_fields": false,
+								"element_defaults": {
+									"style": {
+										"height": "2.5em"
+									}
 								},
 								"tolerance": {
 									"tolerances": [
-										{"limit": 2, "classes": "btn-success"},
-										{"limit": 5, "classes": "btn-warning"},
-										{"limit": 999, "classes": "btn-danger"}
-									]
+										{"limit": 2.0, "classes": "btn-success"},
+										{"limit": 5.0, "classes": "btn-warning"},
+										{"limit": 999.0, "classes": "btn-danger"}
+									],
+									"field": "${state.heat.heaters[0].current}"
+								},
+								"state": {
+									"states": this.heater_states,
+									"field": "${state.heat.heaters[0].state}"
 								},
 								"actions_chooser": [
-									{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Off"},
-									{"type": "gcode", "gcode": "M144 P0 S0", "label": "Standby"},
-									{"type": "gcode", "gcode": "M144 P0 S1", "label": "On"},
+									{"type": "gcode", "gcode": "M140 P0 Q0", "label": "Off"},
+									{"type": "gcode", "gcode": "M140 P0 Q1", "label": "Standby"},
+									{"type": "gcode", "gcode": "M140 P0 Q2", "label": "On"},
 									{"type": "gcode", "gcode": "M562 P0", "label": "Reset"},
-									{"type": "gcode", "gcode": "M303 H0 S${state.temps.beds.active}", "label": "Tune"},
+									{"type": "gcode", "gcode": "M303 H0 S${state.heat.heaters[0].active}", "label": "Tune"},
 								],
+								"temp_fields": {
+									"current": "${state.heat.heaters[0].current.toFixed(1)}",
+									"active": "${state.heat.heaters[0].active}",
+									"standby": "${state.heat.heaters[0].standby}",
+								},
 							},
 							{
-								"id": "extr1_label",
-								"type": "label",
-								"value": "Extruder: ",
-								"style": {
-									"width": "10ch",
-									"height": "2em",
-									"vertical-align": "middle",
-									"text-align": "right",
-								},
+								"id": "print_extr1_heater",
+								"type": "heater",
+								"label": "Extr 1",
 								"position": {
-									"my": "left center",
-									"at": "right+20 center",
-									"of": "#bed_button"
+									"my": "left top",
+									"at": "right+110 top",
+									"of": "#print_bed_heater"
 								},
-							},							
-							{
-								"id": "extr1_button",
-								"type": "button",
-								"value": "${state.temps.current[1].toFixed(1)}",
 								"style": {
-									"width": "10ch",
-									"height": "2em"
+									"flex-direction": "row",
 								},
-								"position": {
-									"my": "left center",
-									"at": "right+10 center",
-									"of": "#extr1_label"
+								"show_set_fields": false,
+								"button_defaults": {
+									"style": {
+										"height": "2.5em"
+									}
 								},
 								"tolerance": {
 									"tolerances": [
@@ -300,18 +283,36 @@ class DueUIConfig {
 										{"limit": 999, "classes": "btn-danger"}
 									]
 								},
+								"state": {
+									"states": this.heater_states,
+									"field": "${state.heat.heaters[1].state}"
+								},
 								"actions_chooser": [
-									{"type": "gcode", "gcode": "T-1", "label": "Off"},
-									{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Standby"},
-									{"type": "gcode", "gcode": "T0", "label": "On"},
+									{"type": "gcode", "gcode": "T0 H0 Q0", "label": "Off"},
+									{"type": "gcode", "gcode": "T0 H0 Q1", "label": "Standby"},
+									{"type": "gcode", "gcode": "T0 H0 Q2", "label": "On"},
 									{"type": "gcode", "gcode": "M562 P1", "label": "Reset"},
-									{"type": "gcode", "gcode": "M303 H1 S${state.temps.tools.active[0]}", "label": "Tune"},
+									{"type": "gcode", "gcode": "M303 H1 S${state.heat.heaters[1].active}", "label": "Tune"},
 								],
+								"temp_fields": {
+									"current": "${state.heat.heaters[1].current.toFixed(1)}",
+									"active": "${state.tools[0].active[0]}",
+									"standby": "${state.tools[0].standby[0]}",
+								},
+								"set_temp_commands": {
+									"active": "G10 P0 S${value}",
+									"standby": "G10 P0 R${value}"
+								}
 							},
 							{
 								"id": "video_html",
 								"type": "image",
-								"src": "http://yourserver/stream",
+//								Example src attributes:								
+//								"src": "http://mydsf/image/jpeg.cgi",
+//								"src": "http://mydsf/video/mjpg.cgi?profileid=1",
+//								"src": "http://mydsf:8080/stream",
+//								"refresh_seconds": 5,
+								"alt": "Place your own image here",
 								"style": {
 									"width": "600px",
 									"height": "450px",
@@ -320,10 +321,10 @@ class DueUIConfig {
 								"position": {
 									"my": "left top",
 									"at": "left bottom+10",
-									"of": "#bed_label"
+									"of": "#print_bed_heater"
 								},
 							},
-							
+
 						]
 					},
 					{
@@ -340,17 +341,48 @@ class DueUIConfig {
 							"of": "#files_panel"
 						},
 						"element_configs": [
-							extendObject(true, {}, this.axes_position, {
+							{
 								"id": "position_print",
+								"type": "position",
 								"style": {
-									"width": "425px",
+									"width": "400px"
 								},
 								"button_defaults": {
 									"read_only": true,
-									"width": "15em"
-								},									
+									"style": {
+										"height": "2.5em",
+										"margin-top": "3px",
+										"margin-left": "5px",
+										"margin-right": "5px",
+									},
+									"state": {
+										"states": [
+											{"state": false, "classes": "btn-warning"},
+											{"state": true, "classes": "btn-success"}
+										]
+									}
+								},
+								"position": {
+									"my": "left top",
+									"at": "left+20 top+10",
+									"of": "#print_current_position_panel"
+								},
 								"direction": "row",
-							})
+								"axes": [
+									{"label": "X:  ", "gcode_axis": "X",
+										"position_field": "${state.move.axes[0].machinePosition.toFixed(3).padStart(7)}",
+										"state_field": "${state.move.axes[0].homed}"
+									},
+									{"label": "Y:  ", "gcode_axis": "Y",
+										"position_field": "${state.move.axes[1].machinePosition.toFixed(3).padStart(7)}",
+										"state_field": "${state.move.axes[1].homed}"
+									},
+									{"label": "Z:  ", "gcode_axis": "Z",
+										"position_field": "${state.move.axes[2].machinePosition.toFixed(3).padStart(7)}",
+										"state_field": "${state.move.axes[2].homed}"
+									},
+								]
+							},
 						]
 					},
 					{
@@ -378,7 +410,7 @@ class DueUIConfig {
 								"style": {
 									"height": "3ch",
 								},
-								"value": "Current/Last File:  ${state.status == 'P' ? 'unknown' : 'Not printing'}",
+								"value": "Current/Last File:  ${state.job.file.fileName ? state.job.file.fileName.basename() : 'Not printing'}",
 								"position": {
 									"my": "left top",
 									"at": "left+10 top+10",
@@ -388,7 +420,7 @@ class DueUIConfig {
 							{
 								"id": "print_progress_label",
 								"type": "label",
-								"value": "Print Progress (by filament):",
+								"value": "Print Progress (by filament): ",
 								"position": {
 									"my": "left top",
 									"at": "left bottom+10",
@@ -398,8 +430,7 @@ class DueUIConfig {
 							{
 								"id": "print_progress",
 								"type": "progress",
-//								"value": "${((state.job.file.printTime / ((state.job.timesLeft.filament + state.job.file.printTime) || 1)) * 100)}",
-								"value": 0,
+								"value": "${100 - ((state.job.timesLeft.filament / (state.job.timesLeft.filament + state.job.duration)) * 100)}",
 								"max": 100,
 								"classes": "bg-success",
 								"style": {
@@ -431,8 +462,7 @@ class DueUIConfig {
 									"padding": "0px",
 									"width": "17ch"
 								},
-//								"value": "${DueUI.formatElapsed(state.job.duration)} / ${DueUI.formatElapsed(state.job.file.printTime)}",
-								"value": "0:00:00",
+								"value": "${DueUI.formatElapsed(state.job.duration)} / ${DueUI.formatElapsed(state.job.file.printTime)}",
 								"initial_value": "0:00:00",
 								"position": {
 									"my": "left top",
@@ -462,8 +492,7 @@ class DueUIConfig {
 									"width": "10ch"
 								},
 								"read_only": true,
-//								"value": "${(state.job.duration != null && state.job.file.printTime > 0) ? DueUI.formatElapsed(state.job.file.printTime - ((state.job.duration / state.job.file.printTime) * state.job.file.printTime)) : \"0:00:00\"}",
-								"value": "0:00:00",
+								"value": "${(state.job.duration != null && state.job.file.printTime > 0) ? DueUI.formatElapsed(state.job.file.printTime - ((state.job.duration / state.job.file.printTime) * state.job.file.printTime)) : \"0:00:00\"}",
 								"initial_value": "0:00:00",
 								"position": {
 									"my": "left top",
@@ -480,8 +509,7 @@ class DueUIConfig {
 									"width": "10ch"
 								},
 								"read_only": true,
-//								"value": "${DueUI.formatElapsed(state.job.timesLeft.filament)}",
-								"value": "0:00:00",
+								"value": "${DueUI.formatElapsed(state.job.timesLeft.filament)}",
 								"initial_value": "0:00:00",
 								"position": {
 									"my": "left top",
@@ -498,8 +526,7 @@ class DueUIConfig {
 									"width": "10ch"
 								},
 								"read_only": true,
-//								"value": "${DueUIConfig.calculateLayers(state)}",
-								"value": "0:00:00",
+								"value": "${state.job.layer || 0}/${state.job.file.numLayers || 0}",
 								"position": {
 									"my": "left top",
 									"at": "left bottom+8",
@@ -591,7 +618,7 @@ class DueUIConfig {
 								"id": "requested_speed",
 								"type": "button",
 								"read_only": true,
-								"value": "${state.speeds.requested.toFixed(2)}",
+								"value": "${state.move.currentMove.requestedSpeed.toFixed(2)}",
 								"style": {
 									"height": "2.5em",
 									"width": "10ch",
@@ -621,7 +648,7 @@ class DueUIConfig {
 							{
 								"id": "top_speed",
 								"type": "button",
-								"value": "${state.speeds.top.toFixed(2)}",
+								"value": "${state.move.currentMove.topSpeed.toFixed(2)}",
 								"read_only": true,
 								"style": {
 									"height": "2.5em",
@@ -673,7 +700,7 @@ class DueUIConfig {
 									[-10, -5, -1,{
 										"type": "button",
 										"id": "speed_current",
-										"value": "${state.params.speedFactor.toFixed(0)}%",
+										"value": "${(state.move.speedFactor * 100).toFixed(0)}%",
 										"actions": {"type": "gcode", "gcode": "M220 S100"}
 									},"+1", "+5", "+10"]
 								],
@@ -719,7 +746,7 @@ class DueUIConfig {
 									[-10, -5, -1,{
 										"type": "button",
 										"id": "extrusion_current",
-										"value": "${state.params.extrFactors[0].toFixed(0)}%",
+										"value": "${(state.move.extruders[0].factor * 100).toFixed(0)}%",
 										"actions": {"type": "gcode", "gcode": "M221 S100 D0"}
 									},"+1", "+5", "+10"]
 								],
@@ -750,14 +777,14 @@ class DueUIConfig {
 							{
 								"id": "babystep_z_p_button",
 								"type": "button",
-								"value": "Baby<br>Z: ${state.params.babystep.toFixed(2)}",
+								"value": "Baby<br>Z: ${state.move.axes[2].babystep.toFixed(2)}",
 								"tolerance": {
 									"tolerances": [
 										{ "limit": 0.000, "classes": "btn-success"},
 										{ "limit": 0.100, "classes": "btn-warning"},
 										{ "limit": 999.0, "classes": "btn-danger"}
 									],
-									"field": "${state.params.babystep}"
+									"field": "${state.move.axes[2].babystep}"
 								},
 								"initial_value": "Baby<br>Z:",
 								"style": {"width": "9ch", "height": "4em"},
@@ -806,7 +833,7 @@ class DueUIConfig {
 				"type": "tab_panel",
 				"menubar_label": "Movement",
 				"element_configs": [
-					extendObject(true, {}, this.axes_position, {
+					extendObject(this.axes_position, {
 						"id": "movement_position",
 						"position": {
 							"my": "left top",
@@ -817,7 +844,7 @@ class DueUIConfig {
 					{
 						"id": "babystep_button",
 						"type": "button",
-						"value": "Z baby: ${state.params.babystep.toFixed(2)}",
+						"value": "Z baby: ${state.move.axes[2].babystep.toFixed(2)}",
 						"style": {
 							"width": "15ch",
 							"height": "2.5em",
@@ -828,7 +855,7 @@ class DueUIConfig {
 								{ "limit": 0.100, "classes": "btn-warning"},
 								{ "limit": 999.0, "classes": "btn-danger"}
 							],
-							"field": "${state.params.babystep}"
+							"field": "${state.move.axes[2].babystep}"
 						},
 						"initial_value": "ZBS:",
 						"position": {
@@ -1285,7 +1312,7 @@ class DueUIConfig {
 						"value": "Level Bed",
 						"position": {
 							"my": "left top",
-							"at": "center+100 bottom+50",
+							"at": "center+75 bottom+50",
 							"of": "#jog_x"
 						},
 						"style": {
@@ -1300,9 +1327,9 @@ class DueUIConfig {
 						]
 					},
 					{
-						"id": "mesh_compensation",
+						"id": "printer_prep",
 						"type": "button",
-						"value": "Start Mesh Probe",
+						"value": "Prep Printer",
 						"classes": "btn btn-warning",
 						"position": {
 							"my": "right top",
@@ -1316,23 +1343,16 @@ class DueUIConfig {
 							"padding": "2px"
 						},
 						"actions": [
-							{"type": "gcode", "gcode": "G29 S0"}
+							{"type": "macro", "macro": "PrepPrinter.g"}
 						]
 					},
 					{
 						"id": "probe_movement",
 						"type": "button",
-						"read_only": true,
-						"value": "Probe: ${state.sensors.probeValue}",
+						"read_only": false,
+						"value": "Probe: ${state.sensors.probes[0].value}",
 						"initial_value": "Probe",
-						"tolerance": {
-							"tolerances": [
-								{"limit": 550, "classes": "btn-success"},
-								{"limit": 559, "classes": "btn-warning"},
-								{"limit": 999, "classes": "btn-danger"}
-							],
-							"field": "${state.sensors.probeValue}"
-						},
+						"tolerance": this.probe_tolerance,
 						"style": {
 							"width": "175px",
 							"height": "50px",
@@ -1342,8 +1362,11 @@ class DueUIConfig {
 						"position": {
 							"my": "left top",
 							"at": "left bottom+10",
-							"of": "#mesh_compensation"
-						}
+							"of": "#printer_prep"
+						},
+						"actions": [
+							{"type": "gcode", "gcode": "G1 Z5 F3600 ; G30 S-1 ; G1 Z5"}
+						]
 					},
 					{
 						"id": "endstop_sense_label",
@@ -1386,7 +1409,7 @@ class DueUIConfig {
 				"type": "tab_panel",
 				"menubar_label": "HeightMap",
 				"element_configs": [
-					extendObject(true, {}, this.axes_position, {
+					extendObject(this.axes_position, {
 						"id": "heightmap_position",
 						"position": {
 							"my": "left top",
@@ -1398,16 +1421,9 @@ class DueUIConfig {
 						"id": "probe_heightmap",
 						"type": "button",
 						"read_only": true,
-						"value": "Probe: ${state.sensors.probeValue}",
+						"value": "Probe: ${state.sensors.probes[0].value}",
 						"initial_value": "Probe",
-						"tolerance": {
-							"tolerances": [
-								{"limit": 550, "classes": "btn-success"},
-								{"limit": 559, "classes": "btn-warning"},
-								{"limit": 999, "classes": "btn-danger"}
-							],
-							"field": "${state.sensors.probeValue}"
-						},
+						"tolerance": this.probe_tolerance,
 						"style": {
 							"height": "2.5em",
 							"width": "15ch",
@@ -1482,8 +1498,8 @@ class DueUIConfig {
 							"height": "1.51em", "width": "3.0ch", "font-size": "13px"
 						},
 						"refresh_event": "heightmap_refresh",
-//						"scale_min": -0.250,
-//						"scale_max": 0.250
+						"scale_min": -0.250,
+						"scale_max": 0.250
 					},
 					{
 						"id": "heightmap_buttons",
@@ -1593,30 +1609,31 @@ class DueUIConfig {
 						},
 						"tolerance": {
 							"tolerances": [
-								{"limit": 2, "classes": "btn-success"},
-								{"limit": 5, "classes": "btn-warning"},
-								{"limit": 999, "classes": "btn-danger"}
-							]
+								{"limit": 2.0, "classes": "btn-success"},
+								{"limit": 5.0, "classes": "btn-warning"},
+								{"limit": 999.0, "classes": "btn-danger"}
+							],
+							"field": "${state.heat.heaters[0].current}"
 						},
 						"state": {
 							"states": this.heater_states,
-							"field": "${state.temps.state[0]}"
+							"field": "${state.heat.heaters[0].state}"
 						},
 						"actions_chooser": [
-							{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Off"},
-							{"type": "gcode", "gcode": "M144 P0 S0", "label": "Standby"},
-							{"type": "gcode", "gcode": "M144 P0 S1", "label": "On"},
+							{"type": "gcode", "gcode": "M140 P0 Q0", "label": "Off"},
+							{"type": "gcode", "gcode": "M140 P0 Q1", "label": "Standby"},
+							{"type": "gcode", "gcode": "M140 P0 Q2", "label": "On"},
 							{"type": "gcode", "gcode": "M562 P0", "label": "Reset"},
-							{"type": "gcode", "gcode": "M303 H0 S${state.temps.beds.active}", "label": "Tune"},
+							{"type": "gcode", "gcode": "M303 H0 S${state.heat.heaters[0].active}", "label": "Tune"},
 						],
 						"temp_fields": {
-							"current": "${state.temps.bed.current.toFixed(1)}",
-							"active": "${state.temps.bed.active}",
-							"standby": "${state.temps.bed.standby}",
+							"current": "${state.heat.heaters[0].current.toFixed(1)}",
+							"active": "${state.heat.heaters[0].active}",
+							"standby": "${state.heat.heaters[0].standby}",
 						},
 						"set_temp_commands": {
-							"active": "M140 P0 S${value}",
-							"standby": "M140 P0 R${value}",
+							"active": "M140 P0 S${value} Q-1",
+							"standby": "M140 P0 R${value} Q-1",
 						}
 					},
 					{
@@ -1643,19 +1660,19 @@ class DueUIConfig {
 						},
 						"state": {
 							"states": this.heater_states,
-							"field": "${state.temps.state[1]}"
+							"field": "${state.heat.heaters[1].state}"
 						},
 						"actions_chooser": [
-							{"type": "gcode", "gcode": "T-1", "label": "Off"},
-							{"type": "gcode", "gcode": 'M118 P3 S"Unsupported in this version of RRF"', "label": "Standby"},
-							{"type": "gcode", "gcode": "T0", "label": "On"},
+							{"type": "gcode", "gcode": "T0 H0 Q0", "label": "Off"},
+							{"type": "gcode", "gcode": "T0 H0 Q1", "label": "Standby"},
+							{"type": "gcode", "gcode": "T0 H0 Q2", "label": "On"},
 							{"type": "gcode", "gcode": "M562 P1", "label": "Reset"},
-							{"type": "gcode", "gcode": "M303 H1 S${state.temps.tools.active[0]}", "label": "Tune"},
+							{"type": "gcode", "gcode": "M303 H1 S${state.heat.heaters[1].active}", "label": "Tune"},
 						],
 						"temp_fields": {
-							"current": "${state.temps.current[1].toFixed(1)}",
-							"active": "${state.temps.tools.active[0]}",
-							"standby": "${state.temps.tools.standby[0]}",
+							"current": "${state.heat.heaters[1].current.toFixed(1)}",
+							"active": "${state.tools[0].active[0]}",
+							"standby": "${state.tools[0].standby[0]}",
 						},
 						"set_temp_commands": {
 							"active": "G10 P0 S${value}",
@@ -1687,7 +1704,7 @@ class DueUIConfig {
 						"id": "fan_0_label",
 						"type": "label",
 						"initial_value": "<b>Fan 0<br>---%</b>",
-						"value": "<b>Fan 0<br>${state.params.fanPercent[0]}%</b>",
+						"value": "<b>Fan 0<br>${(state.fans[0].actualValue * 100).toFixed(0)}%</b>",
 						"position": {
 							"my": "left top",
 							"at": "right+150 top+10",
@@ -1711,14 +1728,14 @@ class DueUIConfig {
 						"max": 100,
 						"step": 5,
 						"orientation": "vertical",
-						"value": "${state.params.fanPercent[0]}",
+						"value": "${(state.fans[0].actualValue * 100).toFixed(0)}",
 						"actions": {"type": "gcode", "gcode": "M106 P0 S${value / 100.0}"}
 					},
 					{
 						"id": "fan_1_label",
 						"type": "label",
 						"initial_value": "<b>Fan 1<br>---%</b>",
-						"value": "<b>Fan 1<br>${state.params.fanPercent[1]}%</b>",
+						"value": "<b>Fan 1<br>${(state.fans[1].actualValue * 100).toFixed(0)}%</b>",
 						"position": {
 							"my": "left top",
 							"at": "right+10 top",
@@ -1737,7 +1754,7 @@ class DueUIConfig {
 							"of": "#fan_1_label"
 						},
 						"min": 0, "max": 100, "step": 5, "orientation": "vertical",
-						"value": "${state.params.fanPercent[0]}",
+						"value": "${(state.fans[1].actualValue * 100).toFixed(0)}",
 						"actions": {"type": "gcode", "gcode": "M106 P1 S${value / 100.0}"}
 					},
 				]
@@ -1792,8 +1809,8 @@ class DueUIConfig {
 						"read_only": true,
 						"wrap": "off",
 						"show_gcode_replies": true,
-						"show_gcode_sent": false,
-						"show_gcode_in_replies": false,
+						"show_gcode_sent": true,
+						"show_gcode_in_replies": true,
 						"show_log_messages": true,
 						"new_entries_at_top": true
 					}
@@ -1804,20 +1821,18 @@ class DueUIConfig {
 
 	status_map = {
 		"idle": {"label": "Idle", "classes": "btn-success"},
+		"P": {"label": "Printing", "classes": "btn-success"},
+		"S": {"label": "Stopped", "classes": "btn-warning"},
 		"C": {"label": "Starting Up", "classes": "btn-success"},
-		"I": {"label": "Idle", "classes": "btn-success"},
 		"paused": {"label": "Paused", "classes": "btn-primary"},
 		"pausing": {"label": "Pausing", "classes": "btn-success"},
 		"resuming": {"label": "Resuming", "classes": "btn-success"},
+		"changingTool": {"label": "Tool<br>Change", "classes": "btn-warning"},
 		"busy": {"label": "Busy", "classes": "btn-success"},
-		"B": {"label": "Busy", "classes": "btn-success"},
 		"updating": {"label": "Updating", "classes": "btn-danger"},
 		"halted": {"label": "Halted", "classes": "btn-danger"},
-		"S": {"label": "Stopped", "classes": "btn-warning"},
 		"off": {"label": "Off", "classes": "btn-danger"},
-		"O": {"label": "Off", "classes": "btn-danger"},
-		"processing": {"label": "Processing", "classes": "btn-primary"},
-		"P": {"label": "Printing", "classes": "btn-success"},
+		"processing": {"label": "Processing", "classes": "btn-warning"},
 		"simulating": {"label": "Simulating", "classes": "btn-primary"},
 		"connected": {"label": "Connected", "classes": "btn-success"},
 		"connecting": {"label": "Connecting", "classes": "btn-warning"},

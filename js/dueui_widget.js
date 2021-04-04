@@ -244,13 +244,13 @@ class DueuiInputFieldWidget extends DueuiWidget {
 		if (this.autocomplete_key) {
 			this.jq.on("dueui-submit", (event) => {
 				let val = this.jq.val();
-				let ac = getSetting(`ac_${this.autocomplete_key}`) || [];
+				let ac = getLocalSetting(`ac_${this.autocomplete_key}`, []);
 				if (!Array.isArray(ac)) {
 					ac = ac.split(',');
 				}
 				if (!ac.includes(val)) {
 					ac.push(val);
-					setSetting(`ac_${this.autocomplete_key}`, ac);
+					setLocalSetting(`ac_${this.autocomplete_key}`, ac);
 				}
 			});
 
@@ -259,7 +259,7 @@ class DueuiInputFieldWidget extends DueuiWidget {
 				"resolver": "custom",
 				"events": {
 					"search": (query, callback) => {
-						let ac = getSetting(`ac_${this.autocomplete_key}`) || [];
+						let ac = getLocalSetting(`ac_${this.autocomplete_key}`, []);
 						if (!Array.isArray(ac)) {
 							ac = ac.split(',');
 						}
@@ -271,7 +271,7 @@ class DueuiInputFieldWidget extends DueuiWidget {
 		}
 
 		if (this.value) {
-			if (this.value.indexOf("${") >= 0) {
+			if (typeof this.value === 'string' && this.value.indexOf("${") >= 0) {
 				this.jq.addClass("state-poll-listener");
 				this.delay_update = false;
 				this.jq.on("duet_poll_response", (event, status) =>	 {
@@ -1213,11 +1213,14 @@ class DueuiImageWidget extends DueuiWidget {
 	constructor(config, parent) {
 		super("div", $.extend(true, {
 		}, config), parent);
-		if (!this.src || this.src.length === 0) {
-			return;
+		this.jq_img = $(`<img>`);
+		if (this.src) {
+			 this.jq_img.prop("src", this.src);
 		}
-		this.jq_img = $(`<img src=${this.src}>`);
 		this.jq_img.css(this.style);
+		if (this.alt) {
+			this.jq_img.prop("alt", this.alt);
+		}
 		this.jq.append(this.jq_img);
 		if (this.refresh_seconds) {
 			setInterval(() => {
@@ -1371,7 +1374,7 @@ class DueuiHeightmapWidget extends DueuiWidget {
 
 		this.jq_map = $(`#${this.id}_map`);
 		this.jq_legend = $(`#${this.id}_legend`);
-		let resp = await dueui.getText("/sys/heightmap.csv");
+		let resp = await getTextFromDuet("/sys/heightmap.csv", {normalize: true});
 		if (resp.ok) {
 			let rows = resp.data.split('\n');
 			this.local_hm(rows);

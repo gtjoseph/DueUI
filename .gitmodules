@@ -1,3 +1,24 @@
 [submodule "wiki"]
 	path = wiki
 	url = git@github.com:gtjoseph/DueUI.wiki.git
+[submodule "libs/bootstrap"]
+	path = libs/bootstrap
+	url = https://github.com/twbs/bootstrap.git
+[submodule "libs/bootstrap-autocomplete"]
+	path = libs/bootstrap-autocomplete
+	url = https://github.com/xcash/bootstrap-autocomplete.git
+[submodule "libs/bootswatch"]
+	path = libs/bootswatch
+	url = https://github.com/thomaspark/bootswatch.git
+[submodule "libs/bootstrap-icons"]
+	path = libs/bootstrap-icons
+	url = https://github.com/twbs/icons/
+[submodule "libs/jquery"]
+	path = libs/jquery
+	url = git://github.com/jquery/jquery.git
+[submodule "libs/material-design-icons"]
+	path = libs/material-design-icons
+	url = https://github.com/google/material-design-icons.git
+[submodule "libs/pako"]
+	path = libs/pako
+	url = https://github.com/nodeca/pako.git

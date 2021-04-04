@@ -1,40 +1,36 @@
 #!/bin/bash
 #
 version=$(git describe)
-rm -rf dist DueUI-DSF-${version}.zip DueUI-Standalone-${version}.zip || :
-mkdir -p dist/dueui
-cp dueui_config_default_dsf.json dist/dueui/
-cp dueui_config_default_standalone.json dist/dueui/
-sed -r -e "s/DUEUI_VERSION/$version/g" dueui.html > dist/dueui/index.html
-cp -a css js fonts dist/dueui/
-cd dist
-zip -r ../DueUI-DSF-${version}.zip dueui
 
-cd dueui
-sed -r -e "s/jquery.js/dueui-vendor-bundle.js/g" -e "/bootstrap/d" \
-	-e "s/dueui.js/dueui-bundle.js/g" -e "/dueui_(element|panel|widget)/d" index.html > dueui.html
-rm index.html
-gzip *.html
+rm -rf dist releases/DueUI-${version}.zip  || :
+mkdir -p dist/js dist/css dist/fonts
+cp dueui_config_default.json dist/
+cp dueui.html dist/
 
-cd js
-mv jquery.js dueui-vendor-bundle.js
-cat bootstrap.bundle.js >> dueui-vendor-bundle.js
-cat bootstrap-autocomplete.js >> dueui-vendor-bundle.js
-rm bootstrap.bundle.js bootstrap-autocomplete.js
+cp -a css/* dist/css/
+cp -a fonts/* dist/fonts/
 
-mv dueui.js dueui-bundle.js
-cat dueui_element.js >> dueui-bundle.js
-cat dueui_panel.js >> dueui-bundle.js
-cat dueui_widget.js >> dueui-bundle.js
-rm dueui_panel.js dueui_widget.js
-gzip *.js
+touch dist/js/dueui-vendor-bundle.js
+echo -e "\n// JQuery"					>> dist/js/dueui-vendor-bundle.js
+cat js/jquery.min.js 					>> dist/js/dueui-vendor-bundle.js
+echo -e "\n// Bootstrap"				>> dist/js/dueui-vendor-bundle.js
+cat js/bootstrap.bundle.min.js 			>> dist/js/dueui-vendor-bundle.js
+echo -e "\n// Bootstrap autocomplete"	>> dist/js/dueui-vendor-bundle.js
+cat js/bootstrap-autocomplete.min.js 	>> dist/js/dueui-vendor-bundle.js
+echo -e "\n// Pako"						>> dist/js/dueui-vendor-bundle.js
+cat js/pako_inflate.min.js 				>> dist/js/dueui-vendor-bundle.js
 
-cd ../css/
+sed -r -e "s/DUEUI_VERSION/$version/g" js/dueui-loader.js > dist/js/dueui-loader.js
+
+touch dist/js/dueui-bundle.js
+echo -e "\n// dueui"			>> dist/js/dueui-bundle.js
+cat js/dueui.js 				>> dist/js/dueui-bundle.js
+echo -e "\n// dueui_elelemt"	>> dist/js/dueui-bundle.js
+cat js/dueui_element.js 		>> dist/js/dueui-bundle.js
+echo -e "\n// dueui_panel"		>> dist/js/dueui-bundle.js
+cat js/dueui_panel.js 			>> dist/js/dueui-bundle.js
+echo -e "\n// dueui_widget"		>> dist/js/dueui-bundle.js
+cat js/dueui_widget.js 			>> dist/js/dueui-bundle.js
+
+cd dist/css/
 gzip *.css
-
-cd ../fonts/
-gzip *.ttf
-gzip *.eot
-
-cd ..
-zip -r ../../DueUI-Standalone-${version}.zip .
