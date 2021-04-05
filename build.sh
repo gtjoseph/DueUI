@@ -32,5 +32,6 @@ cat js/dueui_panel.js 			>> dist/js/dueui-bundle.js
 echo -e "\n// dueui_widget"		>> dist/js/dueui-bundle.js
 cat js/dueui_widget.js 			>> dist/js/dueui-bundle.js
 
-cd dist/css/
-gzip *.css
+gzip dist/css/*.css
+gzip -k dist/dueui.html
+gzip -k dist/js/*.js

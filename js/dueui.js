@@ -281,6 +281,23 @@ class DueUI {
 		$(".connection-listener").trigger("duet_connection_change", { "status": "disconnected" });
 	}
 
+	async removeOldVersion() {
+		let resp = await this.getFileList("/www");
+		let need_cleanup = resp.find(element => element.name === "dueui.html.gz");
+		if (need_cleanup) {
+			await this.deleteFile("/www/dueui.html.gz");
+		}
+		resp = await this.getFileList("/www/js");
+		let oldfiles = ["dueui-bundle.js.gz", "dueui-vendor-bundle.js.gz",
+		"dueui-loader.js.gz", "dueui_element.js.gz"];
+		for (let f of oldfiles.values()) {
+			need_cleanup = resp.find(element => element.name === f);
+			if (need_cleanup) {
+				await this.deleteFile("/www/js/" + f);
+			}
+		}
+	}
+
 	async startup() {
 		$("#dueui_startup").remove();
 		this.id = "dueui";
@@ -298,6 +315,8 @@ class DueUI {
 			this.showStartupSettings();
 			return;
 		}
+
+		await this.removeOldVersion();
 
 		$("body").on("duet_connection_change", (event, response) => {
 			if (response.status === "reconnected") {
@@ -347,10 +366,30 @@ class DueUI_DSF extends DueUI {
 		}
 	}
 	
+	async removeOldVersion() {
+		await super.removeOldVersion();
+		let resp = await this.getFileList("/www/dueui");
+		if (resp.length == 0) {
+			return;
+		}
+		await this.deleteFile("/www/dueui/index.html");
+		
+		for (let d of ["css", "fonts", "js"].values()) {
+			resp = await this.getFileList("/www/dueui/" + d);
+			for (let f of resp.values()) {
+				await this.deleteFile("/www/dueui/" + d + "/" + f.name);
+			}
+			await this.deleteFile("/www/dueui/" + d);
+		}
+			
+		await this.deleteFile("/www/dueui");
+	}
+	
 	async deleteFile(path) {
-		let resp = await tryFetch(`http://${resolvedSettings.duet_host}${path}`, {
+		let resp = await tryFetch(`http://${resolvedSettings.duet_host}/machine/file/${path}`, {
 			"method": "DELETE"
 		});
+		console.log({ action: "DeleteFile", path: path, resp, respText: await resp.text()});
 		
 		if (!resp.ok) {
 			this.logMessage("W", `DELETE of '${path}' failed: ${resp.status} ${resp.statusText}`);
@@ -557,6 +596,8 @@ class DueUI_Standalone extends DueUI {
 
 	async deleteFile(path) {
 		let resp = await getJSONFromDuet(`/rr_delete?name=${path}`);
+		console.log({ action: "DeleteFile", path: path, resp, respText: await resp.data});
+		
 		if (!resp.ok) {
 			this.logMessage("W", `DELETE of '${path}' failed: ${resp.status} ${resp.statusText}`);
 		}
@@ -633,7 +674,7 @@ class DueUI_Standalone extends DueUI {
 		for (let key of keys) {
 			if (newseq[key] != this.model.seqs[key]) {
 				let resp2 = await getJSONFromDuet(`/rr_model?key=${key}&flags=nvd10`);
-				if (!resp.ok) {
+				if (!resp2.ok) {
 					this.logMessage("W", `Poll failed: ${resp.status} ${resp.statusText}`);
 					this.poll_in_flight = false;
 					return resp;
@@ -681,11 +722,10 @@ class DueUI_Standalone extends DueUI {
 			}
 			let now = Date.now();
 			if (now - this.last_poll >= pi_1) {
-				poll_level = 1;
 				this.last_poll = now;
 			}
 
-			if (this.connected && poll_level > 0 && dpi == 1) {
+			if (this.connected && dpi == 1) {
 				this.pollOnce(true, true);
 			}
 		}, interval);
