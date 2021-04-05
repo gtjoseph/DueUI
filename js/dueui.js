@@ -251,10 +251,13 @@ class DueUI {
 			}
 			this.connect_retry = 0;
 
-			resp = await this.startPolling();
-			if (!resp.ok) {
-				dueui.logMessage("E", resp.error);
+			if (resolvedSettings.duet_polling_enabled) {
+				resp = await this.startPolling();
+				if (!resp.ok) {
+					dueui.logMessage("E", resp.error);
+				}
 			}
+			
 			$("body").addClass("dueui-setting-listener");
 			$("body").on("duet_polling_enabled", (event, value) => {
 				if (value) {

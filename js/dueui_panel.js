@@ -170,8 +170,8 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					"placeholder": "myduet",
 					"style": {"height": "2.5em", "width": "100%", "text-align": "left"},
 					"submit_on_event": "change",
+					"value": resolvedSettings.duet_host,
 					"actions": [
-						{"type": "setting", "setting": "duet_host", "fire_on_startup": true},
 						{"type": "setting", "setting": "duet_host"}
 					]
 				}
@@ -312,7 +312,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"state": {
 					"states": [
 						{ "state": 0, "classes": "btn-danger", "value": "Turn Polling On",
-							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 1, "fire_on_startup": true}
+							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 1}
 						},
 						{ "state": 1, "classes": "btn-success", "value": "Turn Polling Off",
 							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 0}
