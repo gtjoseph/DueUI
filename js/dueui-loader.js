@@ -55,6 +55,7 @@ const DUEUI = {
 		SUBMIT: "dueui-submit",
 		RECV_EVENTS: "recv-events"
 	},
+	CONFIG_VERSION: 101
 }
 
 function nativeFromString(vs) {
@@ -94,6 +95,7 @@ defaultSettings = {
 };
 
 resolvedSettings = {};
+settingsDirty = false;
 configFileSettings = {};
 
 themeList = [];
@@ -117,6 +119,7 @@ function addHeadElement(str, element, options = {}) {
 
 async function tryFetch(url, options = {}) {
 	var response = {};
+	url = url.replace(document.location.origin, "");
 	try {
 		response = await fetch(url, { mode: "cors", ...options});
 	} catch(error) {
@@ -247,11 +250,10 @@ async function getThemeList() {
 
 function saveLocalSettings(settings) {
 	console.log("Saving localSettings: ", {localSettings: settings});
+	localStorage.setItem("config_version", DUEUI.CONFIG_VERSION);
 	localStorage.dueui_settings = JSON.stringify(settings); 
-}
-
-function saveSessionSettings(settings) {
-	sessionStorage.dueui_settings = JSON.stringify(settings); 
+	settingsDirty = false;
+	$(".save_settings_button").removeClass("btn-warning");
 }
 
 function getStorageSettings(storage) {
@@ -281,14 +283,9 @@ function getLocalSettings() {
 	return getStorageSettings(localStorage);
 }
 
-function getSessionSettings() {
-	return getStorageSettings(sessionStorage);
-}
-
 function setSetting(setting, value) {
 	resolvedSettings[setting] = value;
 	console.log(`Saving setting '${setting}' = '${value}'`);
-	saveSessionSettings(resolvedSettings);
 }
 
 function getLocalSetting(setting, default_value) {
@@ -299,15 +296,18 @@ function setLocalSetting(setting, value) {
 	localStorage.setItem(setting, value);
 }
 
-function setTheme() {
-	console.log(`Loading theme ${resolvedSettings.theme_name} from ${resolvedSettings.theme_path}.gz`);
-	loadGzElement(`${resolvedSettings.theme_path}.gz`, 'style', {id: 'theme', type: 'text/css'});
-	saveSessionSettings(resolvedSettings);
+function setTheme(theme_name, theme_path) {
+	if (theme_name && !theme_path) {
+		theme_path = themeList.find(t => t.label === theme_name);
+	}	
+	
+	console.log(`Loading theme ${theme_name} from ${theme_path}.gz`);
+	loadGzElement(`${theme_path}.gz`, 'style', {id: 'theme', type: 'text/css'});
 }
 
 async function isStandalone(duet_host, duet_password) {
 	console.log(`Testing ${duet_host} as Standalone`);	
-	response = await tryFetch(duet_host + "/rr_connect?password=" + duet_password);
+	response = await tryFetch(duet_host + "/rr_connect" + (duet_password ? "?password=" + duet_password : ""));
 	if (response.ok) {
 		response.text();
 		if (response.status === 200) {
@@ -359,9 +359,12 @@ async function getTextFile(url) {
 async function dueui_loader() {
 	console.log("Initializing");
 	let localSettings = getLocalSettings();
+	if (!localStorage.getItem("config_version") || nativeFromString(localStorage.getItem("config_version")) < 100) {
+		localSettings = {};
+		localStorage.clear();
+		localStorage.setItem("config_version", DUEUI.CONFIG_VERSION);
+	} 
 	console.log({localSettings: localSettings});
-	let sessionSettings = getSessionSettings();
-	console.log({sessionSettings: sessionSettings});
 	
 	let params = window.location.search.substr(1, window.location.search.length).split("&");
 	var queryParamSettings = {};
@@ -376,22 +379,19 @@ async function dueui_loader() {
 	console.log({queryParams: queryParamSettings});
 	
 	let response = {};
-	let tempSettings = {...defaultSettings, ...localSettings, ...sessionSettings, ...queryParamSettings};
+	let earlySettings = {...localSettings, ...queryParamSettings};
+	let tempSettings = {
+		duet_host: earlySettings.duet_host || document.location.host,
+		dueui_config_url: earlySettings.dueui_config_url || "dueui_config_default.json"
+	};
 	
 	tempSettings.backend_type = await getHostBackendType("http://" + tempSettings.duet_host, tempSettings.duet_password);
-	let retrieve_prefix = "http://" + tempSettings.duet_host + DUEUI.RETRIEVE_PREFIX[tempSettings.backend_type];
 	
 	if (tempSettings.backend_type == DUEUI.BACKENDS.UNKNOWN) {
 		console.log(`${tempSettings.duet_host} is UNKNOWN: (${response.status}) ${response.statusText}`);
 	}
 
-	let error_string = "";
 	let config_file = "";
-	let search_array = [ tempSettings.dueui_config_url, ...DUEUI.BACKEND_CONFIGS];
-	let ix = search_array.lastIndexOf(tempSettings.dueui_config_url);
-	if (ix > 0) {
-		search_array.slice(ix, 1);
-	}
 	
 	console.log("Starting with config_url: " + tempSettings.dueui_config_url);
 	
@@ -479,27 +479,19 @@ async function dueui_loader() {
 	resolvedSettings = { ...defaultSettings, 
 		...configFileSettings,
 		...localSettings,
-		...sessionSettings,
-		...queryParamSettings,
-		...tempSettings };
+		...queryParamSettings};
 
-	if (configFileSettings.duet_host && configFileSettings.duet_host != tempSettings.duet_host) {
-		resolvedSettings.backend_type = await getHostBackendType("http://" + configFileSettings.duet_host, configFileSettings.duet_password); 
+	if (resolvedSettings.backend_type === DUEUI.BACKENDS.UNKNOWN) {
+		resolvedSettings.backend_type = await getHostBackendType("http://" + resolvedSettings.duet_host, resolvedSettings.duet_password); 
 	}
 
 	themeList = await getThemeList();
-	if (resolvedSettings.theme_name && !resolvedSettings.theme_path) {
-		let theme = themeList.find(t => t.label === resolvedSettings.theme_name);
-		if (theme) {
-			resolvedSettings.theme_path = theme.value;
-		}
-	} 
-	saveSessionSettings(resolvedSettings);
 
 	loadGzElement('css/dueui-fonts.css.gz', 'style', {id: 'dueui-fonts-css', type: 'text/css'});
 	loadGzElement('css/bootstrap.min.css.gz', 'style', {id: 'bootstrap-css', type: 'text/css'});
-	if (resolvedSettings.theme_path) {
-		setTheme();
+	
+	if (resolvedSettings.theme_path || resolvedSettings.theme_path) {
+		setTheme(resolvedSettings.theme_name, resolvedSettings.theme_path);
 	}
 	
     DueUI.startup(configLoaded);

@@ -357,16 +357,15 @@ class DueuiElement {
 				dueui.printFile(a2.file);
 				break;
 			case "setting": {
+				let val;
 				if (run_on_startup) {
-					let val = resolvedSettings[a2.setting];
+					val = resolvedSettings[a2.setting];
 					if (keyExistsOn(this, "state.states[0].actions")) {
 						this.state.current = val;
 					} else {
 						this.val(val);
 					}
-					$(".dueui-setting-listener").trigger(a2.setting, val);
 				} else {
-					let val;
 					if (keyExistsOn(this, "state.states[0].actions")) {
 						this.state.current++;
 						if (this.state.current >= this.state.states.length) {
@@ -376,15 +375,11 @@ class DueuiElement {
 					} else {
 						val = (a2.value ? DueUI.evalValue(a2.value, this.val()) : this.val());
 					}
-					setSetting(a2.setting, val);
-					$(".dueui-setting-listener").trigger(a2.setting, val);
+					resolvedSettings[a2.setting] = val;
+					settingsDirty = true;
+					$(".save_settings_button").addClass("btn-warning");
 				}
-				break;
-			}
-			case "theme": {
-				resolvedSettings.theme_path = event.target.selectedOptions[0].value;
-				resolvedSettings.theme_name = event.target.selectedOptions[0].label;
-				setTheme();
+				$(".dueui-setting-listener").trigger("dueui-setting-change", {name: a2.setting, value: val});
 				break;
 			}
 			case "event": {
@@ -394,7 +389,8 @@ class DueuiElement {
 						val = Number(a2.value);
 					} else {
 						if (!a2.no_eval) {
-							val = DueUI.evalValue(a2.value, this.val());
+							let tv = this.val();
+							val = DueUI.evalValue(a2.value, tv);
 						} else {
 							val = a2.value;
 						}

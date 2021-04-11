@@ -127,7 +127,18 @@ class DueuiTabbedPanel extends DueuiPanel {
 					}, this.menubar_widget.button_defaults), this.panel_area_widget);
 			this.settings_panel.makeTabbed(`#${this.menubar_widget.id}`, this.settings_panel.menu_button);
 		}
-
+		
+		this.save_settings_button = new DueuiButtonWidget(
+		$.extend(
+		{
+			"id": "save_settings_button",
+			"icon": "save",
+			"classes": "btn-secondary save_settings_button",
+			"onsubmit": () => {
+				saveLocalSettings(resolvedSettings);
+			}
+		}, this.menubar_widget.button_defaults), this.menubar_widget);
+		
 		$(".state-poll-listener").trigger("duet_poll_response", dueui.model);
 
 		$(".dueui-panel-tab:eq(0)").show();
@@ -150,12 +161,29 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 		super(Object.assign(config,
 			{
 				"id": "dueui_settings",
+				"classes": "dueui-setting-listener",
 				"skip_population": true,
 				"menu_button":  {
+					"id": "dueui_settings_icon",
 					"icon": "settings",
 				}
 			}), parent);
 
+		this.localSettings = {};
+		this.jq.on("dueui-setting-change", (event, setting) => {
+				this.localSettings[setting.name] = setting.value;
+				if (setting.name === 'theme_path') {
+					let theme_name = "";
+					let theme = themeList.find(t => t.value === setting.value);
+					if (theme) {
+						this.localSettings["theme_name"] = theme.label;
+						theme_name = theme.label;
+					}
+					setTheme(theme_name, setting.value); 
+				}
+				console.log(event, setting);
+			});
+			
 		this.element_configs = [
 			{
 				"id": "duet_url",
@@ -251,8 +279,10 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"position": {"my": "left top", "at": "left bottom+5", "of": "#dueui_theme_label"},
 				"style": {"width": "25ch", "height": "2.5em"},
 				"options": [],
-				"submit_on_change": true,
-				"actions": {"type": "theme"}
+				"classes": "dueui-settings-field",
+					"actions": [
+						{ "type": "setting", "setting": "theme_path" }
+					]
 			},
 			{
 				"id": "dueui_settings_debug_polling",
@@ -269,6 +299,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					]
 				},
 				"value": "Debug Polling",
+				"classes": "dueui-settings-field",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_theme"},
 			},
 			{
@@ -286,6 +317,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					]
 				},
 				"value": "Send GCode",
+				"classes": "dueui-settings-field",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_debug_polling"},
 			},
 			{
@@ -303,6 +335,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					]
 				},
 				"value": "Test Mode",
+				"classes": "dueui-settings-field",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_dont_send_gcode"},
 			},
 			{
@@ -312,7 +345,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 				"state": {
 					"states": [
 						{ "state": 0, "classes": "btn-danger", "value": "Turn Polling On",
-							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 1}
+							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 1, "fire_on_startup": true}
 						},
 						{ "state": 1, "classes": "btn-success", "value": "Turn Polling Off",
 							"actions": {"type": "setting", "setting": "duet_polling_enabled", "value": 0}
@@ -320,6 +353,7 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 					]
 				},
 				"value": "Polling",
+				"classes": "dueui-settings-field",
 				"position": {"my": "left top", "at": "left bottom+15", "of": "#dueui_settings_test_mode"},
 			},
 			{
@@ -335,10 +369,13 @@ class DueuiSettingsPanel extends DueuiTabPanel {
 			{
 				"id": "dueui_settings_submit",
 				"type": "button",
-				"style": {"height": "4.0em", "width": "12ch"},
-				"value": "Save Settings",
+				"style": {"text-align": "middle", "height": "4.0em", "width": "12ch"},
+				"classes": "btn-secondary save_settings_button",
+				"value": "Save",
+				"icon": "save",
 				"position": {"my": "left center", "at": "right+40 center", "of": "#dueui_settings_warning"},
 				"onsubmit": () => {
+					Object.assign(resolvedSettings, this.localSettings);
 					saveLocalSettings(resolvedSettings);
 				}
 			},

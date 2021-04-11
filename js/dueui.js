@@ -34,7 +34,8 @@ class DueUI {
 				str = "`" + str + "`";
 			}
 			try {
-				return nativeFromString(eval(str));
+				let ev = eval(str);
+				return nativeFromString(ev);
 			} catch (error) {
 				dueui.logMessage("E", error.message + ": " + value);
 				return Number.NaN;

@@ -128,6 +128,16 @@ class DueuiWidget extends DueuiElement {
 			this.last_value = val;
 		}
 	}
+	label(label, skipcheck) {
+		var label_object = this.label_object || this.jq;
+		if (typeof(label) === 'undefined' && this.label_function) {
+			if (typeof(this.label_function) === 'string') {
+				return 	label_object[this.label_function]();
+			} else {
+				return this.label_function();
+			}
+		}
+	}
 }
 
 class DueuiButtonWidget extends DueuiWidget {
@@ -369,6 +379,8 @@ class DueuiSelectWidget extends DueuiWidget {
 		}, config, {"classes": classes}), parent);
 
 		this.value_function = "val";
+		this.label_function = "html";
+		this.label_object = this.jq;
 		this.value_object = this.jq;
 		for (let option of this.options) {
 			if (typeof(option) === 'string' || typeof(option) === 'number') {
