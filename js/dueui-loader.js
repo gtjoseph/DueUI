@@ -55,7 +55,7 @@ const DUEUI = {
 		SUBMIT: "dueui-submit",
 		RECV_EVENTS: "recv-events"
 	},
-	CONFIG_VERSION: 101
+	CONFIG_VERSION: 102
 }
 
 function nativeFromString(vs) {
@@ -297,17 +297,22 @@ function setLocalSetting(setting, value) {
 }
 
 function setTheme(theme_name, theme_path) {
-	if (theme_name && !theme_path) {
-		theme_path = themeList.find(t => t.label === theme_name);
+	if (theme_name) {
+		theme_path = themeList.find(t => t.label === theme_name).value;
 	}	
-	
+
+	if (theme_path && !theme_name) {
+		theme_name = themeList.find(t => t.value === theme_path).label;
+	}	
+
 	console.log(`Loading theme ${theme_name} from ${theme_path}.gz`);
 	loadGzElement(`${theme_path}.gz`, 'style', {id: 'theme', type: 'text/css'});
+	return {theme_name: theme_name, theme_path: theme_path}
 }
 
 async function isStandalone(duet_host, duet_password) {
 	console.log(`Testing ${duet_host} as Standalone`);	
-	response = await tryFetch(duet_host + "/rr_connect" + (duet_password ? "?password=" + duet_password : ""));
+	response = await tryFetch(duet_host + "/rr_connect?password=" + duet_password );
 	if (response.ok) {
 		response.text();
 		if (response.status === 200) {
@@ -359,7 +364,7 @@ async function getTextFile(url) {
 async function dueui_loader() {
 	console.log("Initializing");
 	let localSettings = getLocalSettings();
-	if (!localStorage.getItem("config_version") || nativeFromString(localStorage.getItem("config_version")) < 100) {
+	if (!localStorage.getItem("config_version") || nativeFromString(localStorage.getItem("config_version")) < 102) {
 		localSettings = {};
 		localStorage.clear();
 		localStorage.setItem("config_version", DUEUI.CONFIG_VERSION);
@@ -382,6 +387,7 @@ async function dueui_loader() {
 	let earlySettings = {...localSettings, ...queryParamSettings};
 	let tempSettings = {
 		duet_host: earlySettings.duet_host || document.location.host,
+		duet_password: earlySettings.duet_password || defaultSettings.duet_password,
 		dueui_config_url: earlySettings.dueui_config_url || "dueui_config_default.json"
 	};
 	
@@ -490,8 +496,14 @@ async function dueui_loader() {
 	loadGzElement('css/dueui-fonts.css.gz', 'style', {id: 'dueui-fonts-css', type: 'text/css'});
 	loadGzElement('css/bootstrap.min.css.gz', 'style', {id: 'bootstrap-css', type: 'text/css'});
 	
-	if (resolvedSettings.theme_path || resolvedSettings.theme_path) {
-		setTheme(resolvedSettings.theme_name, resolvedSettings.theme_path);
+	if (resolvedSettings.theme_name) {
+		let t = setTheme(resolvedSettings.theme_name, null);
+		resolvedSettings.theme_path = t.theme_path;
+	}
+	
+	if (resolvedSettings.theme_path) {
+		let t = setTheme(null, resolvedSettings.theme_path);
+		resolvedSettings.theme_name = t.theme_name;
 	}
 	
     DueUI.startup(configLoaded);
