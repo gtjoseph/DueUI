@@ -364,7 +364,7 @@ async function getTextFile(url) {
 async function dueui_loader() {
 	console.log("Initializing");
 	let localSettings = getLocalSettings();
-	if (!localStorage.getItem("config_version") || nativeFromString(localStorage.getItem("config_version")) < 102) {
+	if (!localStorage.getItem("config_version") || nativeFromString(localStorage.getItem("config_version")) < DUEUI.CONFIG_VERSION) {
 		localSettings = {};
 		localStorage.clear();
 		localStorage.setItem("config_version", DUEUI.CONFIG_VERSION);
