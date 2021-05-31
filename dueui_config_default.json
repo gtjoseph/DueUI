@@ -1793,7 +1793,7 @@ class DueUIConfig {
 						"field_type": "text",
 						"autocomplete_key": "console",
 						"submit_on_enter": true,
-						"actions": {"type": "gcode", "gcode": "${value}", "get_reply": true}
+						"actions": {"type": "gcode", "gcode": "${value}", "get_reply": true, "replies_to": "#console_log"}
 					},
 					{
 						"id": "console_log",
@@ -1808,8 +1808,8 @@ class DueUIConfig {
 						},
 						"read_only": true,
 						"wrap": "off",
-						"show_gcode_replies": true,
-						"show_gcode_sent": true,
+						"show_gcode_replies": false,
+						"show_gcode_sent": false,
 						"show_gcode_in_replies": true,
 						"show_log_messages": true,
 						"new_entries_at_top": true

@@ -418,16 +418,17 @@ class DueuiTextAreaWidget extends DueuiWidget {
 		this.jq.on("append", (event, data) => {
 			this.append(data);
 		});
+		
+		this.jq.on("gcode_reply", (event, reply) => {
+			if (this.show_gcode_in_replies) {
+				this.append(`${reply.gcode}: ${reply.response}`, reply.timestamp);
+			} else {
+				this.append(`${reply.response}`, reply.timestamp);
+			}
+		});
 
 		if (this.show_gcode_replies) {
 			this.jq.addClass("gcode-reply-listener");
-			this.jq.on("gcode_reply", (event, reply) => {
-				if (this.show_gcode_in_replies) {
-					this.append(`${reply.gcode}: ${reply.response}`, reply.timestamp);
-				} else {
-					this.append(`${reply.response}`, reply.timestamp);
-				}
-			});
 		}
 		if (this.show_log_messages) {
 			this.jq.addClass("log-message-listener");

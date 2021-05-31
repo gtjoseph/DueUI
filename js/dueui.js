@@ -429,7 +429,7 @@ class DueUI_DSF extends DueUI {
 			}
 
 			let d = new Date();
-			$(".gcode-sent-listener").trigger("gcode_sent", {
+			$(ge.replies_to || ".gcode-sent-listener").trigger("gcode_sent", {
 				"timestamp": d,
 				"gcode": ge.gcode.trim()
 			});
@@ -446,13 +446,11 @@ class DueUI_DSF extends DueUI {
 				this.logMessage("E", `GCode: ${gc}  Error: ${single_resp.error.responseText}`);
 				return single_resp;
 			} else {
-				resp.replies.push(single_resp.data);
-				let response = "";
-				if (single_resp.data) {
-					response = single_resp.data.trimStart().trim();
-				}
+				let response = await single_resp.text();
+				response = response.trimStart().trim();
+				resp.replies.push(response);
 				if (!ge.no_event && response.length > 0) {
-					$(".gcode-reply-listener").trigger("gcode_reply", {
+					$(ge.replies_to || ".gcode-reply-listener").trigger("gcode_reply", {
 						"timestamp": d,
 						"gcode": gc,
 						"response": response
