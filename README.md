@@ -4,7 +4,7 @@ This is a lightweight user interface for the Duet family of 3D printing
 electronics.  For more information on the Duet products, visit
 http://duet3d.com and the forums at http://forum.duet3d.com.
 
-Everyhing you need to know is in the ![DueUI Wiki](https://github.com/gtjoseph/DueUI/wiki)
+Everyhing you need to know is in the [DueUI Wiki](https://github.com/gtjoseph/DueUI/wiki)
 
 ## Feedback
 

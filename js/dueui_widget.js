@@ -1356,6 +1356,24 @@ class DueuiHeightmapWidget extends DueuiWidget {
 				"width": "15px",
 				"height": "10px",
 				"font-size": "10px"
+			},
+			"xaxis_style": {
+				"padding-top": "15px",
+				"width": "1ch",
+				"font-family": "monospace",
+				"transform": "rotate(90deg)",
+				"transform-style": "preserve-3d"
+			},
+			"yaxis_style": {
+				"text-align": "right",
+				"font-family": "monospace"
+			},
+			"scale_style": {
+				"text-align": "right",
+				"font-family": "monospace"
+			},
+			"summary_style": {
+				"font-family": "monospace"
 			}
 		}, config, {"classes": ""}),parent);
 
@@ -1421,22 +1439,49 @@ class DueuiHeightmapWidget extends DueuiWidget {
 		return colors;
 	}
 
+	find_param(p) {
+		return 
+	}
 	local_hm(rows) {
+		let control = {};
+		let control_values = rows[2].split(',');
 
+		let header_names = rows[1].split(',');
+		if (header_names[0] === "xmin") {
+			header_names.forEach((name, ix) => {
+				let cv = control_values[ix];
+				if (cv.indexOf('.') >= 0) {
+					control[name] = parseFloat(cv);
+				} else {
+					control[name] = parseInt(cv);
+				}
+			}); 
+		} else {
+			let v1 = "xmin,xmax,ymin,ymax,radius,xspacing,yspacing,xnum,ynum".split(",");
+			let v2 = "min0,max0,min1,max1,radius,spacing0,spacing1,num0,num1".split(",");
+			v1.forEach((name, ix) => {
+				let cv = control_values[ix + 2];
+				if (cv.indexOf('.') >= 0) {
+					control[name] = parseFloat(cv);
+				} else {
+					control[name] = parseInt(cv);
+				}
+			}); 
+		}
+		
 		let precision = 8;
 
 		let colors = this.generateColorGradient(precision);
 
-		let control = rows[2].split(',');
-		let xMin = parseFloat(control[0]);
-		let xMax = parseFloat(control[1]);
-		let yMin = parseFloat(control[2]);
-		let yMax = parseFloat(control[3]);
-		let radius = parseFloat(control[4]);
-		let xSpacing = parseFloat(control[5]);
-		let ySpacing = parseFloat(control[6]);
-		let xPoints = parseInt(control[7]);
-		let yPoints = parseInt(control[8]);
+		let xMin = control.xmin;
+		let xMax = control.xmax;
+		let yMin = control.ymin;
+		let yMax = control.ymax;
+		let radius = control.radius;
+		let xSpacing = control.xspacing;
+		let ySpacing = control.yspacing;
+		let xPoints = control.xnum;
+		let yPoints = control.ynum;
 		let zMin = 0;
 		let zMax = 0;
 		let int_rows = [];
@@ -1532,7 +1577,9 @@ class DueuiHeightmapWidget extends DueuiWidget {
 			let jq_row = $("<tr/>");
 			let r = int_rows[y];
 			let y_scale = (y % 2) == 0 ? ((y * ySpacing) + yMin).toFixed(0) : "";
-			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${y_scale}</td>`);
+			let y_label = $(`<td>${y_scale}</td>`);
+			y_label.css(this.yaxis_style);
+			jq_row.append(y_label);
 
 			for (let x = 0; x < xPoints; x++) {
 				let z = r[x];
@@ -1575,20 +1622,23 @@ class DueuiHeightmapWidget extends DueuiWidget {
 		jq_row.append('<td/>');
 		for (let x = 0; x < xPoints; x++) {
 			let v = ((xSpacing * x) + xMin).toFixed(0);
-			jq_row.append(`<td><div style='width: 1ch; font-family: monospace; transform: rotate(90deg); transform-style: preserve-3d;'>${(x % 2 == 0) ? v : ""}</div></td>`);
+			let x_label = $(`<td>${(x % 2 == 0) ? v : ""}</td>`);
+			x_label.css(this.xaxis_style); 
+			jq_row.append(x_label);
 		}
 		jq_tb.append(jq_row);
 
 		$(`#${this.id}_map`).append(jq_tb);
 		this.jq_map.find("td").tooltip();
 
-		$(`#${this.id}_stats`).append(`
-<span style='font-family: monospace;'>
-&nbsp;All Points: ${points.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_all.toFixed(3)} RMS: ${rms_all.toFixed(3)} STDDEV: ${std_dev_all.toFixed(3)}<br>
-High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_high.toFixed(3)} RMS: ${rms_high.toFixed(3)} STDDEV: ${std_dev_high.toFixed(3)}<br>
-&nbsp;Low Points: ${points_low.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_low.toFixed(3)} RMS: ${rms_low.toFixed(3)} STDDEV: ${std_dev_low.toFixed(3)}</span>
+		let summary_span = $(`
+			<span>
+			&nbsp;All Points: ${points.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_all.toFixed(3)} RMS: ${rms_all.toFixed(3)} STDDEV: ${std_dev_all.toFixed(3)}<br>
+			High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_high.toFixed(3)} RMS: ${rms_high.toFixed(3)} STDDEV: ${std_dev_high.toFixed(3)}<br>
+			&nbsp;Low Points: ${points_low.toString().padStart(4, ' ').replace(' ', '&nbsp;')} Mean: ${mean_low.toFixed(3)} RMS: ${rms_low.toFixed(3)} STDDEV: ${std_dev_low.toFixed(3)}</span>
 		`.trim());
-
+		summary_span.css(this.summary_style);
+		$(`#${this.id}_stats`).append(summary_span);
 
 		let inc = Math.ceil(zMax / precision);
 		for (let i = precision - 1; i > 0; i--) {
@@ -1606,10 +1656,17 @@ High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} M
 				q = `&nbsp;${this.high_point_char}&nbsp;`;
 			}
 			jq_row.append(`<td style='width: 2ch; padding: 2px; color: #ffffff; background: ${c}'>${q}</td>`);
-			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${Math.min((zMax / 1000), (vm / 1000)).toFixed(3)}</td>`);
+			let scale_label = $(`<td>${Math.min((zMax / 1000), (vm / 1000)).toFixed(3)}</td>`);
+			scale_label.css(this.scale_style);
+			jq_row.append(scale_label);
 		}
 
-		this.jq_legend.append(`<tr><td style='background: #00ff00;'>&nbsp;${this.zero_point_char}&nbsp;</td><td style='text-align: right; font-family: monospace;'>&nbsp;0.000</td></tr>`);
+		let jq_row2 = $("<tr/>");
+		this.jq_legend.append(jq_row2);
+		jq_row2.append(`<td style='background: #00ff00;'>&nbsp;${this.zero_point_char}&nbsp;</td>`);
+		let zero_label = $("<td>&nbsp;0.000</td>");
+		zero_label.css(this.scale_style);
+		jq_row2.append(zero_label);
 
 		inc = Math.floor(zMin / precision);
 		for (let i = 1; i < precision; i++) {
@@ -1627,7 +1684,9 @@ High Points: ${points_high.toString().padStart(4, ' ').replace(' ', '&nbsp;')} M
 				q = `&nbsp;${this.low_point_char}&nbsp;`;
 			}
 			jq_row.append(`<td style='width: 2ch; padding: 2px; color: #ffffff; background: ${c}'>${q}</td>`);
-			jq_row.append(`<td style='text-align: right; font-family: monospace;'>${Math.max((zMin / 1000), (vm / 1000)).toFixed(3)}</td>`);
+			let scale_label = $(`<td>${Math.max((zMin / 1000), (vm / 1000)).toFixed(3)}</td>`);
+			scale_label.css(this.scale_style);
+			jq_row.append(scale_label);
 		}
 
 	}
