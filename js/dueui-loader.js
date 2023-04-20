@@ -119,9 +119,13 @@ function addHeadElement(str, element, options = {}) {
 
 async function tryFetch(url, options = {}) {
 	var response = {};
+	let headers = {};
+	if (resolvedSettings.sessionKey) {
+		headers["X-Session-Key"] = resolvedSettings.sessionKey;
+	}
 	url = url.replace(document.location.origin, "");
 	try {
-		response = await fetch(url, { mode: "cors", ...options});
+		response = await fetch(url, { mode: "cors", headers: headers, ...options});
 	} catch(error) {
 		response.statusText = error;
 		response.status = 900;
@@ -311,12 +315,11 @@ function setTheme(theme_name, theme_path) {
 }
 
 async function isStandalone(duet_host, duet_password) {
-	console.log(`Testing ${duet_host} as Standalone`);	
-	response = await tryFetch(duet_host + "/rr_connect?password=" + duet_password );
+	console.log(`Testing ${duet_host} as Standalone`);
+	response = await getJSON(duet_host + "/rr_connect?password=" + duet_password);
 	if (response.ok) {
-		response.text();
-		if (response.status === 200) {
-			console.log(`${duet_host} is Standalone`);
+		if (response.status === 200 && !response.data.isEmulated) {
+			console.log(`${duet_host} is Standalone: ${response.data}`);
 			return true;
 		}
 	}

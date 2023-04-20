@@ -289,7 +289,7 @@ class DueUI {
 		let resp = await this.getFileList("/www");
 		let need_cleanup = resp.find(element => element.name === "dueui.html.gz");
 		if (need_cleanup) {
-			await this.deleteFile("/www/dueui.html.gz");
+			await this.deleteFile("/www/dueui.html.gz", true);
 		}
 		resp = await this.getFileList("/www/js");
 		let oldfiles = ["dueui-bundle.js.gz", "dueui-vendor-bundle.js.gz",
@@ -297,7 +297,7 @@ class DueUI {
 		for (let f of oldfiles.values()) {
 			need_cleanup = resp.find(element => element.name === f);
 			if (need_cleanup) {
-				await this.deleteFile("/www/js/" + f);
+				await this.deleteFile("/www/js/" + f, true);
 			}
 		}
 	}
@@ -336,7 +336,21 @@ class DueUI {
 class DueUI_DSF extends DueUI {
 
 	async connect_once(host) {
-		let resp = await getJSONFromDuet("/machine/status");
+		let resp = await getJSONFromDuet(`/rr_connect?password=${encodeURI(resolvedSettings.duet_password)}`);
+
+		let connect_url = "/machine/connect";
+		if (resolvedSettings.duet_password.length > 0) {
+			connect_url += `?password=${encodeURI(resolvedSettings.duet_password)}`;
+		}
+		resp = await getJSONFromDuet(connect_url);
+		if (!resp.ok) {
+			this.logMessage("W", `Initial connect failed: ${resp.status} ${resp.statusText}`);
+			this.connected = false;
+			return resp;
+		}
+		resolvedSettings.sessionKey = resp.data.sessionKey;
+
+		resp = await getJSONFromDuet("/machine/status");
 		if (!resp.ok) {
 			this.logMessage("W", `Initial connect failed: ${resp.status} ${resp.statusText}`);
 			this.connected = false;
@@ -376,26 +390,26 @@ class DueUI_DSF extends DueUI {
 		if (resp.length == 0) {
 			return;
 		}
-		await this.deleteFile("/www/dueui/index.html");
+		await this.deleteFile("/www/dueui/index.html", true);
 		
 		for (let d of ["css", "fonts", "js"].values()) {
 			resp = await this.getFileList("/www/dueui/" + d);
 			for (let f of resp.values()) {
-				await this.deleteFile("/www/dueui/" + d + "/" + f.name);
+				await this.deleteFile("/www/dueui/" + d + "/" + f.name, true);
 			}
-			await this.deleteFile("/www/dueui/" + d);
+			await this.deleteFile("/www/dueui/" + d, true);
 		}
 			
-		await this.deleteFile("/www/dueui");
+		await this.deleteFile("/www/dueui", true);
 	}
 	
-	async deleteFile(path) {
+	async deleteFile(path, suppressError = false) {
 		let resp = await tryFetch(`http://${resolvedSettings.duet_host}/machine/file/${path}`, {
 			"method": "DELETE"
 		});
 		console.log({ action: "DeleteFile", path: path, resp, respText: await resp.text()});
 		
-		if (!resp.ok) {
+		if (!resp.ok && !suppressError) {
 			this.logMessage("W", `DELETE of '${path}' failed: ${resp.status} ${resp.statusText}`);
 		}
 		
@@ -504,6 +518,10 @@ class DueUI_DSF extends DueUI {
 		resp.ok = true;
 
 		let ws_url = `ws://${resolvedSettings.duet_host}/machine`;
+		if (resolvedSettings.sessionKey) {
+			ws_url += `?sessionKey=${encodeURI(resolvedSettings.sessionKey)}`;
+		}
+
 		try {
 			this.websocket = new WebSocket(ws_url);
 
@@ -596,11 +614,11 @@ class DueUI_Standalone extends DueUI {
 		}
 	}
 
-	async deleteFile(path) {
+	async deleteFile(path, suppressError = false) {
 		let resp = await getJSONFromDuet(`/rr_delete?name=${path}`);
 		console.log({ action: "DeleteFile", path: path, resp, respText: await resp.data});
 		
-		if (!resp.ok) {
+		if (!resp.ok && !suppressError) {
 			this.logMessage("W", `DELETE of '${path}' failed: ${resp.status} ${resp.statusText}`);
 		}
 		
