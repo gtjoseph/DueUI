@@ -1,5 +1,6 @@
 *.zip
 /dist/
 css/dueui-themes-custom.css
+libs/material-design-icons
 
 

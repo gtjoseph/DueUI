@@ -16,9 +16,6 @@
 [submodule "libs/jquery"]
 	path = libs/jquery
 	url = git://github.com/jquery/jquery.git
-[submodule "libs/material-design-icons"]
-	path = libs/material-design-icons
-	url = https://github.com/google/material-design-icons.git
 [submodule "libs/pako"]
 	path = libs/pako
 	url = https://github.com/nodeca/pako.git
